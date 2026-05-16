@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { TaskCard } from "./task-card"
 import { TaskModal } from "./task-modal"
@@ -15,7 +16,7 @@ export type Task = {
   points?: number | null
   description?: string | null
   assigneeId?: string | null
-  assignee?: { name: string } | null
+  assignee?: { name: string | null; email?: string | null; image?: string | null } | null
 }
 
 export type ColumnData = {
@@ -37,6 +38,8 @@ export function KanbanBoard({
   projectId: string
   boardSections?: Array<{ id: string; name: string }>
 }) {
+  const { data: session } = useSession()
+  const currentUserId = session?.user?.id
   const [columns, setColumns] = useState(initialData)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
@@ -120,24 +123,33 @@ export function KanbanBoard({
                   )}
                 >
                   <div className="flex flex-col gap-3 min-h-[150px]">
-                    {column.tasks.map((task, index) => (
-                      <Draggable key={task.id} draggableId={task.id} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            style={{ ...provided.draggableProps.style }}
-                          >
-                            <TaskCard 
-                              task={task} 
-                              isDragging={snapshot.isDragging} 
-                              onClick={() => setSelectedTask(task)}
-                            />
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
+                    {column.tasks.map((task, index) => {
+                      const canDrag = task.assigneeId === currentUserId
+                      return (
+                        <Draggable 
+                          key={task.id} 
+                          draggableId={task.id} 
+                          index={index}
+                          isDragDisabled={!canDrag}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              style={{ ...provided.draggableProps.style }}
+                            >
+                              <TaskCard 
+                                task={task} 
+                                isDragging={snapshot.isDragging} 
+                                onClick={() => setSelectedTask(task)}
+                                canDrag={canDrag}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      )
+                    })}
                     {provided.placeholder}
                   </div>
                 </div>
