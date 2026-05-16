@@ -4,6 +4,7 @@ import * as React from "react"
 import { Plus, GripVertical, Trash2, Edit2, Check, X } from "lucide-react"
 import { createBoardSection, deleteBoardSection, updateBoardSectionOrder, renameBoardSection } from "@/actions/board-section"
 import { useRouter } from "next/navigation"
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 
 type Section = {
   id: string
@@ -18,6 +19,11 @@ export function KanbanSettings({ projectId, initialSections }: { projectId: stri
   const [editValue, setEditValue] = React.useState("")
   const [loading, setLoading] = React.useState(false)
   const router = useRouter()
+
+  // Update local state when initialSections change (e.g. on router.refresh)
+  React.useEffect(() => {
+    setSections(initialSections)
+  }, [initialSections])
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,6 +56,20 @@ export function KanbanSettings({ projectId, initialSections }: { projectId: stri
     }
   }
 
+  const onDragEnd = async (result: DropResult) => {
+    if (!result.destination) return
+
+    const items = Array.from(sections)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+
+    setSections(items)
+    
+    const ids = items.map(item => item.id)
+    await updateBoardSectionOrder(projectId, ids)
+    router.refresh()
+  }
+
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
       <div className="p-6 border-b border-border bg-secondary/20">
@@ -58,7 +78,7 @@ export function KanbanSettings({ projectId, initialSections }: { projectId: stri
           Kanban Sections
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Add or remove columns for your project's Kanban board.
+          Add, remove, or drag to reorder columns for your Kanban board.
         </p>
       </div>
 
@@ -79,52 +99,73 @@ export function KanbanSettings({ projectId, initialSections }: { projectId: stri
           </button>
         </form>
 
-        <div className="space-y-2">
-          {sections.map((section, index) => (
-            <div key={section.id} className="flex items-center gap-3 p-3 bg-secondary/10 rounded-lg border border-border">
-              <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-              
-              <div className="flex-1 min-w-0">
-                {editingId === section.id ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      autoFocus
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      className="flex-1 bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none"
-                    />
-                    <button onClick={() => handleRename(section.id)} className="text-emerald-500 hover:bg-emerald-500/10 p-1 rounded">
-                      <Check className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setEditingId(null)} className="text-destructive hover:bg-destructive/10 p-1 rounded">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <span className="text-sm font-medium">{section.name}</span>
-                )}
-              </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="sections">
+            {(provided) => (
+              <div 
+                {...provided.droppableProps} 
+                ref={provided.innerRef} 
+                className="space-y-2"
+              >
+                {sections.map((section, index) => (
+                  <Draggable key={section.id} draggableId={section.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className="flex items-center gap-3 p-3 bg-secondary/10 rounded-lg border border-border group"
+                      >
+                        <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                          <GripVertical className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          {editingId === section.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                autoFocus
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                className="flex-1 bg-background border border-primary rounded px-2 py-1 text-sm focus:outline-none"
+                              />
+                              <button onClick={() => handleRename(section.id)} className="text-emerald-500 hover:bg-emerald-500/10 p-1 rounded">
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => setEditingId(null)} className="text-destructive hover:bg-destructive/10 p-1 rounded">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-sm font-medium">{section.name}</span>
+                          )}
+                        </div>
 
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => {
-                    setEditingId(section.id)
-                    setEditValue(section.name)
-                  }}
-                  className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(section.id)}
-                  className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              setEditingId(section.id)
+                              setEditValue(section.name)
+                            }}
+                            className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(section.id)}
+                            className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
     </div>
   )
