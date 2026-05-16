@@ -26,6 +26,7 @@ export async function PATCH(
           branchName: rest.branchName,
           repoName: rest.repoName,
           dueDate: rest.dueDate ? new Date(rest.dueDate) : null,
+          sprintId: rest.sprintId,
         }
       })
 

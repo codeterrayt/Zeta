@@ -32,7 +32,8 @@ export function TaskModal({
   task,
   projectMembers = [],
   boardSections = [],
-  standalone = false
+  standalone = false,
+  sprints = []
 }: {
   isOpen: boolean
   onClose?: () => void
@@ -40,6 +41,7 @@ export function TaskModal({
   projectMembers?: Array<{ id: string; name: string | null; email: string | null }>
   boardSections?: Array<{ id: string; name: string }>
   standalone?: boolean
+  sprints?: Array<{ id: string; name: string; startDate: Date | null; endDate: Date | null }>
 }) {
   const { data: session } = useSession()
   const router = useRouter()
@@ -48,6 +50,7 @@ export function TaskModal({
     task?.assignments?.map((a: any) => ({ userId: a.userId, role: a.role })) ?? []
   )
   const [reporterId, setReporterId] = React.useState(task?.creatorId || task?.reporter?.id || "")
+  const [sprintId, setSprintId] = React.useState(task?.sprintId || "")
   const [points, setPoints] = React.useState<number | "">(task?.points ?? "")
   const [githubUrl, setGithubUrl] = React.useState(task?.githubUrl ?? "")
   const [devMeta, setDevMeta] = React.useState({
@@ -72,6 +75,7 @@ export function TaskModal({
       setStatus(task.status ?? "BACKLOG")
       setAssignments(task.assignments?.map((a: any) => ({ userId: a.userId, role: a.role })) ?? [])
       setReporterId(task.creatorId || task.reporter?.id || "")
+      setSprintId(task.sprintId || "")
       setPoints(task.points ?? "")
       setGithubUrl(task.githubUrl ?? "")
       setDevMeta({
@@ -117,6 +121,7 @@ export function TaskModal({
         branchName: devMeta.branch || null,
         commitIds: devMeta.commit || null,
         dueDate: dueDate || null,
+        sprintId: sprintId || null,
         assignments
       }
 
@@ -312,16 +317,16 @@ export function TaskModal({
               {/* Multiple Assignees Section */}
               <div className="pt-2">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-3 flex items-center justify-between">
-                  Assignments 
+                  Assignments
                   <span className="bg-secondary px-1.5 py-0.5 rounded text-[8px]">{assignments.length}</span>
                 </label>
-                
+
                 <div className="space-y-3 mb-4 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                   {assignments.map((assignment) => {
                     const member = projectMembers.find(m => m.id === assignment.userId)
                     const config = ROLE_CONFIG[assignment.role]
                     const RoleIcon = config.icon
-                    
+
                     return (
                       <div key={assignment.userId} className="p-3 bg-background border border-border rounded-xl shadow-sm space-y-2">
                         <div className="flex items-center justify-between">
@@ -332,7 +337,7 @@ export function TaskModal({
                             <span className="text-xs font-bold truncate max-w-[120px]">{member?.name ?? member?.email}</span>
                           </div>
                           {canEdit && (
-                            <button 
+                            <button
                               onClick={() => toggleAssignment(assignment.userId)}
                               className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
                             >
@@ -340,7 +345,7 @@ export function TaskModal({
                             </button>
                           )}
                         </div>
-                        
+
                         <div className="flex items-center gap-1.5">
                           {canEdit ? (
                             <select
@@ -365,7 +370,7 @@ export function TaskModal({
                       </div>
                     )
                   })}
-                  
+
                   {assignments.length === 0 && (
                     <div className="text-[10px] text-muted-foreground italic text-center py-4 bg-secondary/20 rounded-xl border border-dashed border-border/50">
                       No one assigned yet.
@@ -408,21 +413,59 @@ export function TaskModal({
                 </select>
               </div>
 
+              {/* Sprint */}
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Sprint</label>
+                <select
+                  value={sprintId}
+                  onChange={e => {
+                    setSprintId(e.target.value)
+                    setDueDate("") // Clear due date if sprint changes to avoid invalid state
+                  }}
+                  disabled={!canEdit}
+                  className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70"
+                >
+                  <option value="">— Backlog —</option>
+                  {sprints.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Due Date */}
               <div>
-                <label className={`text-[10px] font-bold uppercase tracking-[0.2em] block mb-2 ${dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) ? "text-destructive" : "text-muted-foreground"}`}>Due Date &nbsp; {dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && (
-                  <span className="text-[10px] text-destructive font-black mt-1 uppercase">(Overdue)</span>
-                )}</label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={e => setDueDate(e.target.value)}
-                    disabled={!canEdit}
-                    className={`${dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && "border-2 border-destructive text-destructive"} w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70`}
-                  />
+                <label className={`text-[10px] font-bold uppercase tracking-[0.2em] block mb-2 ${dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) ? "text-destructive" : "text-muted-foreground"}`}>
+                  Due Date
+                  &nbsp;{dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && (
+                    <span className="text-[10px] text-destructive font-black mt-1 uppercase">(Overdue)</span>
+                  )}
+                </label>
+                {(() => {
+                  const selectedSprint = sprints.find(s => s.id === sprintId)
+                  const minDate = selectedSprint?.startDate
+                    ? new Date(selectedSprint.startDate).toISOString().split('T')[0]
+                    : new Date().toISOString().split('T')[0]
+                  const maxDate = selectedSprint?.endDate
+                    ? new Date(selectedSprint.endDate).toISOString().split('T')[0]
+                    : undefined
 
-                </div>
+                  return (
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={dueDate}
+                        min={minDate}
+                        max={maxDate}
+                        onChange={e => setDueDate(e.target.value)}
+                        disabled={!canEdit}
+                        className={cn(
+                          "w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70",
+                          dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && "border-2 border-destructive text-destructive"
+                        )}
+                      />
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Complexity */}

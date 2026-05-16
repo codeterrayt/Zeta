@@ -20,7 +20,7 @@ interface CreateTaskModalProps {
   projectId: string
   projectMembers?: ProjectMember[]
   boardSections?: { id: string; name: string }[]
-  sprints?: { id: string; name: string }[]
+  sprints?: Array<{ id: string; name: string; startDate: Date | null; endDate: Date | null }>
   defaultSprintId?: string
 }
 
@@ -39,9 +39,9 @@ const ROLE_CONFIG: Record<TaskAssignmentRole, { label: string; icon: any; color:
   ASSIGNEE: { label: "Assignee", icon: Users, color: "text-primary", bg: "bg-primary/10" },
 }
 
-export function CreateTaskModal({ 
-  projectId, 
-  projectMembers = [], 
+export function CreateTaskModal({
+  projectId,
+  projectMembers = [],
   boardSections = [],
   sprints = [],
   defaultSprintId
@@ -53,7 +53,8 @@ export function CreateTaskModal({
   const [assignments, setAssignments] = React.useState<Array<{ userId: string; role: TaskAssignmentRole }>>([])
   const [reporterId, setReporterId] = React.useState("")
   const [dueDate, setDueDate] = React.useState("")
-  
+  const [sprintId, setSprintId] = React.useState(defaultSprintId || "")
+
   const router = useRouter()
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
@@ -65,10 +66,11 @@ export function CreateTaskModal({
       setAssignments(currentUserId ? [{ userId: currentUserId, role: "OWNER" }] : [])
       setReporterId(currentUserId ?? "")
       setDueDate("")
+      setSprintId(defaultSprintId || "")
       setError("")
     }
-  }, [isOpen, currentUserId])
-  
+  }, [isOpen, currentUserId, defaultSprintId])
+
   const defaultStatus = boardSections[0]?.name || "BACKLOG"
 
   const toggleAssignment = (userId: string) => {
@@ -89,7 +91,7 @@ export function CreateTaskModal({
     setError("")
 
     const formData = new FormData(e.currentTarget)
-    
+
     const res = await createTask({
       title: formData.get("title") as string,
       description,
@@ -168,8 +170,8 @@ export function CreateTaskModal({
                     {/* Status */}
                     <div>
                       <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Status</label>
-                      <select 
-                        name="status" 
+                      <select
+                        name="status"
                         defaultValue={defaultStatus}
                         className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
                       >
@@ -184,7 +186,12 @@ export function CreateTaskModal({
                       <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Sprint</label>
                       <select
                         name="sprintId"
-                        defaultValue={defaultSprintId}
+                        value={sprintId}
+                        onChange={(e) => {
+                          setSprintId(e.target.value)
+                          // Clear due date if it falls outside new sprint range
+                          setDueDate("")
+                        }}
                         className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
                       >
                         <option value="">— Backlog —</option>
@@ -257,13 +264,29 @@ export function CreateTaskModal({
 
                     {/* Due Date */}
                     <div>
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Due Date</label>
-                      <input
-                        type="date"
-                        value={dueDate}
-                        onChange={e => setDueDate(e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
-                      />
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">
+                        Due Date
+                      </label>
+                      {(() => {
+                        const selectedSprint = sprints.find(s => s.id === sprintId)
+                        const minDate = selectedSprint?.startDate
+                          ? new Date(selectedSprint.startDate).toISOString().split('T')[0]
+                          : new Date().toISOString().split('T')[0]
+                        const maxDate = selectedSprint?.endDate
+                          ? new Date(selectedSprint.endDate).toISOString().split('T')[0]
+                          : undefined
+
+                        return (
+                          <input
+                            type="date"
+                            value={dueDate}
+                            min={minDate}
+                            max={maxDate}
+                            onChange={e => setDueDate(e.target.value)}
+                            className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
+                          />
+                        )
+                      })()}
                     </div>
 
                     {/* Complexity */}

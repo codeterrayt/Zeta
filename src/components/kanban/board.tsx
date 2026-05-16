@@ -37,11 +37,13 @@ export function KanbanBoard({
   projectMembers = [],
   projectId,
   boardSections = [],
+  sprints = [],
 }: {
   initialData: ColumnData[]
   projectMembers?: ProjectMember[]
   projectId: string
   boardSections?: Array<{ id: string; name: string }>
+  sprints?: Array<{ id: string; name: string; startDate: Date | null; endDate: Date | null }>
 }) {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
@@ -135,10 +137,10 @@ export function KanbanBoard({
                       
                       return (
                         <Draggable 
-                          key={task.id} 
-                          draggableId={task.id} 
-                          index={index}
-                          isDragDisabled={!canDrag}
+                           key={task.id} 
+                           draggableId={task.id} 
+                           index={index}
+                           isDragDisabled={!canDrag}
                         >
                           {(provided, snapshot) => (
                             <div
@@ -172,6 +174,7 @@ export function KanbanBoard({
         task={selectedTask}
         projectMembers={projectMembers}
         boardSections={boardSections}
+        sprints={sprints}
       />
     </DragDropContext>
   )

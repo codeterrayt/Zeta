@@ -181,7 +181,15 @@ export async function getProjectBacklog(projectId: string) {
     const tasks = await prisma.task.findMany({
       where: { 
         projectId,
-        status: "BACKLOG"
+        OR: [
+          { status: "BACKLOG" },
+          {
+            AND: [
+              { status: { not: "DONE" } },
+              { dueDate: { lt: new Date() } }
+            ]
+          }
+        ]
       },
       include: {
         assignments: {

@@ -111,6 +111,7 @@ export default async function SprintDetailsPage({
             projectMembers={projectMembers}
             projectId={projectId}
             boardSections={boardSections}
+            sprints={sprints as any}
           />
         )}
         {activeTab === "workload" && (
