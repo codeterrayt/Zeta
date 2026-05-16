@@ -69,6 +69,32 @@ export async function getDashboardStats() {
       tasks: p._count.tasks
     }))
 
+    // Avg Points (of completed tasks)
+    const completedTasksWithPoints = await prisma.task.findMany({
+      where: { assignments: { some: { userId } }, status: "DONE" },
+      select: { points: true }
+    })
+    const avgPoints = completedTasksWithPoints.length > 0
+      ? (completedTasksWithPoints.reduce((acc, curr) => acc + (curr.points || 0), 0) / completedTasksWithPoints.length).toFixed(1)
+      : "0"
+
+    // Velocity Change (Last 7 days vs 7 days before that)
+    const prev7DaysCount = await prisma.task.count({
+      where: {
+        assignments: { some: { userId } },
+        status: "DONE",
+        updatedAt: {
+          gte: subDays(new Date(), 13),
+          lt: subDays(new Date(), 6)
+        }
+      }
+    })
+    const current7DaysCount = completedTasks
+
+    const velocityChange = prev7DaysCount === 0 
+      ? (current7DaysCount > 0 ? 100 : 0)
+      : Math.round(((current7DaysCount - prev7DaysCount) / prev7DaysCount) * 100)
+
     return {
       success: true,
       stats: {
@@ -79,7 +105,9 @@ export async function getDashboardStats() {
         documentsCount,
         recentActivity,
         completionTrend,
-        projectStats
+        projectStats,
+        avgPoints,
+        velocityChange
       }
     }
   } catch (error) {

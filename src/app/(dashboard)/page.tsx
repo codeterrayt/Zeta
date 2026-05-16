@@ -191,25 +191,74 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Team Performance Placeholder */}
-        <div className="bg-primary border border-primary rounded-[3rem] p-10 shadow-2xl shadow-primary/30 lg:col-span-2 relative overflow-hidden text-primary-foreground">
-          <div className="absolute right-0 bottom-0 w-1/2 h-1/2 bg-white/10 blur-3xl rounded-full translate-x-1/2 translate-y-1/2" />
+        {/* Team Performance Card */}
+        <div className="bg-primary border border-primary rounded-[3rem] p-10 shadow-2xl shadow-primary/30 lg:col-span-2 relative text-primary-foreground group/card">
+          {/* Decorative Circle with its own clipping */}
+          <div className="absolute inset-0 rounded-[3rem] overflow-hidden pointer-events-none">
+            <div className="absolute right-0 bottom-0 w-1/2 h-1/2 bg-white/10 blur-3xl rounded-full translate-x-1/2 translate-y-1/2" />
+          </div>
+          
+          {/* Info Button & Tooltip */}
+          <div className="absolute top-8 right-8 z-30 group/info">
+            <button className="p-2 hover:bg-white/10 rounded-full transition-colors border border-white/20">
+              <Activity className="w-5 h-5 opacity-60 group-hover/info:opacity-100 transition-opacity" />
+            </button>
+            <div className="absolute right-0 top-[100%] pt-2 w-72 opacity-0 translate-y-2 pointer-events-none group-hover/info:opacity-100 group-hover/info:translate-y-0 transition-all z-40">
+              <div className="bg-white text-slate-900 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Focus Level</h4>
+                    <p className="text-xs font-medium text-slate-500 leading-relaxed">Measures your workload based on active tasks. High focus means you're concentrated on 1-3 tasks.</p>
+                  </div>
+                  <div className="pt-4 border-t border-slate-100">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Avg. Points</h4>
+                    <p className="text-xs font-medium text-slate-500 leading-relaxed">The average story points of your completed tasks, indicating the complexity of work delivered.</p>
+                  </div>
+                  <div className="pt-4 border-t border-slate-100">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Velocity</h4>
+                    <p className="text-xs font-medium text-slate-500 leading-relaxed">The percentage change in your task completion rate compared to the previous 7-day window.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-10 h-10" />
-              <h2 className="text-3xl font-black tracking-tight">You're crushing it!</h2>
+              <h2 className="text-3xl font-black tracking-tight">
+                {data?.velocityChange && data.velocityChange > 0 
+                  ? "You're crushing it!" 
+                  : data?.velocityChange && data.velocityChange < 0 
+                    ? "Time to refocus!" 
+                    : "Steady progress!"}
+              </h2>
             </div>
             <p className="text-lg opacity-80 max-w-xl font-medium leading-relaxed">
-              Your task completion rate is up by 15% this week. Keep maintaining this velocity to finish the current sprint ahead of schedule.
+              {data?.velocityChange && data.velocityChange > 0 
+                ? `Your task completion rate is up by ${data.velocityChange}% this week. Keep maintaining this velocity to finish the current sprint ahead of schedule.`
+                : data?.velocityChange && data.velocityChange < 0 
+                  ? `Your completion rate has slowed down by ${Math.abs(data.velocityChange)}% compared to last week. Let's tackle those blockers and get back on track.`
+                  : "You're maintaining a consistent pace. Focus on your top priorities to ensure a successful sprint completion."}
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
               <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 flex flex-col">
                 <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Focus Level</span>
-                <span className="text-2xl font-black">High</span>
+                <span className="text-2xl font-black">
+                  {data?.inProgressTasks !== undefined ? (
+                    data.inProgressTasks <= 3 ? "High" : data.inProgressTasks <= 6 ? "Medium" : "Overloaded"
+                  ) : "—"}
+                </span>
               </div>
               <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 flex flex-col">
                 <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Avg. Points</span>
-                <span className="text-2xl font-black">3.4</span>
+                <span className="text-2xl font-black">{data?.avgPoints || "0.0"}</span>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Velocity</span>
+                <span className="text-2xl font-black">
+                  {data?.velocityChange && data.velocityChange > 0 ? `+${data.velocityChange}%` : `${data?.velocityChange || 0}%`}
+                </span>
               </div>
             </div>
           </div>
