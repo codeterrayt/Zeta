@@ -247,7 +247,7 @@ export default function DocumentationPage() {
                           {doc.taskLinks.map((link: any) => (
                             <Link
                               key={link.task.id}
-                              href={`/projects/${link.task.projectId}?taskId=${link.task.id}`}
+                              href={`/tasks/${link.task.id}`}
                               target="_blank"
                               className="text-[11px] font-bold text-muted-foreground hover:text-primary bg-secondary/40 px-3 py-1.5 rounded-xl transition-all border border-border/30 hover:border-primary/20 flex items-center gap-2"
                             >

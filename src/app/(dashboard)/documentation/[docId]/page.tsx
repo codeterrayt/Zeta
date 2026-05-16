@@ -180,7 +180,7 @@ export default function DocumentDetailsPage() {
                       {doc.taskLinks.map((link: any) => (
                         <Link 
                           key={link.task.id} 
-                          href={`/projects/${doc.projectId}?taskId=${link.task.id}`}
+                          href={`/tasks/${link.task.id}`}
                           className="hover:text-primary transition-colors font-bold underline decoration-primary/30 underline-offset-4"
                         >
                           OPEN-{link.task.id.slice(0, 6).toUpperCase()}
