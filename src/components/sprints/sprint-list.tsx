@@ -53,14 +53,25 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
     if (res.success) router.refresh()
   }
 
-  const getStatus = (start: Date | null, end: Date | null) => {
+  const getStatus = (start: Date | null, end: Date | null, tasks: any[]) => {
     if (!start || !end) return { label: "Draft", color: "bg-secondary text-muted-foreground" }
+    
     const now = new Date()
     const startDate = new Date(start)
     const endDate = new Date(end)
+    
+    // Check for overdue tasks (At Risk)
+    const hasOverdue = tasks.some(t => 
+      t.status !== "DONE" && 
+      t.dueDate && 
+      isPast(new Date(t.dueDate)) && 
+      !isToday(new Date(t.dueDate))
+    )
 
+    if (hasOverdue) return { label: "At Risk", color: "bg-destructive/15 text-destructive border-destructive/20 shadow-sm" }
     if (now < startDate) return { label: "Planned", color: "bg-sky-500/15 text-sky-600 border-sky-500/20" }
     if (now > endDate) return { label: "Completed", color: "bg-emerald-500/15 text-emerald-600 border-emerald-500/20" }
+    
     return { label: "Active", color: "bg-indigo-500/15 text-indigo-600 border-indigo-500/20" }
   }
 
@@ -76,7 +87,7 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
 
       <div className="space-y-4">
         {paginatedSprints.map(sprint => {
-          const status = getStatus(sprint.startDate, sprint.endDate)
+          const status = getStatus(sprint.startDate, sprint.endDate, sprint.tasks)
           return (
             <div key={sprint.id} className="group bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all shadow-sm">
               <div 

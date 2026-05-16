@@ -7,6 +7,9 @@ import { WorkloadView } from "@/components/projects/workload-view"
 import { ActiveUsersView } from "@/components/sprints/active-users-view"
 import { CreateTaskModal } from "@/components/kanban/create-task-modal"
 import { notFound } from "next/navigation"
+import { cn } from "@/lib/utils"
+
+import { isPast, isToday } from "date-fns"
 
 export default async function SprintDetailsPage({
   params,
@@ -26,6 +29,29 @@ export default async function SprintDetailsPage({
   ])
 
   if (!sprint) return notFound()
+
+  // Status Logic
+  const now = new Date()
+  const startDate = sprint.startDate ? new Date(sprint.startDate) : null
+  const endDate = sprint.endDate ? new Date(sprint.endDate) : null
+  
+  const hasOverdue = (sprint.tasks || []).some((t: any) => 
+    t.status !== "DONE" && 
+    t.dueDate && 
+    isPast(new Date(t.dueDate)) && 
+    !isToday(new Date(t.dueDate))
+  )
+
+  let status = { label: "Active Sprint", color: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", ping: "bg-indigo-500" }
+  if (hasOverdue) {
+    status = { label: "At Risk", color: "bg-destructive/10 text-destructive border-destructive/20", ping: "bg-destructive" }
+  } else if (!startDate || !endDate) {
+    status = { label: "Draft", color: "bg-secondary text-muted-foreground border-border", ping: "bg-muted-foreground" }
+  } else if (now < startDate) {
+    status = { label: "Planned", color: "bg-sky-500/10 text-sky-500 border-sky-500/20", ping: "bg-sky-500" }
+  } else if (now > endDate) {
+    status = { label: "Completed", color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", ping: "bg-emerald-500" }
+  }
 
   // Prepare Kanban data
   const boardSections = sprint.project.boardSections || []
@@ -58,12 +84,12 @@ export default async function SprintDetailsPage({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">{sprint.name}</h1>
-              <div className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full uppercase tracking-wider">
+              <div className={cn("flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border", status.color)}>
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", status.ping)}></span>
+                  <span className={cn("relative inline-flex rounded-full h-2 w-2", status.ping)}></span>
                 </span>
-                Active Sprint
+                {status.label}
               </div>
             </div>
             <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
