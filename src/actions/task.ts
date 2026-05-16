@@ -108,3 +108,16 @@ export async function getTaskSubtree(taskId: string) {
     return { success: false, error: "Failed to fetch task subtree" }
   }
 }
+export async function updateTaskStatus(taskId: string, status: string, projectId: string) {
+  try {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { status },
+    })
+    revalidatePath(`/projects/${projectId}`)
+    return { success: true }
+  } catch (error) {
+    console.error("updateTaskStatus error:", error)
+    return { success: false, error: "Failed to update task status" }
+  }
+}

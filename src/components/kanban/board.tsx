@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { TaskCard } from "./task-card"
 import { TaskModal } from "./task-modal"
 import { cn } from "@/lib/utils"
+import { updateTaskStatus } from "@/actions/task"
 
 export type Task = {
   id: string
@@ -27,14 +28,18 @@ type ProjectMember = { id: string; name: string | null; email: string | null }
 export function KanbanBoard({
   initialData,
   projectMembers = [],
+  projectId,
+  boardSections = [],
 }: {
   initialData: ColumnData[]
   projectMembers?: ProjectMember[]
+  projectId: string
+  boardSections?: Array<{ id: string; name: string }>
 }) {
   const [columns, setColumns] = useState(initialData)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
-  const onDragEnd = (result: DropResult) => {
+  const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result
 
     if (!destination) return
@@ -65,8 +70,11 @@ export function KanbanBoard({
     const startTasks = Array.from(startCol.tasks)
     const [movedTask] = startTasks.splice(source.index, 1)
     
+    // Update task status local state
+    const updatedTask = { ...movedTask, status: finishCol.id }
+
     const finishTasks = Array.from(finishCol.tasks)
-    finishTasks.splice(destination.index, 0, movedTask)
+    finishTasks.splice(destination.index, 0, updatedTask)
 
     setColumns(columns.map(c => {
       if (c.id === startCol.id) return { ...c, tasks: startTasks }
@@ -74,7 +82,8 @@ export function KanbanBoard({
       return c
     }))
 
-    // TODO: Call server action to update task status in DB
+    // Call server action to update task status in DB
+    await updateTaskStatus(draggableId, finishCol.id, projectId)
   }
 
   return (
@@ -130,6 +139,7 @@ export function KanbanBoard({
         onClose={() => setSelectedTask(null)}
         task={selectedTask}
         projectMembers={projectMembers}
+        boardSections={boardSections}
       />
     </DragDropContext>
   )

@@ -17,6 +17,7 @@ interface ProjectMember {
 interface CreateTaskModalProps {
   projectId: string
   projectMembers?: ProjectMember[]
+  boardSections?: { id: string; name: string }[]
 }
 
 const COMPLEXITY_OPTIONS = [
@@ -27,7 +28,11 @@ const COMPLEXITY_OPTIONS = [
   { value: 5, label: "5 — Very High" },
 ]
 
-export function CreateTaskModal({ projectId, projectMembers = [] }: CreateTaskModalProps) {
+export function CreateTaskModal({ 
+  projectId, 
+  projectMembers = [], 
+  boardSections = [] 
+}: CreateTaskModalProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState("")
@@ -38,6 +43,9 @@ export function CreateTaskModal({ projectId, projectMembers = [] }: CreateTaskMo
   // Default assignee to current user if they're a project member
   const currentUserId = session?.user?.id
   const defaultAssignee = projectMembers.find(m => m.id === currentUserId)?.id ?? ""
+  
+  // Default status to the first board section
+  const defaultStatus = boardSections[0]?.name || "BACKLOG"
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -49,7 +57,7 @@ export function CreateTaskModal({ projectId, projectMembers = [] }: CreateTaskMo
       title: formData.get("title") as string,
       description,
       projectId,
-      status: formData.get("status") as string || "BACKLOG",
+      status: formData.get("status") as string || defaultStatus,
       points: formData.get("points") ? Number(formData.get("points")) : undefined,
       assigneeId: formData.get("assigneeId") as string || undefined,
       creatorId: currentUserId,
@@ -115,11 +123,22 @@ export function CreateTaskModal({ projectId, projectMembers = [] }: CreateTaskMo
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Status</label>
-                  <select name="status" className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="BACKLOG">Backlog</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="REVIEW">In Review</option>
-                    <option value="DONE">Done</option>
+                  <select 
+                    name="status" 
+                    defaultValue={defaultStatus}
+                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {boardSections.map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                    {boardSections.length === 0 && (
+                      <>
+                        <option value="BACKLOG">Backlog</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="REVIEW">In Review</option>
+                        <option value="DONE">Done</option>
+                      </>
+                    )}
                   </select>
                 </div>
 

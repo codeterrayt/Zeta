@@ -18,11 +18,13 @@ export function TaskModal({
   onClose,
   task,
   projectMembers = [],
+  boardSections = [],
 }: {
   isOpen: boolean
   onClose: () => void
   task: any
   projectMembers?: Array<{ id: string; name: string | null; email: string | null }>
+  boardSections?: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
   const [status, setStatus] = React.useState(task?.status ?? "BACKLOG")
@@ -151,10 +153,17 @@ export function TaskModal({
                       onChange={e => setStatus(e.target.value)}
                       className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-sm"
                     >
-                      <option value="BACKLOG">Backlog</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="REVIEW">In Review</option>
-                      <option value="DONE">Done</option>
+                      {boardSections.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                      {boardSections.length === 0 && (
+                        <>
+                          <option value="BACKLOG">Backlog</option>
+                          <option value="IN_PROGRESS">In Progress</option>
+                          <option value="REVIEW">In Review</option>
+                          <option value="DONE">Done</option>
+                        </>
+                      )}
                     </select>
                   </div>
 

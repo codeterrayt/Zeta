@@ -88,6 +88,19 @@ model Project {
   sprints     Sprint[]
   tasks       Task[]
   folders     Folder[]
+  boardSections BoardSection[]
+}
+
+model BoardSection {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  projectId String
+  
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, name])
 }
 
 model ProjectMember {

@@ -4,12 +4,19 @@ import * as React from "react"
 import { UserX, UserPlus, Shield, Eye, GitBranch } from "lucide-react"
 import { addProjectMember, removeProjectMember } from "@/actions/project-members"
 import { useRouter } from "next/navigation"
+import { KanbanSettings } from "./kanban-settings"
 
 type Member = {
   id: string
   role: string
   createdAt: Date
   user: { id: string; name: string | null; email: string | null; image: string | null }
+}
+
+type Section = {
+  id: string
+  name: string
+  order: number
 }
 
 const ROLE_ICONS: Record<string, React.ReactNode> = {
@@ -19,7 +26,15 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
   VIEWER: <Eye className="w-3 h-3" />,
 }
 
-export function ProjectSettingsView({ projectId, initialMembers }: { projectId: string; initialMembers: Member[] }) {
+export function ProjectSettingsView({ 
+  projectId, 
+  initialMembers,
+  initialSections
+}: { 
+  projectId: string; 
+  initialMembers: Member[];
+  initialSections: Section[];
+}) {
   const [members, setMembers] = React.useState(initialMembers)
   const [email, setEmail] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -51,6 +66,9 @@ export function ProjectSettingsView({ projectId, initialMembers }: { projectId: 
 
   return (
     <div className="max-w-3xl space-y-8">
+      {/* Kanban Settings */}
+      <KanbanSettings projectId={projectId} initialSections={initialSections} />
+
       {/* Add Member */}
       <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="p-6 border-b border-border bg-secondary/20">

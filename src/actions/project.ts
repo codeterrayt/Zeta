@@ -49,6 +49,17 @@ export async function createProject(name: string, description: string) {
         console.warn("[createProject] Skipping member addition - no userId found")
       }
 
+      // Initialize default Kanban sections
+      const defaultSections = ["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"]
+      console.log("[createProject] Initializing default sections for project:", newProject.id)
+      await tx.boardSection.createMany({
+        data: defaultSections.map((name, index) => ({
+          projectId: newProject.id,
+          name,
+          order: index,
+        })),
+      })
+
       return newProject
     })
 

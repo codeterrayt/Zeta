@@ -9,6 +9,7 @@ import { getProjectMembersForAssign } from "@/actions/project-members"
 async function getProjectData(projectId: string) {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
+    include: { boardSections: { orderBy: { order: "asc" } } }
   })
 
   const tasks = await prisma.task.findMany({
@@ -18,14 +19,6 @@ async function getProjectData(projectId: string) {
   })
 
   return { project, tasks }
-}
-
-const STATUS_ORDER = ["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"]
-const STATUS_LABELS: Record<string, string> = {
-  BACKLOG: "Backlog",
-  IN_PROGRESS: "In Progress",
-  REVIEW: "In Review",
-  DONE: "Done",
 }
 
 export default async function ProjectBoardPage({
@@ -44,12 +37,14 @@ export default async function ProjectBoardPage({
     getProjectMembersForAssign(projectId),
   ])
 
-  // Build Kanban columns from real DB tasks
-  const columns = STATUS_ORDER.map((status) => ({
-    id: status,
-    title: STATUS_LABELS[status],
+  const boardSections = project?.boardSections || []
+
+  // Build Kanban columns from DB sections
+  const columns = boardSections.map((section) => ({
+    id: section.name, // Use name as ID for status matching
+    title: section.name,
     tasks: tasks
-      .filter((t) => t.status === status)
+      .filter((t) => t.status === section.name)
       .map((t) => ({
         id: t.id,
         title: t.title,
@@ -76,7 +71,11 @@ export default async function ProjectBoardPage({
           <p className="text-muted-foreground text-sm mt-0.5">{project?.description ?? "Manage your tasks here."}</p>
         </div>
         {activeTab !== "settings" && (
-          <CreateTaskModal projectId={projectId} projectMembers={projectMembers} />
+          <CreateTaskModal 
+            projectId={projectId} 
+            projectMembers={projectMembers} 
+            boardSections={boardSections} 
+          />
         )}
       </div>
 
@@ -100,7 +99,14 @@ export default async function ProjectBoardPage({
 
       {/* Tab Content */}
       <div className="flex-1 min-h-0">
-        {activeTab === "kanban" && <KanbanBoard initialData={columns} projectMembers={projectMembers} />}
+        {activeTab === "kanban" && (
+          <KanbanBoard 
+            initialData={columns} 
+            projectMembers={projectMembers} 
+            projectId={projectId} 
+            boardSections={boardSections} 
+          />
+        )}
         {activeTab === "workload" && (
           <div className="h-full overflow-y-auto">
             <WorkloadView tasks={tasks} />
@@ -108,8 +114,6 @@ export default async function ProjectBoardPage({
         )}
         {activeTab === "settings" && (
           <div className="h-full overflow-y-auto">
-            {/* Settings content is a separate page rendered here via children would need slot — 
-                instead we import it inline */}
             <SettingsInline projectId={projectId} />
           </div>
         )}
@@ -118,10 +122,21 @@ export default async function ProjectBoardPage({
   )
 }
 
-// Inline Settings — avoids a full page navigation while keeping code simple
 async function SettingsInline({ projectId }: { projectId: string }) {
   const { ProjectSettingsView } = await import("@/components/projects/project-settings-view")
   const { getProjectMembers } = await import("@/actions/project-members")
-  const { members } = await getProjectMembers(projectId)
-  return <ProjectSettingsView projectId={projectId} initialMembers={(members ?? []) as any} />
+  const { getBoardSections } = await import("@/actions/board-section")
+  
+  const [{ members }, { sections }] = await Promise.all([
+    getProjectMembers(projectId),
+    getBoardSections(projectId),
+  ])
+
+  return (
+    <ProjectSettingsView 
+      projectId={projectId} 
+      initialMembers={(members ?? []) as any} 
+      initialSections={sections ?? []}
+    />
+  )
 }
