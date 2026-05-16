@@ -19,6 +19,7 @@ import tippy, { Instance } from "tippy.js"
 import "tippy.js/dist/tippy.css"
 import "tippy.js/animations/shift-away.css"
 import { createPortal } from "react-dom"
+import { TaskTimeline } from "./task-timeline"
 
 const COMPLEXITY_LABELS: Record<number, string> = {
   1: "Very Low",
@@ -210,6 +211,8 @@ export function TaskModal({
           )}
         </div>
         <div className="flex items-center gap-3">
+          <TaskTimeline taskId={task.id} taskTitle={task.title} />
+          
           {!standalone && (
             <Link
               href={`/tasks/${task.id}`}
@@ -596,7 +599,6 @@ export function TaskModal({
               </div>
             </div>
 
-            {/* Attachments Section */}
             <div className="space-y-4 pt-4 border-t border-border/50">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Paperclip className="w-4 h-4" />

@@ -120,6 +120,21 @@ export function StorageView({
     })
   }, [attachments, search, userFilter, sizeFilter, typeFilter])
 
+  // Pagination
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 12
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [search, userFilter, sizeFilter, typeFilter])
+
+  const totalPages = Math.ceil(filteredAttachments.length / itemsPerPage)
+  const paginatedAttachments = filteredAttachments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this file?")) return
     const res = await deleteAttachment(id)
@@ -245,7 +260,7 @@ export function StorageView({
       {/* Grid View */}
       {view === "grid" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAttachments.map(file => {
+          {paginatedAttachments.map(file => {
             const canPreview = file.type.startsWith("image/") || file.type === "application/pdf"
             return (
               <div 
@@ -284,9 +299,6 @@ export function StorageView({
                         <Download className="w-5 h-5" />
                       </a>
                     )}
-                    <a href={file.url} download className="p-3 bg-white/20 hover:bg-white/40 rounded-full transition-all text-white backdrop-blur-md">
-                      <Download className="w-5 h-5" />
-                    </a>
                   </div>
                 </div>
                 
@@ -340,7 +352,7 @@ export function StorageView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
-                {filteredAttachments.map(file => {
+                {paginatedAttachments.map(file => {
                   const canPreview = file.type.startsWith("image/") || file.type === "application/pdf"
                   return (
                     <tr key={file.id} className="group hover:bg-secondary/5 transition-colors">
@@ -414,6 +426,42 @@ export function StorageView({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-12">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="p-3 rounded-2xl border border-border/50 bg-card hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-all font-black text-xs uppercase tracking-widest"
+          >
+            Prev
+          </button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={cn(
+                  "w-10 h-10 rounded-2xl border transition-all font-black text-xs",
+                  currentPage === i + 1 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                    : "bg-card border-border/50 text-muted-foreground hover:bg-secondary"
+                )}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="p-3 rounded-2xl border border-border/50 bg-card hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-all font-black text-xs uppercase tracking-widest"
+          >
+            Next
+          </button>
         </div>
       )}
 

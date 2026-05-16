@@ -45,6 +45,17 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    if (taskId) {
+      await prisma.auditLog.create({
+        data: {
+          action: "UPLOAD_ATTACHMENT",
+          details: `Uploaded file: ${file.name}`,
+          userId: session.user.id,
+          taskId: taskId
+        }
+      })
+    }
+
     return NextResponse.json({ success: true, attachment })
   } catch (error) {
     console.error("Upload error:", error)

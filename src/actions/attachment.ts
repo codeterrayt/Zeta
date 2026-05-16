@@ -33,6 +33,17 @@ export async function deleteAttachment(attachmentId: string) {
       where: { id: attachmentId }
     })
 
+    if (attachment.taskId) {
+      await prisma.auditLog.create({
+        data: {
+          action: "DELETE_ATTACHMENT",
+          details: `Deleted file: ${attachment.name}`,
+          userId: session.user.id,
+          taskId: attachment.taskId
+        }
+      })
+    }
+
     if (attachment.taskId) revalidatePath(`/tasks/${attachment.taskId}`)
     if (attachment.sprintId) revalidatePath(`/projects/any/sprints/${attachment.sprintId}`)
     revalidatePath("/", "layout")

@@ -30,6 +30,17 @@ export async function createDocument(data: {
       }
     })
 
+    if (data.taskId) {
+      await prisma.auditLog.create({
+        data: {
+          action: "CREATE_DOCUMENT",
+          details: `Created and linked documentation: ${data.title}`,
+          userId: session.user.id,
+          taskId: data.taskId
+        }
+      })
+    }
+
     revalidatePath(`/projects/${data.projectId}`)
     if (data.taskId) revalidatePath(`/tasks/${data.taskId}`)
     revalidatePath("/documentation")
@@ -126,16 +137,65 @@ export async function updateDocument(id: string, data: { title: string; content:
 
   try {
     const document = await prisma.document.update({
-      where: { id },
+      where: { id: id },
       data: {
         title: data.title,
         content: data.content
+      },
+      include: {
+        taskLinks: { select: { taskId: true } }
       }
     })
+
+    // Log for all linked tasks
+    for (const link of document.taskLinks) {
+      await prisma.auditLog.create({
+        data: {
+          action: "UPDATE_DOCUMENT",
+          details: `Updated documentation: ${data.title}`,
+          userId: session.user.id,
+          taskId: link.taskId
+        }
+      })
+    }
+
     revalidatePath(`/documentation/${id}`)
     return { success: true, document }
   } catch (error) {
     console.error("updateDocument error:", error)
     return { success: false, error: "Failed to update document" }
+  }
+}
+
+export async function deleteDocument(id: string) {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  try {
+    const document = await prisma.document.findUnique({
+      where: { id },
+      include: { taskLinks: true }
+    })
+
+    if (!document) return { success: false, error: "Document not found" }
+
+    // Log for all linked tasks before deletion
+    for (const link of document.taskLinks) {
+      await prisma.auditLog.create({
+        data: {
+          action: "DELETE_DOCUMENT",
+          details: `Deleted documentation: ${document.title}`,
+          userId: session.user.id,
+          taskId: link.taskId
+        }
+      })
+    }
+
+    await prisma.document.delete({ where: { id } })
+    revalidatePath("/documentation")
+    return { success: true }
+  } catch (error) {
+    console.error("deleteDocument error:", error)
+    return { success: false, error: "Failed to delete document" }
   }
 }
