@@ -86,6 +86,7 @@ export async function getProjects() {
       },
       include: {
         _count: { select: { tasks: true, members: true } },
+        boardSections: { orderBy: { order: "asc" } },
       },
       orderBy: { createdAt: "desc" },
     })
