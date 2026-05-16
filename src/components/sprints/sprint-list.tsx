@@ -12,7 +12,13 @@ type Sprint = {
   name: string
   startDate: Date | null
   endDate: Date | null
-  tasks: any[]
+  tasks: Array<{
+    id: string
+    title: string
+    status: string
+    points: number | null
+    assignee?: { id: string, name: string | null }
+  }>
 }
 
 export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], projectId: string }) {
@@ -60,14 +66,14 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
               onClick={() => router.push(`/projects/${projectId}/sprints/${sprint.id}`)}
               className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors"
             >
-              <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-center gap-4 min-w-0 flex-1">
                 <button 
                   onClick={(e) => toggle(sprint.id, e)}
                   className="p-1 rounded-md hover:bg-secondary transition-colors"
                 >
                   {expanded[sprint.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                 </button>
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">{sprint.name}</h3>
                   <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
@@ -77,6 +83,38 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
                     <span>•</span>
                     <span>{sprint.tasks.length} tasks</span>
                   </div>
+                </div>
+
+                {/* Progress Section */}
+                <div className="hidden md:flex flex-col items-end gap-1.5 px-6 min-w-[180px]">
+                  {(() => {
+                    const totalPoints = sprint.tasks.reduce((acc, t) => acc + (t.points || 0), 0)
+                    const donePoints = sprint.tasks.filter(t => t.status === "DONE").reduce((acc, t) => acc + (t.points || 0), 0)
+                    const progress = totalPoints > 0 ? Math.round((donePoints / totalPoints) * 100) : (sprint.tasks.length > 0 && sprint.tasks.every(t => t.status === "DONE") ? 100 : 0)
+                    
+                    const getProgressColor = (p: number) => {
+                      if (p < 30) return "bg-red-500"
+                      if (p < 70) return "bg-amber-500"
+                      return "bg-emerald-500"
+                    }
+
+                    return (
+                      <>
+                        <div className="flex justify-between w-full text-[10px] font-bold uppercase tracking-wider">
+                          <span className="text-muted-foreground">{donePoints} / {totalPoints} pts</span>
+                          <span className={cn(
+                            progress < 30 ? "text-red-500" : progress < 70 ? "text-amber-500" : "text-emerald-500"
+                          )}>{progress}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden shadow-inner">
+                          <div 
+                            className={cn("h-full transition-all duration-500 ease-out", getProgressColor(progress))}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
 
