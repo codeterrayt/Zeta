@@ -41,14 +41,15 @@ export default function DashboardPage() {
   }
 
   const stats = [
-    { label: "Completed", value: data?.completedTasks || 0, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10", trend: "+12%" },
-    { label: "Active Tasks", value: data?.inProgressTasks || 0, icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10", trend: "+2" },
-    { label: "Documentation", value: data?.documentsCount || 0, icon: BookOpen, color: "text-purple-500", bg: "bg-purple-500/10", trend: "New" },
-    { label: "Total Projects", value: data?.projectStats?.length || 0, icon: Layers, color: "text-amber-500", bg: "bg-amber-500/10", trend: "Stable" },
+    { label: "Completed", value: data?.completedTasks || 0, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10", trend: data?.trends?.completed || 0 },
+    { label: "Active Tasks", value: data?.inProgressTasks || 0, icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10", trend: data?.trends?.inProgress || 0 },
+    { label: "Documentation", value: data?.documentsCount || 0, icon: BookOpen, color: "text-purple-500", bg: "bg-purple-500/10", trend: data?.trends?.docs || 0 },
+    { label: "Total Tasks", value: data?.totalTasks || 0, icon: Layers, color: "text-amber-500", bg: "bg-amber-500/10", trend: data?.trends?.total || 0 },
   ]
 
   return (
-    <div className="p-6 lg:p-10 space-y-10 bg-background/50">
+    <div className="p-6 lg:p-10 space-y-10">
+      {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-black tracking-tight mb-2">Workspace Overview</h1>
@@ -61,14 +62,18 @@ export default function DashboardPage() {
       {/* Main Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-card border border-border/60 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl transition-all duration-500 group overflow-hidden relative">
+          <div key={i} className="bg-card border border-border/60 rounded-[2.5rem] p-8 shadow-sm group overflow-hidden relative">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all" />
             <div className="flex items-start justify-between">
               <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner", stat.bg)}>
                 <stat.icon className={cn("w-7 h-7", stat.color)} />
               </div>
-              <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
-                <ArrowUpRight className="w-3 h-3" /> {stat.trend}
+              <div className={cn(
+                "flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full",
+                stat.trend > 0 ? "text-emerald-500 bg-emerald-500/10" : stat.trend < 0 ? "text-rose-500 bg-rose-500/10" : "text-muted-foreground bg-secondary"
+              )}>
+                {stat.trend > 0 ? <ArrowUpRight className="w-3 h-3" /> : stat.trend < 0 ? <ArrowDownRight className="w-3 h-3" /> : null}
+                {stat.trend > 0 ? `+${stat.trend}%` : `${stat.trend}%`}
               </div>
             </div>
             <div className="mt-6">

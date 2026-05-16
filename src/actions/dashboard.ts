@@ -95,6 +95,18 @@ export async function getDashboardStats() {
       ? (current7DaysCount > 0 ? 100 : 0)
       : Math.round(((current7DaysCount - prev7DaysCount) / prev7DaysCount) * 100)
 
+    // Trends (Current 7 days vs Previous 7 days)
+    const [prevTotal, prevInProgress, prevDocs] = await Promise.all([
+      prisma.task.count({ where: { assignments: { some: { userId } }, createdAt: { lt: subDays(new Date(), 6), gte: subDays(new Date(), 13) } } }),
+      prisma.task.count({ where: { assignments: { some: { userId } }, status: "IN_PROGRESS", updatedAt: { lt: subDays(new Date(), 6), gte: subDays(new Date(), 13) } } }),
+      prisma.document.count({ where: { authorId: userId, createdAt: { lt: subDays(new Date(), 6), gte: subDays(new Date(), 13) } } })
+    ])
+
+    const calculateTrend = (current: number, prev: number) => {
+      if (prev === 0) return current > 0 ? 100 : 0
+      return Math.round(((current - prev) / prev) * 100)
+    }
+
     return {
       success: true,
       stats: {
@@ -107,7 +119,13 @@ export async function getDashboardStats() {
         completionTrend,
         projectStats,
         avgPoints,
-        velocityChange
+        velocityChange,
+        trends: {
+          total: calculateTrend(totalTasks, prevTotal),
+          completed: velocityChange,
+          inProgress: calculateTrend(inProgressTasks, prevInProgress),
+          docs: calculateTrend(documentsCount, prevDocs)
+        }
       }
     }
   } catch (error) {
