@@ -128,38 +128,29 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
           <Quote className="w-3.5 h-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-border mx-1" />
-        <ToolbarButton 
-          onClick={() => (editor.commands as any).setTextAlign?.("left") && editor.chain().focus().setTextAlign("left").run()} 
-          active={editor.isActive({ textAlign: "left" })} 
+        <ToolbarButton
+          onClick={() => (editor.commands as any).setTextAlign?.("left") && editor.chain().focus().setTextAlign("left").run()}
+          active={editor.isActive({ textAlign: "left" })}
           title="Align Left"
         >
           <AlignLeft className="w-3.5 h-3.5" />
         </ToolbarButton>
-        <ToolbarButton 
-          onClick={() => (editor.commands as any).setTextAlign?.("center") && editor.chain().focus().setTextAlign("center").run()} 
-          active={editor.isActive({ textAlign: "center" })} 
+        <ToolbarButton
+          onClick={() => (editor.commands as any).setTextAlign?.("center") && editor.chain().focus().setTextAlign("center").run()}
+          active={editor.isActive({ textAlign: "center" })}
           title="Align Center"
         >
           <AlignCenter className="w-3.5 h-3.5" />
         </ToolbarButton>
-        <ToolbarButton 
-          onClick={() => (editor.commands as any).setTextAlign?.("right") && editor.chain().focus().setTextAlign("right").run()} 
-          active={editor.isActive({ textAlign: "right" })} 
+        <ToolbarButton
+          onClick={() => (editor.commands as any).setTextAlign?.("right") && editor.chain().focus().setTextAlign("right").run()}
+          active={editor.isActive({ textAlign: "right" })}
           title="Align Right"
         >
           <AlignRight className="w-3.5 h-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-border mx-1" />
-        <ToolbarButton 
-          onClick={() => {
-            const url = window.prompt("Enter URL")
-            if (url) editor.chain().focus().setLink({ href: url }).run()
-          }} 
-          active={editor.isActive("link")} 
-          title="Insert Link"
-        >
-          <LinkIcon className="w-3.5 h-3.5" />
-        </ToolbarButton>
+
         <ToolbarButton onClick={addImage} title="Insert Image">
           <ImageIcon className="w-3.5 h-3.5" />
         </ToolbarButton>

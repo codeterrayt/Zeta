@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink } from "lucide-react"
+import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -26,7 +26,7 @@ export function TaskModal({
   standalone = false
 }: {
   isOpen: boolean
-  onClose: () => void
+  onClose?: () => void
   task: any
   projectMembers?: Array<{ id: string; name: string | null; email: string | null }>
   boardSections?: Array<{ id: string; name: string }>
@@ -132,32 +132,19 @@ export function TaskModal({
 
   const modalContent = (
     <div className={cn(
-      "flex flex-col bg-card border border-border shadow-2xl overflow-hidden outline-none transition-all",
-      standalone ? "w-full h-full min-h-[85vh] rounded-2xl border-none shadow-none" : "w-full h-full sm:rounded-2xl"
+      "flex flex-col transition-all w-full",
+      standalone ? "min-h-screen" : "bg-card border border-border shadow-2xl sm:rounded-2xl h-full overflow-hidden outline-none"
     )}>
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-5 border-b border-border bg-card shrink-0">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
-          <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-3 py-1 rounded-full shrink-0 border border-primary/20 uppercase">
-            OPEN-{task.id.slice(0, 6).toUpperCase()}
-          </span>
+      <div className="flex items-center justify-between px-8 py-4 border-b border-border bg-card shrink-0">
+        <div className="flex items-center gap-3">
           {canEdit ? (
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="text-xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 w-full hover:bg-secondary/20 rounded px-1 transition-colors"
-            />
+            <span className="text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-md font-bold uppercase tracking-wider">Editable</span>
           ) : (
-            <h1 className="text-xl font-bold truncate tracking-tight">
-              {title}
-            </h1>
+            <span className="text-[10px] bg-red-500 text-white px-2 py-1 rounded-md font-bold uppercase tracking-wider">Read Only</span>
           )}
         </div>
         <div className="flex items-center gap-3">
-          {!canEdit && (
-            <span className="text-[10px] bg-red-500 text-white px-2 py-1 rounded-md font-bold uppercase tracking-wider">Read Only</span>
-          )}
-
           {!standalone && (
             <Link
               href={`/tasks/${task.id}`}
@@ -179,11 +166,37 @@ export function TaskModal({
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className={cn(
+        "flex-1",
+        standalone ? "" : "overflow-y-auto custom-scrollbar"
+      )}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
 
           {/* Left Column (Main Content) */}
           <div className="lg:col-span-8 p-8 space-y-8 border-r border-border">
+            <section>
+              <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+                <GitCommit className="w-4 h-4" />
+                <h3 className="text-sm font-bold uppercase tracking-widest">Title</h3>
+              </div>
+              {canEdit ? (
+                <div className="group relative">
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="text-3xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 w-full hover:bg-secondary/20 rounded-lg px-2 py-1 transition-all"
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </div>
+              ) : (
+                <h1 className="text-3xl font-bold px-2">
+                  {title}
+                </h1>
+              )}
+            </section>
+
             <section>
               <div className="flex items-center gap-2 mb-4 text-muted-foreground">
                 <AlignLeft className="w-4 h-4" />
@@ -242,6 +255,12 @@ export function TaskModal({
           <div className="lg:col-span-4 p-8 bg-secondary/5 space-y-6">
             <div className="space-y-5">
               {/* Status */}
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Task ID</label>
+                <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-3 py-1 rounded-full shrink-0 border border-primary/20 uppercase">
+                  OPEN-{task.id.slice(0, 6).toUpperCase()}
+                </span>
+              </div>
               <div>
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Status</label>
                 <select
@@ -379,9 +398,9 @@ export function TaskModal({
     <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm" />
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-12 pointer-events-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 lg:p-4 pointer-events-none">
           <DialogPrimitive.Content
-            className="w-full lg:w-[85vw] max-w-8xl h-full max-h-[95vh] outline-none resize both overflow-auto pointer-events-auto"
+            className="w-[94vw] max-w-8xl h-[94vh] outline-none resize both overflow-auto pointer-events-auto shadow-2xl"
             style={{ minWidth: "20rem", minHeight: "20rem" }}
           >
             {modalContent}

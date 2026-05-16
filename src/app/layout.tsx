@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { SessionProvider } from "next-auth/react"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -18,16 +18,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased bg-background text-foreground h-screen flex flex-col overflow-hidden`}>
-        <SessionProvider>
-          <ThemeProvider 
-            attribute="class" 
-            defaultTheme="theme-jira"
-            themes={["theme-jira", "theme-monaco"]}
-          >
+      <body className={`${inter.className} antialiased bg-background text-foreground min-h-screen flex flex-col`} suppressHydrationWarning>
+        <NextThemesProvider 
+          attribute="class" 
+          defaultTheme="theme-jira"
+          enableSystem={false}
+          disableTransitionOnChange
+          value={{
+            'theme-jira': 'theme-jira',
+            'theme-monaco': 'theme-monaco'
+          }}
+        >
+          <SessionProvider>
             {children}
-          </ThemeProvider>
-        </SessionProvider>
+          </SessionProvider>
+        </NextThemesProvider>
       </body>
     </html>
   )
