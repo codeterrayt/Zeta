@@ -17,7 +17,8 @@ export async function getDashboardStats() {
       blockedTasks,
       recentActivity,
       projects,
-      documentsCount
+      documentsCount,
+      settings
     ] = await Promise.all([
       prisma.task.count({ where: { assignments: { some: { userId } } } }),
       prisma.task.count({ where: { assignments: { some: { userId } }, status: "DONE" } }),
@@ -37,8 +38,17 @@ export async function getDashboardStats() {
           }
         }
       }),
-      prisma.document.count({ where: { authorId: userId } })
+      prisma.document.count({ where: { authorId: userId } }),
+      prisma.settings.findUnique({ where: { userId } })
     ])
+
+    // Ensure settings exist
+    let userSettings = settings
+    if (!userSettings) {
+      userSettings = await prisma.settings.create({
+        data: { userId }
+      })
+    }
 
     // Task Completion Trend (last 7 days)
     const last7Days = eachDayOfInterval({
@@ -125,6 +135,10 @@ export async function getDashboardStats() {
           completed: velocityChange,
           inProgress: calculateTrend(inProgressTasks, prevInProgress),
           docs: calculateTrend(documentsCount, prevDocs)
+        },
+        thresholds: {
+          high: userSettings.highFocusMax,
+          medium: userSettings.mediumFocusMax
         }
       }
     }

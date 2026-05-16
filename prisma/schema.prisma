@@ -69,12 +69,16 @@ enum Role {
 }
 
 model Settings {
-  id          String  @id @default(cuid())
-  userId      String  @unique
-  aiEnabled   Boolean @default(true)
-  aiModel     String  @default("gemini-1.5-pro")
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  aiEnabled       Boolean @default(true)
+  aiModel         String  @default("gemini-1.5-pro")
   
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Dashboard Thresholds
+  highFocusMax    Int     @default(3)
+  mediumFocusMax  Int     @default(6)
+  
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Project & Org Models

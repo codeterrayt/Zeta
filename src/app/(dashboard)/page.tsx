@@ -213,7 +213,9 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Focus Level</h4>
-                    <p className="text-xs font-medium text-slate-500 leading-relaxed">Measures your workload based on active tasks. High focus means you're concentrated on 1-3 tasks.</p>
+                    <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                      Measures your workload based on active tasks. High focus means you're concentrated on {data?.thresholds?.high || 3} or fewer tasks.
+                    </p>
                   </div>
                   <div className="pt-4 border-t border-slate-100">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Avg. Points</h4>
@@ -251,7 +253,11 @@ export default function DashboardPage() {
                 <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Focus Level</span>
                 <span className="text-2xl font-black">
                   {data?.inProgressTasks !== undefined ? (
-                    data.inProgressTasks <= 3 ? "High" : data.inProgressTasks <= 6 ? "Medium" : "Overloaded"
+                    data.inProgressTasks <= (data?.thresholds?.high || 3) 
+                      ? "High" 
+                      : data.inProgressTasks <= (data?.thresholds?.medium || 6) 
+                        ? "Medium" 
+                        : "Overloaded"
                   ) : "—"}
                 </span>
               </div>
