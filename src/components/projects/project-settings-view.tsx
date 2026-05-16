@@ -1,9 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { UserX, UserPlus, Shield, Eye, GitBranch } from "lucide-react"
+import { UserX, UserPlus, Shield, Eye, GitBranch, Trash2, AlertTriangle } from "lucide-react"
 import { addProjectMember, removeProjectMember } from "@/actions/project-members"
+import { deleteProject } from "@/actions/project"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { KanbanSettings } from "./kanban-settings"
 
 type Member = {
@@ -42,6 +44,14 @@ export function ProjectSettingsView({
   const [success, setSuccess] = React.useState("")
   const router = useRouter()
 
+  React.useEffect(() => {
+    setMembers(initialMembers)
+  }, [initialMembers])
+
+  const { data: session } = useSession()
+  const currentUserId = session?.user?.id
+  const isAdmin = members.some(m => m.user.id === currentUserId && m.role === "ADMIN")
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -64,8 +74,21 @@ export function ProjectSettingsView({
     router.refresh()
   }
 
+  const handleDeleteProject = async () => {
+    if (!confirm("Are you absolutely sure you want to delete this project? This action cannot be undone and all tasks, sprints, and data will be permanently deleted.")) {
+      return
+    }
+
+    const res = await deleteProject(projectId)
+    if (res.success) {
+      router.push("/projects")
+    } else {
+      alert(res.error || "Failed to delete project")
+    }
+  }
+
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-8 pb-12">
       {/* Kanban Settings */}
       <KanbanSettings projectId={projectId} initialSections={initialSections} />
 
@@ -143,6 +166,38 @@ export function ProjectSettingsView({
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="bg-destructive/5 border border-destructive/20 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-destructive/20 bg-destructive/10">
+          <h2 className="text-lg font-semibold text-destructive flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
+            Danger Zone
+          </h2>
+          <p className="text-sm text-destructive/80 mt-1">
+            Irreversible actions for this project.
+          </p>
+        </div>
+        <div className="p-6 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-sm">Delete this project</h3>
+            <p className="text-xs text-muted-foreground">Once deleted, there is no going back. Please be certain.</p>
+            {!isAdmin && (
+              <p className="text-[10px] text-destructive font-bold uppercase tracking-wider mt-2">
+                Only project admins can perform this operation
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleDeleteProject}
+            disabled={!isAdmin}
+            className="bg-destructive text-destructive-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-destructive/90 transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Project
+          </button>
         </div>
       </div>
     </div>

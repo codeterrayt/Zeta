@@ -97,3 +97,31 @@ export async function getProjects() {
   }
 }
 
+export async function deleteProject(projectId: string) {
+  try {
+    const userId = await getCurrentUserId()
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    // Check if user is ADMIN in this project
+    const membership = await prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: { projectId, userId }
+      }
+    })
+
+    if (!membership || membership.role !== "ADMIN") {
+      return { success: false, error: "Only project admins can delete the project" }
+    }
+
+    await prisma.project.delete({
+      where: { id: projectId }
+    })
+
+    revalidatePath("/projects")
+    return { success: true }
+  } catch (error) {
+    console.error("[deleteProject] Error:", error)
+    return { success: false, error: "Failed to delete project" }
+  }
+}
+

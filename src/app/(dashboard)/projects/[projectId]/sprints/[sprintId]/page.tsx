@@ -50,14 +50,14 @@ export default async function SprintDetailsPage({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Sprint Header */}
       <div className="flex flex-col gap-4 mb-6 shrink-0">
-        <Link 
+        <Link
           href={`/projects/${projectId}`}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary w-fit transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           Back to Project Sprints
         </Link>
-        
+
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3">
@@ -73,15 +73,15 @@ export default async function SprintDetailsPage({
             <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
               <Calendar className="w-4 h-4" />
               <span>
-                {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"} 
+                {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                 {" — "}
                 {sprint.endDate ? new Date(sprint.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
               </span>
             </div>
           </div>
 
-          <CreateTaskModal 
-            projectId={projectId} 
+          <CreateTaskModal
+            projectId={projectId}
             projectMembers={projectMembers}
             boardSections={boardSections}
             sprints={sprints as any}
@@ -96,11 +96,10 @@ export default async function SprintDetailsPage({
           <Link
             key={id}
             href={`/projects/${projectId}/sprints/${sprintId}?tab=${id}`}
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-bold border-b-2 transition-all ${
-              activeTab === id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            }`}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === id
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+              }`}
           >
             <Icon className="w-4 h-4" />
             {label}
@@ -111,10 +110,10 @@ export default async function SprintDetailsPage({
       {/* Tab Content */}
       <div className="flex-1 min-h-0">
         {activeTab === "kanban" && (
-          <KanbanBoard 
-            initialData={columns} 
-            projectMembers={projectMembers} 
-            projectId={projectId} 
+          <KanbanBoard
+            initialData={columns}
+            projectMembers={projectMembers}
+            projectId={projectId}
             boardSections={boardSections}
           />
         )}

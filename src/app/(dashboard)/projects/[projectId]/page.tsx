@@ -82,8 +82,8 @@ export default async function ProjectBoardPage({
             key={id}
             href={`/projects/${projectId}?tab=${id}`}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === id
-                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               }`}
           >
             <Icon className="w-4 h-4" />
@@ -108,7 +108,7 @@ export default async function ProjectBoardPage({
             <BacklogView tasks={backlogTasks as any} />
           </div>
         )}
-        
+
         {activeTab === "settings" && (
           <SettingsInline projectId={projectId} />
         )}
