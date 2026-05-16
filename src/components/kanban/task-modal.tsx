@@ -410,18 +410,18 @@ export function TaskModal({
 
               {/* Due Date */}
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Due Date</label>
+                <label className={`text-[10px] font-bold uppercase tracking-[0.2em] block mb-2 ${dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) ? "text-destructive" : "text-muted-foreground"}`}>Due Date &nbsp; {dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && (
+                  <span className="text-[10px] text-destructive font-black mt-1 uppercase">(Overdue)</span>
+                )}</label>
                 <div className="relative">
                   <input
                     type="date"
                     value={dueDate}
                     onChange={e => setDueDate(e.target.value)}
                     disabled={!canEdit}
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70"
+                    className={`${dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && "border-2 border-destructive text-destructive"} w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70`}
                   />
-                  {dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && (
-                    <p className="text-[10px] text-destructive font-black mt-1 uppercase">Overdue</p>
-                  )}
+
                 </div>
               </div>
 
