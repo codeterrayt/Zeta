@@ -1,6 +1,6 @@
 "use client"
 
-import { useEditor, EditorContent } from "@tiptap/react"
+import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
 import Placeholder from "@tiptap/extension-placeholder"
@@ -14,16 +14,25 @@ import OrderedList from "@tiptap/extension-ordered-list"
 import ListItem from "@tiptap/extension-list-item"
 import Blockquote from "@tiptap/extension-blockquote"
 import Mention from "@tiptap/extension-mention"
+import { mergeAttributes } from "@tiptap/core"
 import {
   Bold, Italic, List, ListOrdered, Heading2, Heading3,
   ImageIcon, Undo, Redo, Code, Quote, Underline as UnderlineIcon,
-  AlignLeft, AlignCenter, AlignRight, Highlighter, Link as LinkIcon, AtSign
+  AlignLeft, AlignCenter, AlignRight, Highlighter, AtSign, Paperclip, X,
+  FileIcon, Download, Trash2, Loader2,
 } from "lucide-react"
 import * as React from "react"
 import { useCallback } from "react"
 import suggestion from "./suggestion"
+import { fileSuggestion } from "./file-suggestion"
 import { useParams } from "next/navigation"
 import { getProjectMembersForAssign } from "@/actions/project-members"
+import { getAttachmentsForContext } from "@/actions/get-attachments"
+import { deleteAttachment } from "@/actions/attachment"
+import { toast } from "sonner"
+import { useSession } from "next-auth/react"
+import { FileMentionBadge } from "./file-mention-badge"
+import { cn } from "@/lib/utils"
 
 interface TiptapEditorProps {
   content?: string
@@ -31,18 +40,56 @@ interface TiptapEditorProps {
   placeholder?: string
   minHeight?: string
   projectId?: string
+  taskId?: string
+  sprintId?: string
 }
 
-export function TiptapEditor({ content = "", onChange, placeholder = "Add a description...", minHeight = "150px", projectId: manualProjectId }: TiptapEditorProps) {
-  const params = useParams()
-  const projectId = manualProjectId || (params.projectId as string)
-  const [members, setMembers] = React.useState<any[]>([])
+let fileMentionCount = 0
 
+const FileMentionNodeView = ({ node, editor }: any) => {
+  const { id, label } = node.attrs
+  // Get attachments from editor storage
+  const attachments = (editor as any).options.attachments || []
+  const meta = attachments.find((a: any) => a.id === id || a.name === label)
+
+  return (
+    <NodeViewWrapper className="inline-block align-middle">
+      <FileMentionBadge 
+        id={id} 
+        name={label} 
+        url={meta?.url} 
+        type={meta?.type} 
+        size={meta?.size} 
+      />
+    </NodeViewWrapper>
+  )
+}
+
+export function TiptapEditor({
+  content = "",
+  onChange,
+  placeholder = "Add a description...",
+  minHeight = "150px",
+  projectId: manualProjectId,
+  taskId: manualTaskId,
+  sprintId: manualSprintId,
+}: TiptapEditorProps) {
+  const params = useParams()
+  const { data: session } = useSession()
+  const projectId = manualProjectId || (params.projectId as string)
+  const taskId = manualTaskId || (params.taskId as string)
+  const sprintId = manualSprintId || (params.sprintId as string)
+
+  const [members, setMembers] = React.useState<any[]>([])
+  const [attachments, setAttachments] = React.useState<any[]>([])
+  const [uploading, setUploading] = React.useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  // Resolve projectId for mentions (backtrace from taskId if needed)
   React.useEffect(() => {
     async function resolveProject() {
       let activeProjectId = projectId
-      
-      // If we don't have a project ID but we have a task ID in the URL, fetch it
+
       if (!activeProjectId && params.taskId) {
         const { getTaskById } = await import("@/actions/task")
         const res = await getTaskById(params.taskId as string)
@@ -55,59 +102,137 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
         getProjectMembersForAssign(activeProjectId).then(res => {
           setMembers(res || [])
         })
+        getAttachmentsForContext({ projectId: activeProjectId, taskId, sprintId }).then(res => {
+          setAttachments(res || [])
+        })
       }
     }
-    
     resolveProject()
-  }, [projectId, params.taskId])
+  }, [projectId, taskId, sprintId, params.taskId])
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-        bulletList: false,
-        orderedList: false,
-        blockquote: false,
-      }),
-      Heading.configure({ levels: [1, 2, 3] }),
-      BulletList,
-      OrderedList,
-      ListItem,
-      Blockquote,
-      Image.configure({ inline: false, allowBase64: true }),
-      Placeholder.configure({ placeholder }),
-      Underline,
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-primary underline cursor-pointer" } }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Highlight.configure({ multicolor: true }),
-      Mention.configure({
-        HTMLAttributes: {
-          class: "mention bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-bold border border-primary/20",
-        },
-        suggestion: {
-          ...suggestion,
-          items: ({ query }) => {
-            return members
-              .filter(item => 
-                (item.name || "").toLowerCase().startsWith(query.toLowerCase()) ||
-                (item.email || "").toLowerCase().startsWith(query.toLowerCase())
-              )
-              .slice(0, 5)
+  const FileMention = React.useMemo(() => {
+    return Mention.extend({
+      name: "fileMention",
+      
+      addAttributes() {
+        return {
+          id: { default: null },
+          label: { default: null },
+        }
+      },
+
+      parseHTML() {
+        return [
+          {
+            tag: 'span[data-type="file-mention"]',
+            getAttrs: dom => {
+              const element = dom as HTMLElement
+              return {
+                id: element.getAttribute('data-id'),
+                label: element.getAttribute('data-label'),
+              }
+            },
           },
+        ]
+      },
+
+      renderHTML({ node, HTMLAttributes }) {
+        return [
+          'span',
+          mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+            'data-type': 'file-mention',
+            'data-id': node.attrs.id,
+            'data-label': node.attrs.label,
+          }),
+          `📎 ${node.attrs.label}`,
+        ]
+      },
+
+      addNodeView() {
+        return ReactNodeViewRenderer(FileMentionNodeView)
+      },
+
+    }).configure({
+      suggestion: {
+        ...fileSuggestion,
+        allowSpaces: true,
+        char: "@file:",
+        items: ({ query }: { query: string }) =>
+          attachments
+            .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
+            .slice(0, 8),
+      },
+    })
+  }, [attachments])
+
+  const editor = useEditor(
+    {
+      extensions: [
+        // StarterKit WITHOUT the extensions we supply ourselves to avoid duplicates
+        StarterKit.configure({
+          heading: false,
+          bulletList: false,
+          orderedList: false,
+          listItem: false,
+          blockquote: false,
+          bold: {},
+          italic: {},
+          strike: {},
+          code: {},
+          codeBlock: false,
+          underline: false,
+        } as any),
+        Heading.configure({ levels: [1, 2, 3] }),
+        BulletList,
+        OrderedList,
+        ListItem,
+        Blockquote,
+        Image.configure({ inline: false, allowBase64: true }),
+        Placeholder.configure({ placeholder }),
+        Underline,
+        Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-primary underline cursor-pointer" } }),
+        TextAlign.configure({ types: ["heading", "paragraph"] }),
+        Highlight.configure({ multicolor: true }),
+        Mention.configure({
+          HTMLAttributes: {
+            class: "mention bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-bold border border-primary/20",
+          },
+          suggestion: {
+            ...suggestion,
+            allowSpaces: true,
+            items: ({ query }: { query: string }) =>
+              members
+                .filter(item =>
+                  (item.name || "").toLowerCase().startsWith(query.toLowerCase()) ||
+                  (item.email || "").toLowerCase().startsWith(query.toLowerCase())
+                )
+                .slice(0, 5),
+          },
+        }),
+        // File @file: mention
+        FileMention,
+      ],
+      attachments, // Pass attachments here so NodeView can access them
+      content,
+      onUpdate: ({ editor }) => {
+        onChange?.(editor.getHTML())
+      },
+      editorProps: {
+        attributes: {
+          class: cn("prose max-w-none focus:outline-none px-4 py-3", `min-h-[${minHeight}]`),
+          style: `min-height: ${minHeight}`,
         },
-      }),
-    ],
-    content,
-    onUpdate: ({ editor }) => {
-      onChange?.(editor.getHTML())
-    },
-    editorProps: {
-      attributes: {
-        class: cn("prose max-w-none focus:outline-none px-4 py-3", `min-h-[${minHeight}]`),
-        style: `min-height: ${minHeight}`,
       },
     },
-  }, [members]) // Re-initialize when members are loaded
+    [members, FileMention, attachments]
+  )
+
+  // Sync attachments with editor options for NodeView access
+  React.useEffect(() => {
+    if (editor) {
+      editor.setOptions({ attachments })
+    }
+  }, [editor, attachments])
 
   const addImage = useCallback(() => {
     const input = document.createElement("input")
@@ -125,6 +250,47 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
     input.click()
   }, [editor])
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !editor) return
+
+    setUploading(true)
+    const formData = new FormData()
+    formData.append("file", file)
+    if (taskId) formData.append("taskId", taskId)
+    if (sprintId) formData.append("sprintId", sprintId)
+
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json()
+      if (data.success) {
+        const att = data.attachment
+        setAttachments(prev => [att, ...prev])
+        toast.success(`"${att.name}" uploaded`)
+        // Auto-insert a file mention into the editor
+        editor.chain().focus().insertContent(`@file:${att.name} `).run()
+      } else {
+        toast.error(data.error || "Upload failed")
+      }
+    } catch {
+      toast.error("Upload error")
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  const handleDeleteAttachment = async (id: string) => {
+    if (!confirm("Delete this attachment?")) return
+    const res = await deleteAttachment(id)
+    if (res.success) {
+      setAttachments(prev => prev.filter(a => a.id !== id))
+      toast.success("Attachment deleted")
+    } else {
+      toast.error(res.error)
+    }
+  }
+
   if (!editor) return null
 
   const ToolbarButton = ({ onClick, active, title, children }: {
@@ -141,9 +307,9 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
   )
 
   return (
-    <div className="border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm">
+    <div className="border border-border rounded-xl overflow-visible focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border bg-secondary/10 flex-wrap">
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border bg-secondary/10 flex-wrap rounded-t-xl">
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
           <Bold className="w-3.5 h-3.5" />
         </ToolbarButton>
@@ -177,35 +343,38 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
           <Quote className="w-3.5 h-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-border mx-1" />
-        <ToolbarButton
-          onClick={() => (editor.commands as any).setTextAlign?.("left") && editor.chain().focus().setTextAlign("left").run()}
-          active={editor.isActive({ textAlign: "left" })}
-          title="Align Left"
-        >
+        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("left").run()} active={editor.isActive({ textAlign: "left" })} title="Align Left">
           <AlignLeft className="w-3.5 h-3.5" />
         </ToolbarButton>
-        <ToolbarButton
-          onClick={() => (editor.commands as any).setTextAlign?.("center") && editor.chain().focus().setTextAlign("center").run()}
-          active={editor.isActive({ textAlign: "center" })}
-          title="Align Center"
-        >
+        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("center").run()} active={editor.isActive({ textAlign: "center" })} title="Align Center">
           <AlignCenter className="w-3.5 h-3.5" />
         </ToolbarButton>
-        <ToolbarButton
-          onClick={() => (editor.commands as any).setTextAlign?.("right") && editor.chain().focus().setTextAlign("right").run()}
-          active={editor.isActive({ textAlign: "right" })}
-          title="Align Right"
-        >
+        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("right").run()} active={editor.isActive({ textAlign: "right" })} title="Align Right">
           <AlignRight className="w-3.5 h-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-border mx-1" />
-
         <ToolbarButton onClick={addImage} title="Insert Image">
           <ImageIcon className="w-3.5 h-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().insertContent("@").run()} title="Mention">
+        <ToolbarButton onClick={() => editor.chain().focus().insertContent("@").run()} title="Mention User">
           <AtSign className="w-3.5 h-3.5" />
         </ToolbarButton>
+        {/* File Upload Button */}
+        <label
+          title="Attach File"
+          className={`p-1.5 rounded hover:bg-secondary transition-colors text-muted-foreground cursor-pointer flex items-center justify-center ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Paperclip className="w-3.5 h-3.5" />}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileUpload}
+            disabled={uploading}
+          />
+        </label>
+
         <div className="flex-1" />
         <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title="Undo">
           <Undo className="w-3.5 h-3.5" />
@@ -216,13 +385,30 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
       </div>
 
       {/* Editor Content */}
-      <div className="bg-background">
+      <div className="bg-background rounded-b-xl">
         <EditorContent editor={editor} />
       </div>
     </div>
   )
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ")
+function getFileEmoji(type: string, name: string) {
+  if (type.startsWith("image/")) return "🖼️"
+  if (type === "application/pdf") return "📄"
+  if (type.includes("word") || name.endsWith(".doc") || name.endsWith(".docx")) return "📝"
+  if (type.includes("sheet") || name.endsWith(".xls") || name.endsWith(".xlsx") || name.endsWith(".csv")) return "📊"
+  if (type.includes("presentation") || name.endsWith(".ppt") || name.endsWith(".pptx")) return "📑"
+  if (type.includes("zip") || name.endsWith(".zip") || name.endsWith(".rar")) return "🗜️"
+  if (type.startsWith("video/")) return "🎬"
+  if (type.startsWith("audio/")) return "🎵"
+  if (type.includes("javascript") || type.includes("typescript") || name.match(/\.(ts|js|py|go|rs|java|c|cpp)$/)) return "💻"
+  return "📎"
 }
+
+function formatBytes(bytes: number) {
+  if (!bytes) return "–"
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+

@@ -35,14 +35,17 @@ export const MentionList = forwardRef((props: any, ref) => {
   }))
 
   return (
-    <div className="bg-popover border border-border rounded-xl shadow-xl overflow-hidden min-w-[200px] flex flex-col p-1 z-[100]">
+    <div className="bg-popover text-popover-foreground border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[200px] flex flex-col p-1 z-[100] pointer-events-auto">
       {props.items.length > 0 ? (
         props.items.map((item: any, index: number) => (
           <button
             key={item.id}
-            onClick={() => selectItem(index)}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              selectItem(index)
+            }}
             className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors w-full text-left ${
-              index === selectedIndex ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
+              index === selectedIndex ? "bg-primary text-primary-foreground" : "hover:bg-secondary hover:text-foreground"
             }`}
           >
             <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center overflow-hidden border border-border shrink-0">
@@ -54,7 +57,7 @@ export const MentionList = forwardRef((props: any, ref) => {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-bold truncate">{item.name || item.email}</span>
-              {item.name && <span className="text-[9px] opacity-60 truncate">{item.email}</span>}
+              {item.name && <span className="text-[9px] opacity-70 truncate">{item.email}</span>}
             </div>
           </button>
         ))

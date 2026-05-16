@@ -8,6 +8,8 @@ import { addComment, deleteComment } from "@/actions/comment"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
+import { ContentRenderer } from "@/components/editor/content-renderer"
+import { getAttachmentsForContext } from "@/actions/get-attachments"
 import { useParams } from "next/navigation"
 
 interface User {
@@ -41,12 +43,20 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
   const [replyTo, setReplyTo] = React.useState<string | null>(null)
   const [replyContent, setReplyContent] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
+  const [attachments, setAttachments] = React.useState<any[]>([])
   const params = useParams()
   const projectId = params.projectId as string
 
   React.useEffect(() => {
     setComments(initialComments)
   }, [initialComments])
+
+  // Load project attachments for file mention badge hydration
+  React.useEffect(() => {
+    if (projectId) {
+      getAttachmentsForContext({ projectId }).then(res => setAttachments(res || []))
+    }
+  }, [projectId])
 
   const commentTree = React.useMemo(() => {
     const map: Record<string, any> = {}
@@ -119,6 +129,8 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
               placeholder="Type @ to mention or share your thoughts..."
               minHeight="120px"
               projectId={projectId}
+              taskId={taskId}
+              sprintId={sprintId}
             />
           </div>
         </div>
@@ -149,6 +161,9 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
               handleDelete={handleDelete}
               submitting={submitting}
               projectId={projectId}
+              taskId={taskId}
+              sprintId={sprintId}
+              attachments={attachments}
             />
           ))
         ) : (
@@ -176,7 +191,10 @@ function CommentItem({
   handleAddComment, 
   handleDelete,
   submitting,
-  projectId
+  projectId,
+  taskId,
+  sprintId,
+  attachments = []
 }: any) {
   return (
     <div className={cn(
@@ -223,9 +241,10 @@ function CommentItem({
           </div>
         </div>
 
-        <div 
+        <ContentRenderer
+          html={comment.content}
+          attachments={attachments}
           className="text-sm text-foreground/80 leading-relaxed prose prose-sm max-w-none bg-secondary/5 p-3 rounded-2xl border border-border/30"
-          dangerouslySetInnerHTML={{ __html: comment.content }}
         />
 
         {replyTo === comment.id && (
@@ -240,6 +259,8 @@ function CommentItem({
                 placeholder={`Reply to ${comment.user.name || "user"}...`}
                 minHeight="100px"
                 projectId={projectId}
+                taskId={taskId}
+                sprintId={sprintId}
               />
               <div className="flex justify-end gap-2">
                 <button 
@@ -277,6 +298,9 @@ function CommentItem({
                 handleDelete={handleDelete}
                 submitting={submitting}
                 projectId={projectId}
+                taskId={taskId}
+                sprintId={sprintId}
+                attachments={attachments}
               />
             ))}
           </div>

@@ -162,3 +162,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Remove Tippy default styling for custom React popovers */
+.tippy-box {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: hsl(var(--popover)) !important; /* Colors the tippy arrow */
+}
+.tippy-content {
+  padding: 0 !important;
+}

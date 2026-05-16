@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users, BookOpen, FileText, Eye, Edit3 } from "lucide-react"
+import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users, BookOpen, FileText, Eye, Edit3, Paperclip, Download } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils"
 import { TaskAssignmentRole } from "@prisma/client"
 import { isPast, isToday } from "date-fns"
 import { CommentSection } from "./comment-section"
+import { ContentRenderer } from "@/components/editor/content-renderer"
+import { getAttachmentsForContext } from "@/actions/get-attachments"
+import { deleteAttachment } from "@/actions/attachment"
+import { toast } from "sonner"
 
 const COMPLEXITY_LABELS: Record<number, string> = {
   1: "Very Low",
@@ -75,6 +79,7 @@ export function TaskModal({
 
   const [fullTask, setFullTask] = React.useState(task)
   const [loading, setLoading] = React.useState(false)
+  const [projectAttachments, setProjectAttachments] = React.useState<any[]>([])
 
   React.useEffect(() => {
     if (task?.id) {
@@ -106,6 +111,13 @@ export function TaskModal({
         setLoading(false)
       }
       fetchFullTask()
+
+      // Load project-level attachments for file mention badges
+      if (task.projectId) {
+        getAttachmentsForContext({ projectId: task.projectId }).then(res => {
+          setProjectAttachments(res || [])
+        })
+      }
     }
   }, [task?.id])
 
@@ -261,9 +273,10 @@ export function TaskModal({
                   projectId={projectId}
                 />
               ) : task.description ? (
-                <div
+                <ContentRenderer
+                  html={task.description}
+                  attachments={projectAttachments}
                   className="prose max-w-none bg-secondary/10 rounded-2xl p-6 border border-border/50 text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: task.description }}
                 />
               ) : (
                 <div className="bg-secondary/10 rounded-2xl p-8 border border-dashed border-border/50 text-sm text-muted-foreground italic text-center">
@@ -579,6 +592,55 @@ export function TaskModal({
               </div>
             </div>
 
+            {/* Attachments Section */}
+            <div className="space-y-4 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Paperclip className="w-4 h-4" />
+                <h3 className="text-[10px] font-black uppercase tracking-widest">Project Attachments</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-2">
+                  {projectAttachments.map((file) => (
+                    <div key={file.id} className="flex items-center gap-2 p-2 rounded-xl bg-background border border-border/60 hover:border-primary/30 transition-all group">
+                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 text-base">
+                        {getFileEmoji(file.type, file.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold truncate" title={file.name}>{file.name}</p>
+                        <p className="text-[8px] text-muted-foreground">{formatBytes(file.size)}</p>
+                      </div>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href={file.url} download className="p-1.5 hover:bg-secondary rounded-lg transition-colors" title="Download">
+                          <Download className="w-3 h-3" />
+                        </a>
+                        {session?.user?.id === file.userId && (
+                          <button 
+                            onClick={async () => {
+                              if (!confirm("Delete attachment?")) return
+                              const res = await deleteAttachment(file.id)
+                              if (res.success) {
+                                setProjectAttachments(prev => prev.filter(a => a.id !== file.id))
+                                toast.success("Attachment deleted")
+                              } else {
+                                toast.error(res.error)
+                              }
+                            }}
+                            className="p-1.5 hover:bg-destructive/10 text-destructive rounded-lg transition-colors" 
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {projectAttachments.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground italic px-1">No attachments uploaded yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {canEdit && (
               <button
                 onClick={handleSave}
@@ -606,10 +668,33 @@ export function TaskModal({
             className="w-[94vw] max-w-8xl h-[94vh] outline-none resize both overflow-auto pointer-events-auto shadow-2xl"
             style={{ minWidth: "20rem", minHeight: "20rem" }}
           >
+            <DialogPrimitive.Title className="sr-only">
+              {task.title || "Task Details"}
+            </DialogPrimitive.Title>
             {modalContent}
           </DialogPrimitive.Content>
         </div>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   )
+}
+
+function getFileEmoji(type: string, name: string) {
+  if (type.startsWith("image/")) return "🖼️"
+  if (type === "application/pdf") return "📄"
+  if (type.includes("word") || name.endsWith(".doc") || name.endsWith(".docx")) return "📝"
+  if (type.includes("sheet") || name.endsWith(".xls") || name.endsWith(".xlsx") || name.endsWith(".csv")) return "📊"
+  if (type.includes("presentation") || name.endsWith(".ppt") || name.endsWith(".pptx")) return "📑"
+  if (type.includes("zip") || name.endsWith(".zip") || name.endsWith(".rar")) return "🗜️"
+  if (type.startsWith("video/")) return "🎬"
+  if (type.startsWith("audio/")) return "🎵"
+  if (type.includes("javascript") || type.includes("typescript") || name.match(/\.(ts|js|py|go|rs|java|c|cpp)$/)) return "💻"
+  return "📎"
+}
+
+function formatBytes(bytes: number) {
+  if (!bytes) return "–"
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }

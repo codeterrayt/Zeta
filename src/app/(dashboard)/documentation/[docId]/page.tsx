@@ -4,7 +4,9 @@ import * as React from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { BookOpen, ChevronLeft, Save, Loader2, FileText, Info, ShieldAlert, Edit3, Eye } from "lucide-react"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
+import { ContentRenderer } from "@/components/editor/content-renderer"
 import { getDocumentById, updateDocument } from "@/actions/document"
+import { getAttachmentsForContext } from "@/actions/get-attachments"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -203,9 +205,10 @@ export default function DocumentDetailsPage() {
                 projectId={doc.projectId}
               />
             ) : (
-              <div 
+              <ContentRenderer
+                html={doc.content}
+                attachments={projectAttachments}
                 className="prose prose-lg max-w-none prose-headings:font-black prose-p:leading-relaxed prose-p:text-foreground/80 prose-strong:text-foreground prose-a:text-primary prose-a:font-bold prose-img:rounded-3xl prose-img:shadow-2xl"
-                dangerouslySetInnerHTML={{ __html: doc.content }}
               />
             )}
           </div>
