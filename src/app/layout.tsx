@@ -20,7 +20,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased bg-background text-foreground h-screen flex flex-col overflow-hidden`}>
         <SessionProvider>
-          <ThemeProvider attribute="class" defaultTheme="theme-jira">
+          <ThemeProvider 
+            attribute="class" 
+            defaultTheme="theme-jira"
+            themes={["theme-jira", "theme-monaco"]}
+          >
             {children}
           </ThemeProvider>
         </SessionProvider>
