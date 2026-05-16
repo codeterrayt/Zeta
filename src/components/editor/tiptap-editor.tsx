@@ -54,12 +54,12 @@ const FileMentionNodeView = ({ node, editor }: any) => {
 
   return (
     <NodeViewWrapper className="inline-block align-middle">
-      <FileMentionBadge 
-        id={id} 
-        name={label} 
-        url={meta?.url} 
-        type={meta?.type} 
-        size={meta?.size} 
+      <FileMentionBadge
+        id={id}
+        name={label}
+        url={meta?.url}
+        type={meta?.type}
+        size={meta?.size}
       />
     </NodeViewWrapper>
   )
@@ -113,7 +113,7 @@ export function TiptapEditor({
   const FileMention = React.useMemo(() => {
     return Mention.extend({
       name: "fileMention",
-      
+
       addAttributes() {
         return {
           id: { default: null },
@@ -356,7 +356,7 @@ export function TiptapEditor({
         <ToolbarButton onClick={addImage} title="Insert Image">
           <ImageIcon className="w-3.5 h-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().insertContent("@").run()} title="Mention User">
+        <ToolbarButton onClick={() => editor.chain().focus().insertContent("@").run()} title="Mention User or File use @user / @file:filename">
           <AtSign className="w-3.5 h-3.5" />
         </ToolbarButton>
         {/* File Upload Button */}
