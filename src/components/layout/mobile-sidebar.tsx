@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { Menu, X, Activity, Home, Folder, ListTodo, BookOpen, Settings } from "lucide-react"
+import { Menu, X, Activity, Home, Folder, ListTodo, BookOpen, Settings, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -65,7 +65,20 @@ export function MobileSidebar() {
             })}
           </nav>
 
-          <div className="mt-auto pt-6 border-t border-border/50">
+          <div className="mt-auto pt-6 border-t border-border/50 space-y-2">
+            <Link
+              href="/profile"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
+                pathname === "/profile" 
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                  : "hover:bg-secondary text-muted-foreground border-transparent"
+              )}
+            >
+              <User className="w-5 h-5" />
+              Profile
+            </Link>
             <Link
               href="/settings"
               onClick={() => setOpen(false)}

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Home, Folder, ListTodo, Settings, Activity, BookOpen } from "lucide-react"
+import { Home, Folder, ListTodo, Settings, Activity, BookOpen, User } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -48,7 +48,19 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-6 border-t border-border/50">
+      <div className="p-6 border-t border-border/50 space-y-2">
+        <Link 
+          href="/profile" 
+          className={cn(
+            "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
+            pathname === "/profile" 
+              ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+              : "hover:bg-secondary text-muted-foreground border-transparent"
+          )}
+        >
+          <User className="w-5 h-5" />
+          Profile
+        </Link>
         <Link 
           href="/settings" 
           className={cn(
