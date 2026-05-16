@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TaskAssignmentRole } from "@prisma/client"
+import { auth } from "@/auth"
 
 export async function createTask(data: {
   title: string
@@ -243,5 +244,36 @@ export async function getTaskById(taskId: string) {
   } catch (error) {
     console.error("getTaskById error:", error)
     return { success: false, error: "Failed to fetch task" }
+  }
+}
+
+export async function getMyTasks() {
+  const session = await auth()
+  const userId = (session?.user as any)?.id
+  if (!userId) return { success: false, error: "Unauthorized" }
+
+  try {
+    const tasks = await prisma.task.findMany({
+      where: {
+        assignments: {
+          some: { userId }
+        }
+      },
+      include: {
+        project: { select: { id: true, name: true } },
+        assignments: {
+          include: {
+            user: { select: { id: true, name: true, image: true } }
+          }
+        },
+        sprint: { select: { id: true, name: true } },
+        documents: { include: { document: true } }
+      },
+      orderBy: { updatedAt: "desc" }
+    })
+    return { success: true, tasks }
+  } catch (error) {
+    console.error("getMyTasks error:", error)
+    return { success: false, error: "Failed to fetch tasks" }
   }
 }

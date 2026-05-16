@@ -14,65 +14,7 @@ const toTitleCase = (str: string) => {
   return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
-function CustomDropdown({ value, onChange, options, icon: Icon, label }: any) {
-  const [isOpen, setIsOpen] = React.useState(false)
-  const dropdownRef = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  const selectedOption = options.find((o: any) => o.value === value)
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-2xl border transition-all group min-w-[150px]",
-          isOpen ? "bg-card border-primary shadow-lg ring-2 ring-primary/10" : "bg-secondary/30 border-border/50 hover:border-primary/30"
-        )}
-      >
-        <Icon className={cn("w-4 h-4 transition-colors", isOpen ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />
-        <span className="text-sm font-bold flex-1 text-left truncate">
-          {selectedOption?.label || label}
-        </span>
-        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform duration-300", isOpen && "rotate-180")} />
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-full mt-2 left-0 min-w-[200px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="p-1.5 max-h-[300px] overflow-y-auto custom-scrollbar">
-            {options.map((option: any) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  onChange(option.value)
-                  setIsOpen(false)
-                }}
-                className={cn(
-                  "w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold rounded-xl transition-all",
-                  value === option.value
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {option.label}
-                {value === option.value && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+import { CustomDropdown } from "@/components/ui/custom-dropdown"
 
 export default function DocumentationPage() {
   const { data: session } = useSession()
@@ -86,6 +28,8 @@ export default function DocumentationPage() {
   const [filterType, setFilterType] = React.useState<"ALL" | "SELF" | "MENTIONED">("ALL")
   const [selectedProjectId, setSelectedProjectId] = React.useState<string>("ALL")
   const [selectedSprintId, setSelectedSprintId] = React.useState<string>("ALL")
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 6
 
   React.useEffect(() => {
     async function load() {
@@ -102,7 +46,7 @@ export default function DocumentationPage() {
     load()
   }, [])
 
-  const filteredDocs = documents.filter(doc => {
+  const filteredDocsAll = documents.filter(doc => {
     // 1. Search Filter
     const matchesSearch = doc.title.toLowerCase().includes(search.toLowerCase()) ||
       doc.project.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -111,7 +55,7 @@ export default function DocumentationPage() {
     // 2. Type Filter (ALL means SELF OR MENTIONED)
     let matchesType = false
     const isSelf = doc.authorId === userId
-    const isMentioned = doc.content.includes(`data-id="${userId}"`)
+    const isMentioned = doc.content?.includes(`data-id="${userId}"`)
 
     if (filterType === "ALL") {
       matchesType = isSelf || isMentioned
@@ -126,10 +70,18 @@ export default function DocumentationPage() {
 
     // 4. Sprint Filter (Check if any linked task is in the selected sprint)
     const matchesSprint = selectedSprintId === "ALL" ||
-      doc.taskLinks.some((l: any) => l.task.sprintId === selectedSprintId)
+      doc.taskLinks?.some((l: any) => l.task?.sprintId === selectedSprintId)
 
     return matchesSearch && matchesType && matchesProject && matchesSprint
   })
+
+  const totalPages = Math.ceil(filteredDocsAll.length / itemsPerPage)
+  const filteredDocs = filteredDocsAll.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [search, filterType, selectedProjectId, selectedSprintId])
 
   // Get unique sprints for the selected project (or all if ALL selected)
   const availableSprints = React.useMemo(() => {
@@ -242,97 +194,135 @@ export default function DocumentationPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-            {filteredDocs.map((doc) => {
-              const hasEditAccess = doc.authorId === userId ||
-                doc.taskLinks?.some((l: any) => l.task?.assignments?.some((a: any) => a.userId === userId))
+          <div className="space-y-10 pb-20">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredDocs.map((doc) => {
+                const hasEditAccess = doc.authorId === userId ||
+                  doc.taskLinks?.some((l: any) => l.task?.assignments?.some((a: any) => a.userId === userId))
+                  
+                return (
+                  <div key={doc.id} className="group flex flex-col bg-card border border-border/60 rounded-[2.5rem] overflow-hidden hover:border-primary/40 transition-all shadow-sm hover:shadow-2xl hover:-translate-y-2 duration-500">
+                    <div className="p-8 space-y-6 flex-1">
+                      <div className="flex items-start justify-between gap-4">
+                        <Link 
+                          href={`/projects/${doc.projectId}`}
+                          className="text-[10px] font-black uppercase tracking-[0.2em] text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all"
+                        >
+                          {doc.project.name}
+                        </Link>
+                        <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                          {format(new Date(doc.createdAt), "MMM d, yyyy")}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Link 
+                          href={`/documentation/${doc.id}?mode=view`}
+                          target="_blank"
+                          className="block group-hover:text-primary transition-colors"
+                        >
+                          <h3 className="text-2xl font-black leading-tight line-clamp-2">
+                            {toTitleCase(doc.title)}
+                          </h3>
+                        </Link>
+                        
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden border-2 border-background shadow-sm">
+                            {doc.author.image ? (
+                              <img src={doc.author.image} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold">{doc.author.name?.[0]}</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black tracking-tight">{doc.author.name}</span>
+                            <span className="text-[10px] text-muted-foreground font-bold uppercase">Author</span>
+                          </div>
+                        </div>
+                      </div>
 
-              return (
-                <div key={doc.id} className="group flex flex-col bg-card border border-border/60 rounded-[2.5rem] overflow-hidden hover:border-primary/40 transition-all shadow-sm hover:shadow-2xl hover:-translate-y-2 duration-500">
-                  <div className="p-8 space-y-6 flex-1">
-                    <div className="flex items-start justify-between gap-4">
-                      <Link
-                        href={`/projects/${doc.projectId}`}
-                        className="text-[10px] font-black uppercase tracking-[0.2em] text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all"
-                      >
-                        {doc.project.name}
-                      </Link>
-                      <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                        {format(new Date(doc.createdAt), "MMM d, yyyy")}
-                      </span>
+                      {doc.taskLinks?.length > 0 && (
+                        <div className="pt-6 border-t border-border/40 space-y-3">
+                          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+                            <LinkIcon className="w-3 h-3" /> Linked Tasks
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {doc.taskLinks.map((link: any) => (
+                              <Link
+                                key={link.task.id}
+                                href={`/tasks/${link.task.id}`}
+                                target="_blank"
+                                className="text-[11px] font-bold text-muted-foreground hover:text-primary bg-secondary/40 px-3 py-1.5 rounded-xl transition-all border border-border/30 hover:border-primary/20 flex items-center gap-2"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                                {link.task.title}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    <div className="space-y-3">
-                      <Link
+                    
+                    <div className="px-8 py-4 bg-secondary/10 border-t border-border/40 flex items-center justify-between">
+                      <Link 
                         href={`/documentation/${doc.id}?mode=view`}
                         target="_blank"
-                        className="block group-hover:text-primary transition-colors"
+                        className="text-xs font-black text-primary hover:tracking-widest transition-all uppercase"
                       >
-                        <h3 className="text-2xl font-black leading-tight line-clamp-2">
-                          {toTitleCase(doc.title)}
-                        </h3>
+                        Read Document →
                       </Link>
-
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden border-2 border-background shadow-sm">
-                          {doc.author.image ? (
-                            <img src={doc.author.image} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-xs font-bold">{doc.author.name?.[0]}</span>
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black tracking-tight">{doc.author.name}</span>
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase">Author</span>
-                        </div>
-                      </div>
+                      
+                      {hasEditAccess && (
+                        <Link
+                          href={`/documentation/${doc.id}?mode=edit`}
+                          target="_blank"
+                          className="flex items-center gap-2 text-xs font-black text-amber-600 hover:text-amber-700 transition-colors uppercase"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Edit
+                        </Link>
+                      )}
                     </div>
-
-                    {doc.taskLinks.length > 0 && (
-                      <div className="pt-6 border-t border-border/40 space-y-3">
-                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-                          <LinkIcon className="w-3 h-3" /> Linked Tasks
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {doc.taskLinks.map((link: any) => (
-                            <Link
-                              key={link.task.id}
-                              href={`/tasks/${link.task.id}`}
-                              target="_blank"
-                              className="text-[11px] font-bold text-muted-foreground hover:text-primary bg-secondary/40 px-3 py-1.5 rounded-xl transition-all border border-border/30 hover:border-primary/20 flex items-center gap-2"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                              {link.task.title}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
+                )
+              })}
+            </div>
 
-                  <div className="px-8 py-4 bg-secondary/10 border-t border-border/40 flex items-center justify-between">
-                    <Link
-                      href={`/documentation/${doc.id}?mode=view`}
-                      target="_blank"
-                      className="text-xs font-black text-primary hover:tracking-widest transition-all uppercase"
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold hover:bg-secondary disabled:opacity-50 transition-all"
+                >
+                  Previous
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={cn(
+                        "w-10 h-10 rounded-xl text-xs font-bold transition-all border",
+                        currentPage === i + 1 
+                          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                          : "bg-card border-border hover:bg-secondary text-muted-foreground"
+                      )}
                     >
-                      Read Document →
-                    </Link>
-
-                    {hasEditAccess && (
-                      <Link
-                        href={`/documentation/${doc.id}?mode=edit`}
-                        target="_blank"
-                        className="flex items-center gap-2 text-xs font-black text-amber-600 hover:text-amber-700 transition-colors uppercase"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        Edit
-                      </Link>
-                    )}
-                  </div>
+                      {i + 1}
+                    </button>
+                  ))}
                 </div>
-              )
-            })}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold hover:bg-secondary disabled:opacity-50 transition-all"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
