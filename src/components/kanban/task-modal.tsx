@@ -181,7 +181,7 @@ export function TaskModal({
                     />
                   ) : task.description ? (
                     <div
-                      className="prose prose-jira max-w-none bg-secondary/10 rounded-2xl p-6 border border-border/50 text-sm leading-relaxed"
+                      className="prose max-w-none bg-secondary/10 rounded-2xl p-6 border border-border/50 text-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: task.description }}
                     />
                   ) : (

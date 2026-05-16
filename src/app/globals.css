@@ -1,4 +1,77 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Robust Prose Styles for Tiptap */
+.prose {
+  max-width: none !important;
+  color: hsl(var(--foreground));
+}
+
+.prose h2 {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 0.5rem;
+}
+
+.prose h3 {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.prose ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.prose ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.prose li {
+  margin-bottom: 0.25rem !important;
+}
+
+.prose blockquote {
+  border-left: 4px solid hsl(var(--primary)) !important;
+  padding: 1.5rem !important;
+  font-style: italic !important;
+  background: hsl(var(--secondary)) !important;
+  margin: 2rem 0 !important;
+  border-radius: 0 0.75rem 0.75rem 0;
+  position: relative;
+  color: hsl(var(--muted-foreground));
+}
+
+.prose blockquote p {
+  margin: 0 !important;
+}
+
+.prose code {
+  background: hsl(var(--secondary));
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.prose pre {
+  background: hsl(var(--secondary) / 0.8);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border));
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
 
 @theme {
   --color-border: hsl(var(--border));
