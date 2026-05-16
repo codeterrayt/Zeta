@@ -12,7 +12,7 @@ interface BacklogTask {
   sprint: { name: string } | null
 }
 
-export function BacklogView({ tasks }: { tasks: BacklogTask[] }) {
+export function BacklogView({ tasks = [] }: { tasks?: BacklogTask[] }) {
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden mb-8">
       <div className="px-6 py-4 border-b border-border bg-secondary/10 flex items-center justify-between">

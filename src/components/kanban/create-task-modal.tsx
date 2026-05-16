@@ -65,7 +65,7 @@ export function CreateTaskModal({
       points: formData.get("points") ? Number(formData.get("points")) : undefined,
       assigneeId: formData.get("assigneeId") as string || undefined,
       sprintId: formData.get("sprintId") as string || undefined,
-      creatorId: currentUserId,
+      reporterId: currentUserId,
     })
 
     setLoading(false)

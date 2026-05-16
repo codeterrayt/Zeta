@@ -16,7 +16,7 @@ export async function createSprint(data: {
       startDate: data.startDate,
       endDate: data.endDate
     })
-    
+
     if (!data.projectId || data.projectId === "undefined") {
       throw new Error("Invalid Project ID. Please refresh the page and try again.")
     }
@@ -38,11 +38,11 @@ export async function createSprint(data: {
     return { success: true, sprint }
   } catch (error: any) {
     console.error("[createSprint] CRITICAL ERROR:", error)
-    
+
     // Detailed error parsing for Prisma
     if (error.code === 'P2002') return { success: false, error: "A sprint with this name already exists." }
     if (error.code === 'P2003') return { success: false, error: "Project not found. The project might have been deleted." }
-    
+
     return { success: false, error: error.message || "An unexpected error occurred while creating the sprint." }
   }
 }
@@ -53,8 +53,21 @@ export async function getProjectSprints(projectId: string) {
       where: { projectId },
       include: {
         tasks: {
-          include: {
-            assignee: { select: { id: true, name: true, email: true } }
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            points: true,
+            creatorId: true,
+            assigneeId: true,
+            githubUrl: true,
+            repoName: true,
+            branchName: true,
+            commitIds: true,
+            createdAt: true,
+            assignee: { select: { id: true, name: true, email: true, image: true } },
+            reporter: { select: { id: true, name: true, email: true, image: true } }
           }
         }
       },
@@ -73,8 +86,21 @@ export async function getSprintById(sprintId: string) {
       where: { id: sprintId },
       include: {
         tasks: {
-          include: {
-            assignee: { select: { id: true, name: true, email: true, image: true } }
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            points: true,
+            creatorId: true,
+            assigneeId: true,
+            githubUrl: true,
+            repoName: true,
+            branchName: true,
+            commitIds: true,
+            createdAt: true,
+            assignee: { select: { id: true, name: true, email: true, image: true } },
+            reporter: { select: { id: true, name: true, email: true, image: true } }
           }
         },
         project: {
@@ -85,7 +111,7 @@ export async function getSprintById(sprintId: string) {
     return { success: true, sprint }
   } catch (error) {
     console.error("getSprintById error:", error)
-    return { success: false, error: "Failed to fetch sprint" }
+    return { success: false, error: "Failed to fetch sprint", sprint: null }
   }
 }
 

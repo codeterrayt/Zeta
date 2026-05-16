@@ -35,12 +35,7 @@ export default async function SprintDetailsPage({
     tasks: sprint.tasks
       .filter((t: any) => t.status === section.name)
       .map((t: any) => ({
-        id: t.id,
-        title: t.title,
-        status: t.status,
-        points: t.points,
-        description: t.description,
-        assigneeId: t.assigneeId,
+        ...t,
         assignee: t.assignee ? { name: t.assignee.name ?? "?" } : null,
       })),
   }))

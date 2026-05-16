@@ -32,8 +32,9 @@ export function TaskModal({
   const router = useRouter()
   const [status, setStatus] = React.useState(task?.status ?? "BACKLOG")
   const [assigneeId, setAssigneeId] = React.useState(task?.assigneeId ?? "")
+  const [reporterId, setReporterId] = React.useState(task?.creatorId || task?.reporter?.id || "")
   const [points, setPoints] = React.useState<number | "">(task?.points ?? "")
-  const [githubUrl, setGithubUrl] = React.useState("")
+  const [githubUrl, setGithubUrl] = React.useState(task?.githubUrl ?? "")
   const [devMeta, setDevMeta] = React.useState({
     repo: task?.repoName ?? "",
     branch: task?.branchName ?? "",
@@ -44,13 +45,15 @@ export function TaskModal({
 
   // Permissions check
   const currentUserId = (session?.user as any)?.id
-  const canEdit = currentUserId === task?.creatorId || currentUserId === task?.assigneeId
+  const canEdit = currentUserId === (task?.creatorId || task?.reporter?.id) || currentUserId === task?.assigneeId
 
   React.useEffect(() => {
     if (task) {
       setStatus(task.status ?? "BACKLOG")
       setAssigneeId(task.assigneeId ?? "")
+      setReporterId(task.creatorId || task.reporter?.id || "")
       setPoints(task.points ?? "")
+      setGithubUrl(task.githubUrl ?? "")
       setDevMeta({
         repo: task.repoName ?? "",
         branch: task.branchName ?? "",
@@ -83,22 +86,35 @@ export function TaskModal({
     if (!canEdit) return
     setSaving(true)
     try {
+      const payload: any = {
+        status,
+        points: points === "" ? null : Number(points),
+        githubUrl: githubUrl || null,
+        repoName: devMeta.repo || null,
+        branchName: devMeta.branch || null,
+        commitIds: devMeta.commit || null
+      }
+
+      if (assigneeId) payload.assigneeId = assigneeId
+      else payload.assigneeId = null
+
+      if (reporterId) payload.creatorId = reporterId
+
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status,
-          assigneeId: assigneeId || null,
-          points: points === "" ? null : Number(points),
-          repoName: devMeta.repo,
-          branchName: devMeta.branch,
-          commitIds: devMeta.commit
-        }),
+        body: JSON.stringify(payload),
       })
       if (res.ok) {
         router.refresh()
         onClose()
+      } else {
+        const error = await res.json()
+        alert(`Failed to save: ${error.error || "Unknown error"}`)
       }
+    } catch (err) {
+      console.error("Save error:", err)
+      alert("An error occurred while saving the task.")
     } finally {
       setSaving(false)
     }
@@ -219,7 +235,9 @@ export function TaskModal({
                     >
                       <option value="">— Unassigned —</option>
                       {projectMembers.map(m => (
-                        <option key={m.id} value={m.id}>{m.name ?? m.email}</option>
+                        <option key={m.id} value={m.id}>
+                          {m.name ?? m.email} {m.id === currentUserId ? "(You)" : ""}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -227,12 +245,18 @@ export function TaskModal({
                   {/* Reporter */}
                   <div>
                     <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Reporter</label>
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-background border border-border rounded-xl shadow-sm">
-                      <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold">
-                        {task.creator?.name?.[0] ?? "U"}
-                      </div>
-                      <span className="text-sm font-medium">{task.creator?.name ?? "Unknown"}</span>
-                    </div>
+                    <select
+                      value={reporterId}
+                      onChange={e => setReporterId(e.target.value)}
+                      disabled={!canEdit}
+                      className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70"
+                    >
+                      {projectMembers.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.name ?? m.email} {m.id === currentUserId ? "(You)" : ""}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Complexity */}

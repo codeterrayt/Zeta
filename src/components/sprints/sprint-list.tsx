@@ -15,7 +15,7 @@ type Sprint = {
   tasks: any[]
 }
 
-export function SprintList({ sprints, projectId }: { sprints: Sprint[], projectId: string }) {
+export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], projectId: string }) {
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({})
   const router = useRouter()
 
@@ -119,7 +119,7 @@ export function SprintList({ sprints, projectId }: { sprints: Sprint[], projectI
                         "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
                         task.status === "DONE" ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"
                       )}>
-                        {task.status.replace("_", " ")}
+                        {task.status?.replace("_", " ") ?? "Backlog"}
                       </span>
                     </div>
                   </div>

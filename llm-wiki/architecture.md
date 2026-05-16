@@ -18,7 +18,7 @@ OpenJira is built as a modern, high-performance project management tool using th
 
 ## 🧩 Core Principles
 
-1. **Server-First Data**: Use Server Actions for mutations and RSC (React Server Components) for initial data fetching where possible.
+1. **Server-First Data**: Use Server Actions for mutations and RSC (React Server Components) for initial data fetching where possible. API routes use Prisma **connect/disconnect** syntax for relation updates to ensure referential integrity.
 2. **Glassmorphism UI**: High-end aesthetic using semi-transparent backgrounds, subtle borders, and smooth transitions.
 3. **Closure Table Pattern**: Used for managing hierarchical tasks (subtasks) with infinite depth support.
 4. **Permissions**: Role-based access controlled via `assigneeId` and `creatorId` (Reporter) for sensitive edits like task descriptions and titles.

@@ -14,5 +14,5 @@ OpenJira supports threaded discussions and user mentions to facilitate team comm
 
 ## 👤 Reporter vs Assignee
 - **Assignee**: The user currently responsible for the work.
-- **Reporter**: The user who created the task (or is designated as the primary stakeholder).
-- **Edit Rights**: Both roles share administrative control over the specific task.
+- **Reporter**: The user who created the task or is designated as the primary stakeholder.
+- **Edit Rights**: Both roles share administrative control over the specific task. The Reporter can be reassigned via a dropdown in the Task Modal by authorized users. Dropdowns show a **(You)** label next to the current user's name for easier identification.

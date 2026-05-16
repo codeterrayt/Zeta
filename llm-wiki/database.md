@@ -17,7 +17,7 @@ Time-boxed iteration containing tasks.
 The primary unit of work.
 - `status`: Matches `boardSections` names.
 - `points`: Fibonacci complexity (1, 2, 3, 5, 8, 13).
-- `creatorId`: The "Reporter".
+- **Reporter**: The user who created the task or is designated as the primary stakeholder. Represented by `reporterId` and `reporter` relation in the schema.
 - `assigneeId`: The person working on it.
 - `githubUrl`: Persistent link to a GitHub Commit/PR.
 - `repoName` / `branchName`: Parsed metadata from the URL.

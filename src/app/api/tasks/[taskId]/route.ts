@@ -13,21 +13,23 @@ export async function PATCH(
       where: { id: taskId },
       data: {
         status: body.status,
-        assigneeId: body.assigneeId ?? null,
-        points: body.points ?? null,
-        commitIds: body.commitIds ?? null,
-        branchName: body.branchName ?? null,
-        repoName: body.repoName ?? null,
+        points: body.points !== undefined ? body.points : undefined,
+        assigneeId: body.assigneeId !== undefined ? body.assigneeId : undefined,
+        creatorId: body.creatorId !== undefined ? body.creatorId : undefined,
+        githubUrl: body.githubUrl !== undefined ? body.githubUrl : undefined,
+        commitIds: body.commitIds !== undefined ? body.commitIds : undefined,
+        branchName: body.branchName !== undefined ? body.branchName : undefined,
+        repoName: body.repoName !== undefined ? body.repoName : undefined,
       },
       include: {
         assignee: { select: { id: true, name: true, email: true } },
-        creator: { select: { id: true, name: true, email: true } }
+        reporter: { select: { id: true, name: true, email: true } }
       }
     })
 
     return NextResponse.json({ success: true, task })
   } catch (error) {
     console.error("PATCH /api/tasks/[taskId]:", error)
-    return NextResponse.json({ success: false, error: "Failed to update task" }, { status: 500 })
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Failed to update task" }, { status: 500 })
   }
 }

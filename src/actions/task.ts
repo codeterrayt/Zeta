@@ -15,7 +15,7 @@ export async function createTask(data: {
   sprintId?: string
 }) {
   try {
-    // Ensure we have a valid creator — find or create a system placeholder
+    // Ensure we have a valid reporter — find or create a system placeholder
     let creatorId = data.creatorId
     if (!creatorId || creatorId === "system") {
       let systemUser = await prisma.user.findFirst({ where: { email: "system@openjira.local" } })
@@ -145,15 +145,28 @@ export async function getProjectBacklog(projectId: string) {
         projectId,
         status: "BACKLOG"
       },
-      include: {
-        assignee: { select: { name: true, image: true } },
-        sprint: { select: { name: true } }
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        points: true,
+        creatorId: true,
+        assigneeId: true,
+        githubUrl: true,
+        repoName: true,
+        branchName: true,
+        commitIds: true,
+        createdAt: true,
+        assignee: { select: { id: true, name: true, email: true, image: true } },
+        reporter: { select: { id: true, name: true, email: true, image: true } },
+        sprint: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
     })
     return { success: true, tasks }
   } catch (error) {
     console.error("getProjectBacklog error:", error)
-    return { success: false, error: "Failed to fetch backlog" }
+    return { success: false, error: "Failed to fetch backlog", tasks: [] }
   }
 }
