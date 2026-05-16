@@ -98,7 +98,12 @@ export default async function ProjectBoardPage({
 
         {activeTab === "backlog" && (
           <div className="space-y-6">
-            <BacklogView tasks={backlogTasks as any} />
+            <BacklogView 
+              tasks={backlogTasks as any} 
+              projectMembers={projectMembers}
+              sprints={sprints as any}
+              boardSections={boardSections}
+            />
           </div>
         )}
 

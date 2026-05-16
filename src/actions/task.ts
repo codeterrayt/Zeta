@@ -196,7 +196,7 @@ export async function getProjectBacklog(projectId: string) {
           include: { user: { select: { id: true, name: true, email: true, image: true } } }
         },
         reporter: { select: { id: true, name: true, email: true, image: true } },
-        sprint: { select: { name: true } },
+        sprint: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
     })

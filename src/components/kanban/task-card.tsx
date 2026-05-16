@@ -3,7 +3,7 @@
 import { Task } from "./board"
 import { cn } from "@/lib/utils"
 import { format, differenceInDays, isPast, isToday } from "date-fns"
-import { Calendar, Lock } from "lucide-react"
+import { Calendar, Lock, ExternalLink } from "lucide-react"
 
 export function TaskCard({ 
   task, 
@@ -38,7 +38,19 @@ export function TaskCard({
       )}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h4 className="font-medium text-sm leading-tight text-foreground/90 flex-1">{task.title}</h4>
+        <div className="flex-1 flex items-start gap-2 group/title">
+          <h4 className="font-medium text-sm leading-tight text-foreground/90">{task.title}</h4>
+          <a
+            href={`/tasks/${task.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="opacity-0 group-hover/title:opacity-100 p-1 hover:bg-secondary rounded transition-all text-muted-foreground hover:text-primary shrink-0"
+            title="Open in new tab"
+          >
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
         
         <div className="flex -space-x-1.5 items-center shrink-0">
           {firstThree.map((assignment, i) => {
