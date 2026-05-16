@@ -95,10 +95,12 @@ export async function getSprintById(sprintId: string) {
         },
         comments: {
           include: {
-            user: { select: { id: true, name: true, image: true } }
+            user: { select: { id: true, name: true, image: true } },
+            attachments: true
           },
           orderBy: { createdAt: "asc" }
-        }
+        },
+        attachments: true
       },
     })
     return { success: true, sprint }

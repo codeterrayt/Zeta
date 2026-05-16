@@ -50,6 +50,7 @@ model User {
   assignments   TaskAssignment[]
   reportedTasks Task[]    @relation("ReportedTasks")
   comments      Comment[]
+  attachments   Attachment[]
   auditLogs     AuditLog[]
   settings      Settings?
   authoredDocuments Document[] @relation("AuthoredDocuments")
@@ -149,6 +150,7 @@ model Sprint {
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       Task[]
   comments    Comment[]
+  attachments Attachment[]
 }
 
 // Tasks & Closure Table for Infinite Hierarchy
@@ -186,6 +188,7 @@ model Task {
   assignments TaskAssignment[]
   comments    Comment[]
   documents   DocLink[]
+  attachments Attachment[]
   
   // Closure Table Relationships
   ancestors   TaskClosure[] @relation("AncestorRelation")
@@ -240,6 +243,26 @@ model Comment {
   parentId  String?
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
+  attachments Attachment[]
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  size      Int
+  type      String
+  userId    String
+  taskId    String?
+  sprintId  String?
+  commentId String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sprint    Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }
 
 // Confluence-style Documentation

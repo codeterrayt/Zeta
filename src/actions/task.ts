@@ -236,11 +236,13 @@ export async function getTaskById(taskId: string) {
         sprint: { select: { id: true, name: true } },
         comments: {
           include: {
-            user: { select: { id: true, name: true, image: true } }
+            user: { select: { id: true, name: true, image: true } },
+            attachments: true
           },
           orderBy: { createdAt: "asc" }
         },
-        documents: { include: { document: true } }
+        documents: { include: { document: true } },
+        attachments: true
       }
     })
     return { success: true, task }
