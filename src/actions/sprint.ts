@@ -35,6 +35,7 @@ export async function createSprint(data: {
 
     console.log("[createSprint] SUCCESS! Created Sprint ID:", sprint.id)
     revalidatePath(`/projects/${data.projectId}`)
+    revalidatePath("/", "layout")
     return { success: true, sprint }
   } catch (error: any) {
     console.error("[createSprint] CRITICAL ERROR:", error)
@@ -121,6 +122,7 @@ export async function deleteSprint(sprintId: string, projectId: string) {
       where: { id: sprintId },
     })
     revalidatePath(`/projects/${projectId}`)
+    revalidatePath("/", "layout")
     return { success: true }
   } catch (error) {
     console.error("deleteSprint error:", error)
@@ -136,6 +138,7 @@ export async function updateSprint(sprintId: string, data: any, projectId: strin
     })
     revalidatePath(`/projects/${projectId}`)
     revalidatePath(`/projects/${projectId}/sprints/${sprintId}`)
+    revalidatePath("/", "layout")
     return { success: true }
   } catch (error) {
     console.error("updateSprint error:", error)

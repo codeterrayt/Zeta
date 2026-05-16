@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 
@@ -26,6 +27,7 @@ export async function POST(
       }
     })
 
+    revalidatePath("/", "layout")
     return NextResponse.json({ success: true, comment })
   } catch (error) {
     console.error("POST /api/tasks/[taskId]/comments:", error)

@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState } from "react"
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { TaskCard } from "./task-card"
@@ -38,6 +39,17 @@ export function KanbanBoard({
 }) {
   const [columns, setColumns] = useState(initialData)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+
+  // Sync state with props when server data refreshes
+  React.useEffect(() => {
+    setColumns(initialData)
+    
+    // Update selectedTask if it's currently open to reflect latest data
+    if (selectedTask) {
+      const freshTask = initialData.flatMap(c => c.tasks).find(t => t.id === selectedTask.id)
+      if (freshTask) setSelectedTask(freshTask)
+    }
+  }, [initialData])
 
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result

@@ -73,8 +73,8 @@ export async function createTask(data: {
       return task
     })
 
-    revalidatePath("/tasks")
     revalidatePath(`/projects/${data.projectId}`)
+    revalidatePath("/", "layout")
     return { success: true, task: result }
   } catch (error) {
     console.error(error)
@@ -117,6 +117,7 @@ export async function updateTaskStatus(taskId: string, status: string, projectId
       data: { status },
     })
     revalidatePath(`/projects/${projectId}`)
+    revalidatePath("/", "layout")
     return { success: true }
   } catch (error) {
     console.error("updateTaskStatus error:", error)
@@ -132,6 +133,7 @@ export async function updateTaskSprint(taskId: string, sprintId: string | null, 
     })
     revalidatePath(`/projects/${projectId}`)
     if (sprintId) revalidatePath(`/projects/${projectId}/sprints/${sprintId}`)
+    revalidatePath("/", "layout")
     return { success: true }
   } catch (error) {
     console.error("updateTaskSprint error:", error)

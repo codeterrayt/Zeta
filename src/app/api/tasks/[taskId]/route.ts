@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { revalidatePath } from "next/cache"
 
 export async function PATCH(
   req: NextRequest,
@@ -27,6 +28,7 @@ export async function PATCH(
       }
     })
 
+    revalidatePath("/", "layout")
     return NextResponse.json({ success: true, task })
   } catch (error) {
     console.error("PATCH /api/tasks/[taskId]:", error)
