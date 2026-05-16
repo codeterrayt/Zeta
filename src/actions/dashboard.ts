@@ -4,12 +4,36 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { startOfMonth, endOfMonth, subMonths, format, eachDayOfInterval, subDays } from "date-fns"
 
-export async function getDashboardStats() {
-  const session = await auth()
-  const userId = (session?.user as any)?.id
+import { getCurrentUserId } from "./project"
+
+export async function getDashboardStats(filters?: {
+  startDate?: Date,
+  endDate?: Date,
+  projectId?: string,
+  sprintId?: string
+}) {
+  const userId = await getCurrentUserId()
   if (!userId) return { success: false, error: "Unauthorized" }
 
   try {
+    const baseWhere: any = {
+      assignments: { some: { userId } }
+    }
+
+    if (filters?.projectId && filters.projectId !== "ALL") {
+      baseWhere.projectId = filters.projectId
+    }
+    if (filters?.sprintId && filters.sprintId !== "ALL") {
+      baseWhere.sprintId = filters.sprintId
+    }
+
+    const dateWhere: any = { ...baseWhere }
+    if (filters?.startDate || filters?.endDate) {
+      dateWhere.createdAt = {}
+      if (filters.startDate) dateWhere.createdAt.gte = filters.startDate
+      if (filters.endDate) dateWhere.createdAt.lte = filters.endDate
+    }
+
     const [
       totalTasks,
       completedTasks,
@@ -18,28 +42,43 @@ export async function getDashboardStats() {
       recentActivity,
       projects,
       documentsCount,
-      settings
+      settings,
+      sprintsCount
     ] = await Promise.all([
-      prisma.task.count({ where: { assignments: { some: { userId } } } }),
-      prisma.task.count({ where: { assignments: { some: { userId } }, status: "DONE" } }),
-      prisma.task.count({ where: { assignments: { some: { userId } }, status: "IN_PROGRESS" } }),
-      prisma.task.count({ where: { assignments: { some: { userId } }, status: "BACKLOG" } }), // Using BACKLOG as placeholder for blocked if not explicit
+      prisma.task.count({ where: dateWhere }),
+      prisma.task.count({ where: { ...dateWhere, status: "DONE" } }),
+      prisma.task.count({ where: { ...dateWhere, status: "IN_PROGRESS" } }),
+      prisma.task.count({ where: { ...dateWhere, status: "BACKLOG" } }),
       prisma.task.findMany({
-        where: { assignments: { some: { userId } } },
+        where: baseWhere,
         orderBy: { updatedAt: "desc" },
         take: 5,
         include: { project: { select: { name: true } } }
       }),
       prisma.project.findMany({
-        where: { members: { some: { userId } } },
+        where: {
+          OR: [
+            { members: { some: { userId } } },
+            { tasks: { some: { assignments: { some: { userId } } } } }
+          ]
+        },
         include: {
-          _count: {
-            select: { tasks: true }
-          }
+          _count: { select: { tasks: true } },
+          sprints: { select: { id: true, name: true } }
         }
       }),
       prisma.document.count({ where: { authorId: userId } }),
-      prisma.settings.findUnique({ where: { userId } })
+      prisma.settings.findUnique({ where: { userId } }),
+      prisma.sprint.count({ 
+        where: { 
+          project: { 
+            OR: [
+              { members: { some: { userId } } },
+              { tasks: { some: { assignments: { some: { userId } } } } }
+            ]
+          } 
+        } 
+      })
     ])
 
     // Ensure settings exist
@@ -50,16 +89,16 @@ export async function getDashboardStats() {
       })
     }
 
-    // Task Completion Trend (last 7 days)
-    const last7Days = eachDayOfInterval({
-      start: subDays(new Date(), 6),
-      end: new Date()
+    // Task Completion Trend (last 7 days or filtered range)
+    const trendDays = eachDayOfInterval({
+      start: filters?.startDate || subDays(new Date(), 6),
+      end: filters?.endDate || new Date()
     })
 
-    const completionTrend = await Promise.all(last7Days.map(async (day) => {
+    const completionTrend = await Promise.all(trendDays.slice(-14).map(async (day) => {
       const count = await prisma.task.count({
         where: {
-          assignments: { some: { userId } },
+          ...baseWhere,
           status: "DONE",
           updatedAt: {
             gte: day,
@@ -73,48 +112,68 @@ export async function getDashboardStats() {
       }
     }))
 
-    // Project Distribution
-    const projectStats = projects.map(p => ({
-      name: p.name,
-      tasks: p._count.tasks
+    // Project Distribution (Filtered by user's active tasks for "Project Load")
+    const projectStats = await Promise.all(projects.map(async (p) => {
+      const userActiveTasksInProject = await prisma.task.count({
+        where: { ...baseWhere, projectId: p.id, status: "IN_PROGRESS" }
+      })
+      return {
+        name: p.name,
+        tasks: userActiveTasksInProject
+      }
     }))
 
-    // Avg Points (of completed tasks)
+    // Total Points
+    const pointsAggregate = await prisma.task.aggregate({
+      where: dateWhere,
+      _sum: { points: true }
+    })
+    const totalPoints = pointsAggregate._sum.points || 0
+
+    // Avg Points
     const completedTasksWithPoints = await prisma.task.findMany({
-      where: { assignments: { some: { userId } }, status: "DONE" },
+      where: { ...dateWhere, status: "DONE" },
       select: { points: true }
     })
     const avgPoints = completedTasksWithPoints.length > 0
       ? (completedTasksWithPoints.reduce((acc, curr) => acc + (curr.points || 0), 0) / completedTasksWithPoints.length).toFixed(1)
       : "0"
 
-    // Velocity Change (Last 7 days vs 7 days before that)
+    // Velocity Change
+    const prevRangeStart = subDays(filters?.startDate || new Date(), 7)
     const prev7DaysCount = await prisma.task.count({
       where: {
-        assignments: { some: { userId } },
+        ...baseWhere,
         status: "DONE",
         updatedAt: {
-          gte: subDays(new Date(), 13),
-          lt: subDays(new Date(), 6)
+          gte: prevRangeStart,
+          lt: filters?.startDate || subDays(new Date(), 6)
         }
       }
     })
-    const current7DaysCount = completedTasks
-
     const velocityChange = prev7DaysCount === 0 
-      ? (current7DaysCount > 0 ? 100 : 0)
-      : Math.round(((current7DaysCount - prev7DaysCount) / prev7DaysCount) * 100)
+      ? (completedTasks > 0 ? 100 : 0)
+      : Math.round(((completedTasks - prev7DaysCount) / prev7DaysCount) * 100)
 
-    // Trends (Current 7 days vs Previous 7 days)
-    const [prevTotal, prevInProgress, prevDocs] = await Promise.all([
-      prisma.task.count({ where: { assignments: { some: { userId } }, createdAt: { lt: subDays(new Date(), 6), gte: subDays(new Date(), 13) } } }),
-      prisma.task.count({ where: { assignments: { some: { userId } }, status: "IN_PROGRESS", updatedAt: { lt: subDays(new Date(), 6), gte: subDays(new Date(), 13) } } }),
-      prisma.document.count({ where: { authorId: userId, createdAt: { lt: subDays(new Date(), 6), gte: subDays(new Date(), 13) } } })
-    ])
+    // Trends
+    const prevInProgress = await prisma.task.count({
+      where: {
+        ...baseWhere,
+        status: "IN_PROGRESS",
+        updatedAt: {
+          gte: prevRangeStart,
+          lt: filters?.startDate || subDays(new Date(), 6)
+        }
+      }
+    })
 
-    const calculateTrend = (current: number, prev: number) => {
-      if (prev === 0) return current > 0 ? 100 : 0
-      return Math.round(((current - prev) / prev) * 100)
+    const trends = {
+      total: 0, 
+      completed: velocityChange,
+      inProgress: prevInProgress === 0 
+        ? (inProgressTasks > 0 ? 100 : 0)
+        : Math.round(((inProgressTasks - prevInProgress) / prevInProgress) * 100),
+      docs: 0
     }
 
     return {
@@ -125,25 +184,35 @@ export async function getDashboardStats() {
         inProgressTasks,
         blockedTasks,
         documentsCount,
+        sprintsCount,
         recentActivity,
         completionTrend,
         projectStats,
         avgPoints,
+        totalPoints,
         velocityChange,
-        trends: {
-          total: calculateTrend(totalTasks, prevTotal),
-          completed: velocityChange,
-          inProgress: calculateTrend(inProgressTasks, prevInProgress),
-          docs: calculateTrend(documentsCount, prevDocs)
-        },
+        trends,
         thresholds: {
           high: userSettings.highFocusMax,
           medium: userSettings.mediumFocusMax
-        }
+        },
+        projects // Return projects with sprints for filtering
       }
     }
   } catch (error) {
     console.error("getDashboardStats error:", error)
     return { success: false, error: "Failed to fetch dashboard data" }
   }
+}
+
+export async function debugDashboard() {
+  const userId = await getCurrentUserId()
+  if (!userId) return { success: false }
+
+  const tasks = await prisma.task.findMany({
+    where: { assignments: { some: { userId } } },
+    select: { title: true, status: true, projectId: true }
+  })
+
+  return { success: true, tasks }
 }

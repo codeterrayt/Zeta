@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { CheckCircle2, Clock, AlertCircle, TrendingUp, BookOpen, Layers, Users, Activity, Calendar, ArrowUpRight, ArrowDownRight, MoreHorizontal } from "lucide-react"
+import { CheckCircle2, Clock, AlertCircle, TrendingUp, BookOpen, Layers, Users, Activity, Calendar, ArrowUpRight, ArrowDownRight, MoreHorizontal, Loader2 } from "lucide-react"
 import { getDashboardStats } from "@/actions/dashboard"
 import { cn } from "@/lib/utils"
+import { CustomDropdown } from "@/components/ui/custom-dropdown"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts"
 import dynamic from "next/dynamic"
-import { format } from "date-fns"
+import { format, subDays } from "date-fns"
 
 // Dynamic import for Recharts to avoid SSR issues
 const NoSSRBarChart = dynamic(() => import("recharts").then(mod => mod.BarChart), { ssr: false })
@@ -17,13 +18,26 @@ const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
 export default function DashboardPage() {
   const [data, setData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
+  const [filtering, setFiltering] = React.useState(false)
+
+  // Filters
+  const [selectedProjectId, setSelectedProjectId] = React.useState("ALL")
+  const [selectedSprintId, setSelectedSprintId] = React.useState("ALL")
+
+  const fetchStats = React.useCallback(async () => {
+    setFiltering(true)
+    const res = await getDashboardStats({
+      projectId: selectedProjectId,
+      sprintId: selectedSprintId
+    })
+    if (res.success) setData(res.stats)
+    setLoading(false)
+    setFiltering(false)
+  }, [selectedProjectId, selectedSprintId])
 
   React.useEffect(() => {
-    getDashboardStats().then(res => {
-      if (res.success) setData(res.stats)
-      setLoading(false)
-    })
-  }, [])
+    fetchStats()
+  }, [fetchStats])
 
   if (loading) {
     return (
@@ -32,10 +46,6 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-secondary/30 rounded-[2rem]" />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 h-[400px] bg-secondary/20 rounded-[2.5rem]" />
-          <div className="h-[400px] bg-secondary/20 rounded-[2.5rem]" />
-        </div>
       </div>
     )
   }
@@ -43,19 +53,57 @@ export default function DashboardPage() {
   const stats = [
     { label: "Completed", value: data?.completedTasks || 0, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10", trend: data?.trends?.completed || 0 },
     { label: "Active Tasks", value: data?.inProgressTasks || 0, icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10", trend: data?.trends?.inProgress || 0 },
-    { label: "Documentation", value: data?.documentsCount || 0, icon: BookOpen, color: "text-purple-500", bg: "bg-purple-500/10", trend: data?.trends?.docs || 0 },
     { label: "Total Tasks", value: data?.totalTasks || 0, icon: Layers, color: "text-amber-500", bg: "bg-amber-500/10", trend: data?.trends?.total || 0 },
+    { label: "Total Sprints", value: data?.sprintsCount || 0, icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10", trend: data?.trends?.docs || 0 },
   ]
+
+  const availableSprints = selectedProjectId === "ALL" 
+    ? [] 
+    : data?.projects?.find((p: any) => p.id === selectedProjectId)?.sprints || []
 
   return (
     <div className="p-6 lg:p-10 space-y-10">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-black tracking-tight mb-2">Workspace Overview</h1>
-          <p className="text-muted-foreground font-medium flex items-center gap-2">
-            <Calendar className="w-4 h-4" /> {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
+      {/* Header & Filters */}
+      <header className="flex flex-col gap-8 relative z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-black tracking-tight mb-2">Workspace Overview</h1>
+            <p className="text-muted-foreground font-medium flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
+          </div>
+          {filtering && <Loader2 className="w-6 h-6 animate-spin text-primary" />}
+        </div>
+
+        {/* Filter Bar */}
+        <div className="bg-card/50 backdrop-blur-xl border border-border/40 p-4 rounded-[2rem] flex flex-wrap items-center gap-4 shadow-sm relative z-50">
+          <CustomDropdown
+            label="Project"
+            value={selectedProjectId}
+            onChange={(val) => {
+              setSelectedProjectId(val)
+              setSelectedSprintId("ALL")
+            }}
+            options={[
+              { value: "ALL", label: "All Projects" },
+              ...(data?.projects?.map((p: any) => ({ value: p.id, label: p.name })) || [])
+            ]}
+            icon={Layers}
+            className="min-w-[220px]"
+          />
+
+          <CustomDropdown
+            label="Sprint"
+            value={selectedSprintId}
+            onChange={setSelectedSprintId}
+            options={[
+              { value: "ALL", label: "All Sprints" },
+              ...(availableSprints.map((s: any) => ({ value: s.id, label: s.name })) || [])
+            ]}
+            icon={Activity}
+            disabled={selectedProjectId === "ALL"}
+            className="min-w-[220px]"
+          />
         </div>
       </header>
 

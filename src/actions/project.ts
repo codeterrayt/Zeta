@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
-async function getCurrentUserId(): Promise<string | null> {
+export async function getCurrentUserId(): Promise<string | null> {
   const session = await auth()
   console.log("[getCurrentUserId] Session:", JSON.stringify(session))
 

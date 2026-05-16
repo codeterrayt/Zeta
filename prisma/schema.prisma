@@ -165,7 +165,7 @@ model Task {
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   sprintId    String?
-  sprint      Sprint?  @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  sprint      Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
   
   folderId    String?
   folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
