@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: openjira-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: openjira
+      POSTGRES_PASSWORD: openjira_password
+      POSTGRES_DB: openjira
+    ports:
+      - "5432:5432"
+    volumes:
+      - openjira_pgdata:/var/lib/postgresql/data
+
+volumes:
+  openjira_pgdata:

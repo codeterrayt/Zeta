@@ -1,0 +1,241 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// NextAuth.js Models
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  
+  // Custom Jira fields
+  role          Role      @default(USER)
+  projects      ProjectMember[]
+  tasks         Task[]    @relation("AssignedTasks")
+  createdTasks  Task[]    @relation("CreatedTasks")
+  comments      Comment[]
+  auditLogs     AuditLog[]
+  settings      Settings?
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Settings {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  aiEnabled   Boolean @default(true)
+  aiModel     String  @default("gemini-1.5-pro")
+  
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Project & Org Models
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  members     ProjectMember[]
+  sprints     Sprint[]
+  tasks       Task[]
+  folders     Folder[]
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      ProjectRole @default(VIEWER)
+  createdAt DateTime @default(now())
+  
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+enum ProjectRole {
+  VIEWER
+  CONTRIBUTOR
+  ADMIN
+}
+
+// Folder / Epic
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  projectId   String
+  
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+}
+
+// Sprint
+model Sprint {
+  id          String   @id @default(cuid())
+  name        String
+  startDate   DateTime?
+  endDate     DateTime?
+  projectId   String
+  
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+}
+
+// Tasks & Closure Table for Infinite Hierarchy
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  status      String   @default("BACKLOG")
+  points      Int?
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  sprintId    String?
+  sprint      Sprint?  @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  
+  folderId    String?
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  assigneeId  String?
+  assignee    User?    @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+  
+  creatorId   String
+  creator     User     @relation("CreatedTasks", fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Dev Metadata
+  commitIds   String?
+  branchName  String?
+
+  comments    Comment[]
+  documents   DocLink[]
+  
+  // Closure Table Relationships
+  ancestors   TaskClosure[] @relation("AncestorRelation")
+  descendants TaskClosure[] @relation("DescendantRelation")
+}
+
+model TaskClosure {
+  ancestorId   String
+  descendantId String
+  depth        Int
+  
+  ancestor     Task @relation("AncestorRelation", fields: [ancestorId], references: [id], onDelete: Cascade)
+  descendant   Task @relation("DescendantRelation", fields: [descendantId], references: [id], onDelete: Cascade)
+
+  @@id([ancestorId, descendantId])
+}
+
+// Comments & Reallocation Logs
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  taskId    String
+  userId    String
+  isReallocationLog Boolean @default(false)
+  
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// Confluence-style Documentation
+model Document {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  projectId String?
+  userId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  taskLinks DocLink[]
+}
+
+model DocLink {
+  id         String   @id @default(cuid())
+  documentId String
+  taskId     String
+  
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, taskId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   String   @db.Text
+  userId    String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailQueue {
+  id          String   @id @default(cuid())
+  to          String
+  subject     String
+  body        String   @db.Text
+  status      String   @default("PENDING") // PENDING, SENT, FAILED
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+}
