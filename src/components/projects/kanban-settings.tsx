@@ -150,12 +150,23 @@ export function KanbanSettings({ projectId, initialSections }: { projectId: stri
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleDelete(section.id)}
-                            className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {section.name !== "DONE" && section.name !== "IN_PROGRESS" ? (
+                            <button
+                              onClick={() => handleDelete(section.id)}
+                              className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Delete status"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="p-1.5 rounded-md text-muted-foreground/30 cursor-not-allowed"
+                              title="System statuses cannot be deleted"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
