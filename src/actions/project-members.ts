@@ -30,26 +30,35 @@ export async function getProjectMembersForAssign(projectId: string) {
   }
 }
 
-export async function addProjectMember(projectId: string, email: string) {
+export async function addProjectMemberById(projectId: string, userId: string) {
   try {
-    const user = await prisma.user.findUnique({ where: { email } })
-    if (!user) {
-      return { success: false, error: "No user found with that email address" }
-    }
-
     const existing = await prisma.projectMember.findFirst({
-      where: { projectId, userId: user.id }
+      where: { projectId, userId }
     })
     if (existing) {
       return { success: false, error: "User is already a member of this project" }
     }
 
     await prisma.projectMember.create({
-      data: { projectId, userId: user.id, role: "CONTRIBUTOR" }
+      data: { projectId, userId, role: "CONTRIBUTOR" }
     })
 
     revalidatePath(`/projects/${projectId}`)
+    revalidatePath("/", "layout")
     return { success: true }
+  } catch (error) {
+    console.error("addProjectMemberById error:", error)
+    return { success: false, error: "Failed to add member" }
+  }
+}
+
+export async function addProjectMember(projectId: string, email: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      return { success: false, error: "No user found with that email address" }
+    }
+    return addProjectMemberById(projectId, user.id)
   } catch {
     return { success: false, error: "Failed to add member" }
   }

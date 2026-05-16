@@ -7,6 +7,7 @@ import { deleteProject } from "@/actions/project"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { KanbanSettings } from "./kanban-settings"
+import { MemberSearch } from "./member-search"
 
 type Member = {
   id: string
@@ -28,20 +29,16 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
   VIEWER: <Eye className="w-3 h-3" />,
 }
 
-export function ProjectSettingsView({ 
-  projectId, 
+export function ProjectSettingsView({
+  projectId,
   initialMembers,
   initialSections
-}: { 
-  projectId: string; 
+}: {
+  projectId: string;
   initialMembers: Member[];
   initialSections: Section[];
 }) {
   const [members, setMembers] = React.useState(initialMembers)
-  const [email, setEmail] = React.useState("")
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState("")
-  const [success, setSuccess] = React.useState("")
   const router = useRouter()
 
   React.useEffect(() => {
@@ -52,21 +49,6 @@ export function ProjectSettingsView({
   const currentUserId = session?.user?.id
   const isAdmin = members.some(m => m.user.id === currentUserId && m.role === "ADMIN")
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    setSuccess("")
-    const res = await addProjectMember(projectId, email)
-    setLoading(false)
-    if (!res.success) {
-      setError(res.error || "Failed to add member")
-    } else {
-      setSuccess(`Successfully added ${email}`)
-      setEmail("")
-      router.refresh()
-    }
-  }
 
   const handleRemove = async (userId: string, name: string | null) => {
     if (!confirm(`Remove ${name ?? "this user"} from the project?`)) return
@@ -100,29 +82,11 @@ export function ProjectSettingsView({
             Add Project Member
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Add any registered OpenJira user by their email address.
+            Search for any registered OpenJira user by name or email.
           </p>
         </div>
         <div className="p-6">
-          <form onSubmit={handleAdd} className="flex gap-3">
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              placeholder="user@example.com"
-              className="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {loading ? "Adding..." : "Add Member"}
-            </button>
-          </form>
-          {error && <p className="text-destructive text-sm mt-2">{error}</p>}
-          {success && <p className="text-emerald-500 text-sm mt-2">{success}</p>}
+          <MemberSearch projectId={projectId} />
         </div>
       </div>
 
