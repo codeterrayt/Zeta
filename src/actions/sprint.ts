@@ -83,7 +83,8 @@ export async function getSprintById(sprintId: string) {
             assignments: {
               include: { user: { select: { id: true, name: true, email: true, image: true } } }
             },
-            reporter: { select: { id: true, name: true, email: true, image: true } }
+            reporter: { select: { id: true, name: true, email: true, image: true } },
+            documents: { include: { document: true } }
           }
         },
         project: {
@@ -135,7 +136,8 @@ export async function getSprintTasks(sprintId: string) {
         assignments: {
           include: { user: { select: { id: true, name: true, email: true, image: true } } }
         },
-        reporter: { select: { id: true, name: true, email: true, image: true } }
+        reporter: { select: { id: true, name: true, email: true, image: true } },
+        documents: { include: { document: true } }
       },
       orderBy: { createdAt: "desc" }
     })

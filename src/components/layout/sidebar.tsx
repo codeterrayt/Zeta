@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Home, Folder, ListTodo, Settings, Activity } from "lucide-react"
+import { Home, Folder, ListTodo, Settings, Activity, BookOpen } from "lucide-react"
 
 export function Sidebar() {
   return (
@@ -27,6 +27,11 @@ export function Sidebar() {
         <Link href="/tasks" className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-secondary text-foreground/80 hover:text-foreground transition-colors">
           <ListTodo className="w-4 h-4" />
           My Tasks
+        </Link>
+
+        <Link href="/documentation" className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-secondary text-foreground/80 hover:text-foreground transition-colors">
+          <BookOpen className="w-4 h-4" />
+          Documentation
         </Link>
       </nav>
 

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users } from "lucide-react"
+import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users, BookOpen, FileText, Eye, Edit3 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -63,6 +63,8 @@ export function TaskModal({
   const [title, setTitle] = React.useState(task?.title ?? "")
   const [description, setDescription] = React.useState(task?.description ?? "")
   const [dueDate, setDueDate] = React.useState<string>(task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "")
+
+  const projectId = task?.projectId
 
   // Permissions check
   const currentUserId = (session?.user as any)?.id
@@ -238,6 +240,7 @@ export function TaskModal({
                   onChange={setDescription}
                   placeholder="Add a more detailed description..."
                   minHeight="150px"
+                  projectId={projectId}
                 />
               ) : task.description ? (
                 <div
@@ -517,12 +520,59 @@ export function TaskModal({
                 </div>
               </div>
 
-              {/* Doc Link */}
+              {/* Documentation Section */}
               <div className="pt-4 border-t border-border/50">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2 flex items-center gap-2">
-                  <LinkIcon className="w-3 h-3" /> Doc Link
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-3 h-3" /> Documentation
+                  </div>
+                  <span className="bg-secondary px-1.5 py-0.5 rounded text-[8px]">{(task as any).documents?.length || 0}</span>
                 </label>
-                <p className="text-xs text-primary font-bold cursor-pointer hover:underline">Create documentation</p>
+                
+                <div className="space-y-2 mb-3">
+                  {(task as any).documents?.map((link: any) => (
+                    <div key={link.document.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded-lg group/doc">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs font-medium truncate">{link.document.title}</span>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover/doc:opacity-100 transition-all">
+                        <a 
+                          href={`/documentation/${link.document.id}?mode=view`} 
+                          target="_blank"
+                          className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors"
+                          title="View Document"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
+                        {canEdit && (
+                          <a 
+                            href={`/documentation/${link.document.id}?mode=edit`} 
+                            target="_blank"
+                            className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-amber-600 transition-colors"
+                            title="Edit Document"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {(!(task as any).documents || (task as any).documents.length === 0) && (
+                    <p className="text-[10px] text-muted-foreground italic px-1">No documentation linked yet.</p>
+                  )}
+                </div>
+
+                <a 
+                  href={`/projects/${projectId}/tasks/${task.id}/docs/new`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary font-bold hover:underline flex items-center gap-1 w-fit"
+                >
+                  <Plus className="w-3 h-3" />
+                  Create documentation
+                </a>
               </div>
             </div>
 

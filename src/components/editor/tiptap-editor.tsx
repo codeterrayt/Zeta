@@ -13,22 +13,39 @@ import BulletList from "@tiptap/extension-bullet-list"
 import OrderedList from "@tiptap/extension-ordered-list"
 import ListItem from "@tiptap/extension-list-item"
 import Blockquote from "@tiptap/extension-blockquote"
+import Mention from "@tiptap/extension-mention"
 import {
   Bold, Italic, List, ListOrdered, Heading2, Heading3,
   ImageIcon, Undo, Redo, Code, Quote, Underline as UnderlineIcon,
-  AlignLeft, AlignCenter, AlignRight, Highlighter, Link as LinkIcon
+  AlignLeft, AlignCenter, AlignRight, Highlighter, Link as LinkIcon, AtSign
 } from "lucide-react"
 import * as React from "react"
 import { useCallback } from "react"
+import suggestion from "./suggestion"
+import { useParams } from "next/navigation"
+import { getProjectMembersForAssign } from "@/actions/project-members"
 
 interface TiptapEditorProps {
   content?: string
   onChange?: (html: string) => void
   placeholder?: string
   minHeight?: string
+  projectId?: string
 }
 
-export function TiptapEditor({ content = "", onChange, placeholder = "Add a description...", minHeight = "150px" }: TiptapEditorProps) {
+export function TiptapEditor({ content = "", onChange, placeholder = "Add a description...", minHeight = "150px", projectId: manualProjectId }: TiptapEditorProps) {
+  const params = useParams()
+  const projectId = manualProjectId || (params.projectId as string)
+  const [members, setMembers] = React.useState<any[]>([])
+
+  React.useEffect(() => {
+    if (projectId) {
+      getProjectMembersForAssign(projectId).then(res => {
+        setMembers(res || [])
+      })
+    }
+  }, [projectId])
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -48,6 +65,22 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
       Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-primary underline cursor-pointer" } }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Highlight.configure({ multicolor: true }),
+      Mention.configure({
+        HTMLAttributes: {
+          class: "mention bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-bold border border-primary/20",
+        },
+        suggestion: {
+          ...suggestion,
+          items: ({ query }) => {
+            return members
+              .filter(item => 
+                (item.name || "").toLowerCase().startsWith(query.toLowerCase()) ||
+                (item.email || "").toLowerCase().startsWith(query.toLowerCase())
+              )
+              .slice(0, 5)
+          },
+        },
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -55,10 +88,11 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
     },
     editorProps: {
       attributes: {
-        class: "prose max-w-none focus:outline-none px-4 py-3 min-h-[150px]",
+        class: cn("prose max-w-none focus:outline-none px-4 py-3", `min-h-[${minHeight}]`),
+        style: `min-height: ${minHeight}`,
       },
     },
-  })
+  }, [members]) // Re-initialize when members are loaded
 
   const addImage = useCallback(() => {
     const input = document.createElement("input")
@@ -92,9 +126,9 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
   )
 
   return (
-    <div className="border border-border rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-primary transition-all">
+    <div className="border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border bg-secondary/30 flex-wrap">
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border bg-secondary/10 flex-wrap">
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">
           <Bold className="w-3.5 h-3.5" />
         </ToolbarButton>
@@ -154,6 +188,9 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
         <ToolbarButton onClick={addImage} title="Insert Image">
           <ImageIcon className="w-3.5 h-3.5" />
         </ToolbarButton>
+        <ToolbarButton onClick={() => editor.chain().focus().insertContent("@").run()} title="Mention">
+          <AtSign className="w-3.5 h-3.5" />
+        </ToolbarButton>
         <div className="flex-1" />
         <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title="Undo">
           <Undo className="w-3.5 h-3.5" />
@@ -169,4 +206,8 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
       </div>
     </div>
   )
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ")
 }

@@ -197,6 +197,7 @@ export async function getProjectBacklog(projectId: string) {
         },
         reporter: { select: { id: true, name: true, email: true, image: true } },
         sprint: { select: { id: true, name: true } },
+        documents: { include: { document: true } }
       },
       orderBy: { createdAt: "desc" },
     })
@@ -234,7 +235,8 @@ export async function getTaskById(taskId: string) {
             user: { select: { id: true, name: true, image: true } }
           },
           orderBy: { createdAt: "desc" }
-        }
+        },
+        documents: { include: { document: true } }
       }
     })
     return { success: true, task }
