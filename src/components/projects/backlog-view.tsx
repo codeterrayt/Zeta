@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { User, Layers, Info, Calendar, Search, Filter, X, ChevronDown, Shield, GitBranch, Eye, Users, ExternalLink } from "lucide-react"
+import { User, Layers, Info, Calendar, Search, Filter, X, ChevronDown, Shield, GitBranch, Eye, Users, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format, isPast, isToday, differenceInDays } from "date-fns"
 
@@ -46,6 +46,10 @@ export function BacklogView({
   const [selectedStatus, setSelectedStatus] = React.useState("all")
   const [selectedDueDate, setSelectedDueDate] = React.useState("all")
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const [pageSize, setPageSize] = React.useState(5)
+
   const filteredTasks = tasks.filter(task => {
     const matchesSearch =
       task.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -76,6 +80,14 @@ export function BacklogView({
 
     return matchesSearch && matchesAssignee && matchesSprint && matchesComplexity && matchesStatus && matchesDueDate
   })
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredTasks.length / pageSize)
+  const paginatedTasks = filteredTasks.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [search, selectedAssignee, selectedSprint, selectedComplexity, selectedStatus, selectedDueDate, pageSize])
 
   const resetFilters = () => {
     setSearch("")
@@ -191,7 +203,7 @@ export function BacklogView({
             <h2 className="text-lg font-bold">Backlog Tasks</h2>
           </div>
           <span className="text-xs font-medium text-muted-foreground bg-background px-2 py-1 rounded-md border border-border">
-            {filteredTasks.length} of {tasks.length} items
+            {filteredTasks.length} items
           </span>
         </div>
 
@@ -209,7 +221,7 @@ export function BacklogView({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredTasks.length === 0 ? (
+              {paginatedTasks.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
                     <div className="flex flex-col items-center gap-2">
@@ -219,7 +231,7 @@ export function BacklogView({
                   </td>
                 </tr>
               ) : (
-                filteredTasks.map((task) => (
+                paginatedTasks.map((task) => (
                   <tr key={task.id} className="hover:bg-secondary/10 transition-colors group">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
@@ -227,9 +239,9 @@ export function BacklogView({
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <a 
-                        href={`/tasks/${task.id}`} 
-                        target="_blank" 
+                      <a
+                        href={`/tasks/${task.id}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 group/title w-fit"
                       >
@@ -272,7 +284,7 @@ export function BacklogView({
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex -space-x-2 overflow-hidden space-x-1 transition-all duration-300 p-1">
+                      <div className="flex overflow-hidden">
                         {task.assignments.length === 0 ? (
                           <span className="text-xs text-muted-foreground">—</span>
                         ) : (
@@ -320,6 +332,75 @@ export function BacklogView({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {filteredTasks.length > 0 && (
+          <div className="px-6 py-4 border-t border-border bg-secondary/5 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="bg-background border border-border rounded px-2 py-1 text-xs font-bold outline-none cursor-pointer"
+                >
+                  {[5, 10, 20, 50].map(size => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted-foreground">per page</span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                Showing {Math.min(filteredTasks.length, (currentPage - 1) * pageSize + 1)} to {Math.min(filteredTasks.length, currentPage * pageSize)} of {filteredTasks.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="p-2 border border-border rounded-lg hover:bg-secondary disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const maxVisible = 5
+                  let start = Math.max(1, currentPage - Math.floor(maxVisible / 2))
+                  let end = Math.min(totalPages, start + maxVisible - 1)
+
+                  if (end - start + 1 < maxVisible) {
+                    start = Math.max(1, end - maxVisible + 1)
+                  }
+
+                  return Array.from({ length: end - start + 1 }, (_, i) => start + i).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={cn(
+                        "w-8 h-8 rounded-lg text-xs font-bold transition-all",
+                        currentPage === page
+                          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                          : "hover:bg-secondary text-muted-foreground"
+                      )}
+                    >
+                      {page}
+                    </button>
+                  ))
+                })()}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 border border-border rounded-lg hover:bg-secondary disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
