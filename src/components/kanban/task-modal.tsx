@@ -4,8 +4,8 @@ import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-
 import { useSession } from "next-auth/react"
+import { TiptapEditor } from "@/components/editor/tiptap-editor"
 
 const COMPLEXITY_LABELS: Record<number, string> = {
   1: "Very Low",
@@ -42,6 +42,8 @@ export function TaskModal({
   })
   const [comment, setComment] = React.useState("")
   const [saving, setSaving] = React.useState(false)
+  const [title, setTitle] = React.useState(task?.title ?? "")
+  const [description, setDescription] = React.useState(task?.description ?? "")
 
   // Permissions check
   const currentUserId = (session?.user as any)?.id
@@ -59,6 +61,8 @@ export function TaskModal({
         branch: task.branchName ?? "",
         commit: task.commitIds ?? ""
       })
+      setTitle(task.title ?? "")
+      setDescription(task.description ?? "")
     }
   }, [task?.id])
 
@@ -87,6 +91,8 @@ export function TaskModal({
     setSaving(true)
     try {
       const payload: any = {
+        title,
+        description,
         status,
         points: points === "" ? null : Number(points),
         githubUrl: githubUrl || null,
@@ -132,9 +138,17 @@ export function TaskModal({
               <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-3 py-1 rounded-full shrink-0 border border-primary/20 uppercase">
                 OPEN-{task.id.slice(0, 6).toUpperCase()}
               </span>
-              <DialogPrimitive.Title className="text-xl font-bold truncate tracking-tight">
-                {task.title}
-              </DialogPrimitive.Title>
+              {canEdit ? (
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="text-xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 w-full hover:bg-secondary/20 rounded px-1 transition-colors"
+                />
+              ) : (
+                <DialogPrimitive.Title className="text-xl font-bold truncate tracking-tight">
+                  {title}
+                </DialogPrimitive.Title>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {!canEdit && (
@@ -157,7 +171,15 @@ export function TaskModal({
                     <AlignLeft className="w-4 h-4" />
                     <h3 className="text-sm font-bold uppercase tracking-widest">Description</h3>
                   </div>
-                  {task.description ? (
+                  {canEdit ? (
+                    <TiptapEditor
+                      key={task.id}
+                      content={task.description || ""}
+                      onChange={setDescription}
+                      placeholder="Add a more detailed description..."
+                      minHeight="150px"
+                    />
+                  ) : task.description ? (
                     <div
                       className="prose prose-jira max-w-none bg-secondary/10 rounded-2xl p-6 border border-border/50 text-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: task.description }}

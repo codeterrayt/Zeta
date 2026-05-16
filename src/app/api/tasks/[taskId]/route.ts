@@ -13,6 +13,8 @@ export async function PATCH(
     const task = await prisma.task.update({
       where: { id: taskId },
       data: {
+        title: body.title !== undefined ? body.title : undefined,
+        description: body.description !== undefined ? body.description : undefined,
         status: body.status,
         points: body.points !== undefined ? body.points : undefined,
         assigneeId: body.assigneeId !== undefined ? body.assigneeId : undefined,

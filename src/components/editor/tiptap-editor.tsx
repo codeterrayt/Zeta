@@ -8,6 +8,7 @@ import {
   Bold, Italic, List, ListOrdered, Heading2, Heading3,
   ImageIcon, Undo, Redo, Code, Quote
 } from "lucide-react"
+import * as React from "react"
 import { useCallback } from "react"
 
 interface TiptapEditorProps {
