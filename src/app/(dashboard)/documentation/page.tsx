@@ -14,6 +14,66 @@ const toTitleCase = (str: string) => {
   return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
+function CustomDropdown({ value, onChange, options, icon: Icon, label }: any) {
+  const [isOpen, setIsOpen] = React.useState(false)
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const selectedOption = options.find((o: any) => o.value === value)
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-2xl border transition-all group min-w-[150px]",
+          isOpen ? "bg-card border-primary shadow-lg ring-2 ring-primary/10" : "bg-secondary/30 border-border/50 hover:border-primary/30"
+        )}
+      >
+        <Icon className={cn("w-4 h-4 transition-colors", isOpen ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />
+        <span className="text-sm font-bold flex-1 text-left truncate">
+          {selectedOption?.label || label}
+        </span>
+        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform duration-300", isOpen && "rotate-180")} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full mt-2 left-0 min-w-[200px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="p-1.5 max-h-[300px] overflow-y-auto custom-scrollbar">
+            {options.map((option: any) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value)
+                  setIsOpen(false)
+                }}
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold rounded-xl transition-all",
+                  value === option.value 
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {option.label}
+                {value === option.value && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DocumentationPage() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id
@@ -122,54 +182,44 @@ export default function DocumentationPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Access Filter */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border bg-secondary/30 border-border/50 hover:border-primary/30 transition-all group">
-            <Filter className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className="bg-transparent border-none outline-none text-sm font-bold cursor-pointer pr-2 appearance-none"
-            >
-              <option value="ALL">All Access</option>
-              <option value="SELF">Created by Me</option>
-              <option value="MENTIONED">Mentioned Me</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-          </div>
+          <CustomDropdown
+            value={filterType}
+            onChange={setFilterType}
+            icon={Filter}
+            label="Access Filter"
+            options={[
+              { value: "ALL", label: "All Access" },
+              { value: "SELF", label: "Created by Me" },
+              { value: "MENTIONED", label: "Mentioned Me" }
+            ]}
+          />
 
           {/* Project Filter */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border bg-secondary/30 border-border/50 hover:border-primary/30 transition-all group">
-            <Layout className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            <select
-              value={selectedProjectId}
-              onChange={(e) => {
-                setSelectedProjectId(e.target.value)
-                setSelectedSprintId("ALL")
-              }}
-              className="bg-transparent border-none outline-none text-sm font-bold cursor-pointer pr-2 appearance-none"
-            >
-              <option value="ALL">All Projects</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-          </div>
+          <CustomDropdown
+            value={selectedProjectId}
+            onChange={(val: string) => {
+              setSelectedProjectId(val)
+              setSelectedSprintId("ALL")
+            }}
+            icon={Layout}
+            label="All Projects"
+            options={[
+              { value: "ALL", label: "All Projects" },
+              ...projects.map(p => ({ value: p.id, label: p.name }))
+            ]}
+          />
 
           {/* Sprint Filter */}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border bg-secondary/30 border-border/50 hover:border-primary/30 transition-all group">
-            <Milestone className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            <select
-              value={selectedSprintId}
-              onChange={(e) => setSelectedSprintId(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm font-bold cursor-pointer pr-2 appearance-none"
-            >
-              <option value="ALL">All Sprints</option>
-              {availableSprints.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-          </div>
+          <CustomDropdown
+            value={selectedSprintId}
+            onChange={setSelectedSprintId}
+            icon={Milestone}
+            label="All Sprints"
+            options={[
+              { value: "ALL", label: "All Sprints" },
+              ...availableSprints.map(s => ({ value: s.id, label: s.name }))
+            ]}
+          />
         </div>
       </div>
 
