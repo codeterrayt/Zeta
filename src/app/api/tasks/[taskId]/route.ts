@@ -15,9 +15,13 @@ export async function PATCH(
         status: body.status,
         assigneeId: body.assigneeId ?? null,
         points: body.points ?? null,
+        commitIds: body.commitIds ?? null,
+        branchName: body.branchName ?? null,
+        repoName: body.repoName ?? null,
       },
       include: {
-        assignee: { select: { id: true, name: true, email: true } }
+        assignee: { select: { id: true, name: true, email: true } },
+        creator: { select: { id: true, name: true, email: true } }
       }
     })
 

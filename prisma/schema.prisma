@@ -175,6 +175,7 @@ model Task {
   // Dev Metadata
   commitIds   String?
   branchName  String?
+  repoName    String?
 
   comments    Comment[]
   documents   DocLink[]
