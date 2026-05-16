@@ -43,3 +43,39 @@ export async function deleteAttachment(attachmentId: string) {
     return { success: false, error: "Failed to delete attachment" }
   }
 }
+
+export async function getProjectAttachments(projectId: string) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized", attachments: [] }
+
+    const attachments = await prisma.attachment.findMany({
+      where: {
+        OR: [
+          { task: { projectId } },
+          { sprint: { projectId } },
+          { comment: { task: { projectId } } },
+          { comment: { sprint: { projectId } } }
+        ]
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    })
+
+    return { success: true, attachments }
+  } catch (error) {
+    console.error("getProjectAttachments error:", error)
+    return { success: false, error: "Failed to fetch attachments", attachments: [] }
+  }
+}

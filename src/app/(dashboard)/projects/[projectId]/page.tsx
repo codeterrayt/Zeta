@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { LayoutDashboard, BarChart3, Settings2, CalendarRange } from "lucide-react"
+import { LayoutDashboard, BarChart3, Settings2, CalendarRange, HardDrive } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getProjectMembersForAssign } from "@/actions/project-members"
 import { getProjectSprints } from "@/actions/sprint"
@@ -38,6 +38,7 @@ export default async function ProjectBoardPage({
   const tabs = [
     { id: "sprints", label: "Sprints", icon: CalendarRange },
     { id: "backlog", label: "Backlog", icon: BarChart3 },
+    { id: "storage", label: "Storage", icon: HardDrive },
     { id: "settings", label: "Settings", icon: Settings2 },
   ]
 
@@ -107,11 +108,29 @@ export default async function ProjectBoardPage({
           </div>
         )}
 
+        {activeTab === "storage" && (
+          <StorageInline projectId={projectId} />
+        )}
+
         {activeTab === "settings" && (
           <SettingsInline projectId={projectId} />
         )}
       </div>
     </div>
+  )
+}
+
+async function StorageInline({ projectId }: { projectId: string }) {
+  const { StorageView } = await import("@/components/projects/storage-view")
+  const { getProjectAttachments } = await import("@/actions/attachment")
+
+  const { attachments } = await getProjectAttachments(projectId)
+
+  return (
+    <StorageView
+      projectId={projectId}
+      initialAttachments={attachments ?? []}
+    />
   )
 }
 
