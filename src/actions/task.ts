@@ -14,6 +14,7 @@ export async function createTask(data: {
   points?: number
   assignments?: Array<{ userId: string; role: TaskAssignmentRole }>
   sprintId?: string
+  dueDate?: Date
 }) {
   try {
     let creatorId = data.creatorId
@@ -37,6 +38,7 @@ export async function createTask(data: {
           status: data.status || "BACKLOG",
           points: data.points,
           sprintId: data.sprintId || null,
+          dueDate: data.dueDate,
           assignments: {
             create: data.assignments?.map(a => ({
               userId: a.userId,
@@ -84,6 +86,8 @@ export async function updateTask(taskId: string, data: {
   status?: string
   points?: number | null
   sprintId?: string | null
+  dueDate?: Date | null
+  creatorId?: string
   projectId: string
 }) {
   try {
@@ -94,7 +98,9 @@ export async function updateTask(taskId: string, data: {
         description: data.description,
         status: data.status,
         points: data.points,
-        sprintId: data.sprintId
+        sprintId: data.sprintId,
+        dueDate: data.dueDate,
+        creatorId: data.creatorId
       }
     })
     revalidatePath(`/projects/${data.projectId}`)

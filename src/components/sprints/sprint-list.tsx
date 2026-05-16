@@ -6,6 +6,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { deleteSprint } from "@/actions/sprint"
 import { useRouter } from "next/navigation"
+import { format, isPast, isToday, differenceInDays } from "date-fns"
 
 type Sprint = {
   id: string
@@ -17,6 +18,7 @@ type Sprint = {
     title: string
     status: string
     points: number | null
+    dueDate?: string | null
     assignments: Array<{
       role: string
       user: { id: string; name: string | null }
@@ -160,6 +162,18 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
                           </div>
                         )
                       })()}
+                      {task.dueDate && (
+                        <div className={cn(
+                          "flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase border",
+                          isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate))
+                            ? "bg-destructive/10 text-destructive border-destructive/20"
+                            : differenceInDays(new Date(task.dueDate), new Date()) <= 2
+                            ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        )}>
+                          {isToday(new Date(task.dueDate)) ? "Today" : format(new Date(task.dueDate), "MMM d")}
+                        </div>
+                      )}
                       <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
                         task.status === "DONE" ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"

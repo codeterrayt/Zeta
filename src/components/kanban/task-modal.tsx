@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { cn } from "@/lib/utils"
 import { TaskAssignmentRole } from "@prisma/client"
+import { isPast, isToday } from "date-fns"
 
 const COMPLEXITY_LABELS: Record<number, string> = {
   1: "Very Low",
@@ -58,6 +59,7 @@ export function TaskModal({
   const [saving, setSaving] = React.useState(false)
   const [title, setTitle] = React.useState(task?.title ?? "")
   const [description, setDescription] = React.useState(task?.description ?? "")
+  const [dueDate, setDueDate] = React.useState<string>(task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "")
 
   // Permissions check
   const currentUserId = (session?.user as any)?.id
@@ -79,6 +81,7 @@ export function TaskModal({
       })
       setTitle(task.title ?? "")
       setDescription(task.description ?? "")
+      setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "")
     }
   }, [task?.id])
 
@@ -113,6 +116,7 @@ export function TaskModal({
         repoName: devMeta.repo || null,
         branchName: devMeta.branch || null,
         commitIds: devMeta.commit || null,
+        dueDate: dueDate || null,
         assignments
       }
 
@@ -402,6 +406,23 @@ export function TaskModal({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Due Date</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={e => setDueDate(e.target.value)}
+                    disabled={!canEdit}
+                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70"
+                  />
+                  {dueDate && isPast(new Date(dueDate)) && !isToday(new Date(dueDate)) && (
+                    <p className="text-[10px] text-destructive font-black mt-1 uppercase">Overdue</p>
+                  )}
+                </div>
               </div>
 
               {/* Complexity */}

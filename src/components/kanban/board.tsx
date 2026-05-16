@@ -16,6 +16,7 @@ export type Task = {
   points?: number | null
   description?: string | null
   creatorId?: string | null
+  dueDate?: string | null
   assignments: Array<{
     userId: string
     role: string

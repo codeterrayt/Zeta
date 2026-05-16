@@ -25,6 +25,7 @@ export async function PATCH(
           commitIds: rest.commitIds,
           branchName: rest.branchName,
           repoName: rest.repoName,
+          dueDate: rest.dueDate ? new Date(rest.dueDate) : null,
         }
       })
 

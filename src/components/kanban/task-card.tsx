@@ -2,6 +2,8 @@
 
 import { Task } from "./board"
 import { cn } from "@/lib/utils"
+import { format, differenceInDays, isPast, isToday } from "date-fns"
+import { Calendar, Lock } from "lucide-react"
 
 export function TaskCard({ 
   task, 
@@ -83,12 +85,28 @@ export function TaskCard({
       </div>
       
       <div className="flex items-center justify-between mt-auto">
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <span className="text-[10px] font-bold text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded tracking-tight">
             OPEN-{task.id.slice(0, 4).toUpperCase()}
           </span>
+          {task.dueDate && (
+            <div className={cn(
+              "flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter",
+              isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate)) 
+                ? "bg-destructive/10 text-destructive border border-destructive/20" 
+                : differenceInDays(new Date(task.dueDate), new Date()) <= 2
+                ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+            )}>
+              <Calendar className="w-2.5 h-2.5" />
+              {isToday(new Date(task.dueDate)) ? "Today" : format(new Date(task.dueDate), "MMM d")}
+            </div>
+          )}
           {!canDrag && (
-            <span className="text-[8px] font-black text-destructive/60 uppercase tracking-tighter">Locked</span>
+            <div className="flex items-center gap-1 text-[8px] font-black text-destructive/60 uppercase tracking-tighter">
+              <Lock className="w-2 h-2" />
+              Locked
+            </div>
           )}
         </div>
         

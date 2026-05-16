@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { User, Layers, Info } from "lucide-react"
+import { User, Layers, Info, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { format, isPast, isToday, differenceInDays } from "date-fns"
 
 interface BacklogTask {
   id: string
@@ -13,6 +14,7 @@ interface BacklogTask {
     user: { name: string | null; email: string | null; image: string | null }
   }>
   sprint: { name: string } | null
+  dueDate?: string | null
 }
 
 export function BacklogView({ tasks = [] }: { tasks?: BacklogTask[] }) {
@@ -35,6 +37,7 @@ export function BacklogView({ tasks = [] }: { tasks?: BacklogTask[] }) {
               <th className="px-6 py-3 border-b border-border">Task ID</th>
               <th className="px-6 py-3 border-b border-border w-full">Summary</th>
               <th className="px-6 py-3 border-b border-border">Sprint</th>
+              <th className="px-6 py-3 border-b border-border">Due Date</th>
               <th className="px-6 py-3 border-b border-border">Assignee</th>
               <th className="px-6 py-3 border-b border-border">Complexity</th>
             </tr>
@@ -65,6 +68,23 @@ export function BacklogView({ tasks = [] }: { tasks?: BacklogTask[] }) {
                       <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-medium border border-primary/20">
                         {task.sprint.name}
                       </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {task.dueDate ? (
+                      <div className={cn(
+                        "inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-md border",
+                        isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate))
+                          ? "bg-destructive/10 text-destructive border-destructive/20"
+                          : differenceInDays(new Date(task.dueDate), new Date()) <= 2
+                          ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                      )}>
+                        <Calendar className="w-3 h-3" />
+                        {isToday(new Date(task.dueDate)) ? "Today" : format(new Date(task.dueDate), "MMM d, yyyy")}
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}

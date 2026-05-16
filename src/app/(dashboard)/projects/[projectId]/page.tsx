@@ -58,20 +58,13 @@ export default async function ProjectBoardPage({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* <Link 
-            href={`/projects/${projectId}?tab=settings`}
-            className={`p-2 rounded-md transition-colors ${activeTab === 'settings' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
-            title="Project Settings"
-          >
-            <Settings2 className="w-5 h-5" />
-          </Link> */}
+          <CreateSprintModal projectId={projectId} />
           <CreateTaskModal
             projectId={projectId}
             projectMembers={projectMembers}
             boardSections={boardSections}
             sprints={sprints as any}
           />
-          <CreateSprintModal projectId={projectId} />
         </div>
       </div>
 
