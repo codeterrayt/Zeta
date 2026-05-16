@@ -172,3 +172,38 @@ export async function getProjectBacklog(projectId: string) {
     return { success: false, error: "Failed to fetch backlog", tasks: [] }
   }
 }
+
+export async function getTaskById(taskId: string) {
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        assignee: { select: { id: true, name: true, email: true, image: true } },
+        reporter: { select: { id: true, name: true, email: true, image: true } },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            boardSections: true,
+            members: {
+              select: {
+                user: { select: { id: true, name: true, email: true } }
+              }
+            }
+          }
+        },
+        sprint: { select: { id: true, name: true } },
+        comments: {
+          include: {
+            user: { select: { id: true, name: true, image: true } }
+          },
+          orderBy: { createdAt: "desc" }
+        }
+      }
+    })
+    return { success: true, task }
+  } catch (error) {
+    console.error("getTaskById error:", error)
+    return { success: false, error: "Failed to fetch task" }
+  }
+}
