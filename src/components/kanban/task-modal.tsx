@@ -122,7 +122,7 @@ export function TaskModal({
             </div>
             <div className="flex items-center gap-2">
               {!canEdit && (
-                <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-1 rounded-md font-bold uppercase tracking-wider">Read Only</span>
+                <span className="text-[10px] bg-red-500 text-white px-2 py-1 rounded-md font-bold uppercase tracking-wider">Read Only</span>
               )}
               <DialogPrimitive.Close className="rounded-xl p-2 hover:bg-secondary transition-all shrink-0">
                 <X className="w-5 h-5" />
@@ -257,7 +257,7 @@ export function TaskModal({
                       <GitCommit className="w-3 h-3" /> Development
                     </label>
                     <div className="space-y-3">
-                      <input 
+                      <input
                         type="text"
                         value={githubUrl}
                         onChange={e => parseGithubUrl(e.target.value)}
@@ -270,10 +270,10 @@ export function TaskModal({
                           <p className="text-[10px] font-bold text-muted-foreground uppercase">{devMeta.repo}</p>
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-mono font-bold text-primary">{devMeta.commit || devMeta.branch}</span>
-                            <a 
-                              href={githubUrl} 
-                              target="_blank" 
-                              rel="noreferrer" 
+                            <a
+                              href={githubUrl}
+                              target="_blank"
+                              rel="noreferrer"
                               className="text-[10px] font-bold text-primary hover:underline"
                             >
                               Open in GitHub
