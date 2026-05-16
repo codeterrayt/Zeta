@@ -87,6 +87,7 @@ export async function getProjects() {
       include: {
         _count: { select: { tasks: true, members: true } },
         boardSections: { orderBy: { order: "asc" } },
+        members: { where: { userId }, select: { role: true } },
       },
       orderBy: { createdAt: "desc" },
     })
@@ -125,4 +126,32 @@ export async function deleteProject(projectId: string) {
     return { success: false, error: "Failed to delete project" }
   }
 }
+export async function updateProject(projectId: string, name: string, description: string) {
+  try {
+    const userId = await getCurrentUserId()
+    if (!userId) return { success: false, error: "Unauthorized" }
 
+    // Check if user is ADMIN in this project
+    const membership = await prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: { projectId, userId }
+      }
+    })
+
+    if (!membership || membership.role !== "ADMIN") {
+      return { success: false, error: "Only project admins can edit the project" }
+    }
+
+    const project = await prisma.project.update({
+      where: { id: projectId },
+      data: { name, description }
+    })
+
+    revalidatePath("/projects")
+    revalidatePath(`/projects/${projectId}`)
+    return { success: true, project }
+  } catch (error) {
+    console.error("[updateProject] Error:", error)
+    return { success: false, error: "Failed to update project" }
+  }
+}
