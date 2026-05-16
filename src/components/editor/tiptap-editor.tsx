@@ -39,12 +39,27 @@ export function TiptapEditor({ content = "", onChange, placeholder = "Add a desc
   const [members, setMembers] = React.useState<any[]>([])
 
   React.useEffect(() => {
-    if (projectId) {
-      getProjectMembersForAssign(projectId).then(res => {
-        setMembers(res || [])
-      })
+    async function resolveProject() {
+      let activeProjectId = projectId
+      
+      // If we don't have a project ID but we have a task ID in the URL, fetch it
+      if (!activeProjectId && params.taskId) {
+        const { getTaskById } = await import("@/actions/task")
+        const res = await getTaskById(params.taskId as string)
+        if (res.success && res.task) {
+          activeProjectId = res.task.projectId
+        }
+      }
+
+      if (activeProjectId) {
+        getProjectMembersForAssign(activeProjectId).then(res => {
+          setMembers(res || [])
+        })
+      }
     }
-  }, [projectId])
+    
+    resolveProject()
+  }, [projectId, params.taskId])
 
   const editor = useEditor({
     extensions: [

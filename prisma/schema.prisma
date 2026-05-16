@@ -148,6 +148,7 @@ model Sprint {
   
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       Task[]
+  comments    Comment[]
 }
 
 // Tasks & Closure Table for Infinite Hierarchy
@@ -226,11 +227,13 @@ model TaskClosure {
 model Comment {
   id        String   @id @default(cuid())
   content   String   @db.Text
-  taskId    String
+  taskId    String?
+  sprintId  String?
   userId    String
   isReallocationLog Boolean @default(false)
   
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sprint    Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 

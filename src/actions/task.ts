@@ -209,7 +209,10 @@ export async function getProjectBacklog(projectId: string) {
   }
 }
 
+import { unstable_noStore as noStore } from "next/cache"
+
 export async function getTaskById(taskId: string) {
+  noStore()
   try {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
@@ -235,7 +238,7 @@ export async function getTaskById(taskId: string) {
           include: {
             user: { select: { id: true, name: true, image: true } }
           },
-          orderBy: { createdAt: "desc" }
+          orderBy: { createdAt: "asc" }
         },
         documents: { include: { document: true } }
       }

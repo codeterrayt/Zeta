@@ -73,7 +73,10 @@ export async function getProjectSprints(projectId: string) {
   }
 }
 
+import { unstable_noStore as noStore } from "next/cache"
+
 export async function getSprintById(sprintId: string) {
+  noStore()
   try {
     const sprint = await prisma.sprint.findUnique({
       where: { id: sprintId },
@@ -89,6 +92,12 @@ export async function getSprintById(sprintId: string) {
         },
         project: {
           include: { boardSections: { orderBy: { order: "asc" } } }
+        },
+        comments: {
+          include: {
+            user: { select: { id: true, name: true, image: true } }
+          },
+          orderBy: { createdAt: "asc" }
         }
       },
     })

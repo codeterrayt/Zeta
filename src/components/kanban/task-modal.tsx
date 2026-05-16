@@ -10,6 +10,7 @@ import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { cn } from "@/lib/utils"
 import { TaskAssignmentRole } from "@prisma/client"
 import { isPast, isToday } from "date-fns"
+import { CommentSection } from "./comment-section"
 
 const COMPLEXITY_LABELS: Record<number, string> = {
   1: "Very Low",
@@ -72,8 +73,15 @@ export function TaskModal({
   const isAssigned = assignments.some(a => a.userId === currentUserId)
   const canEdit = isReporter || isAssigned
 
+  const [fullTask, setFullTask] = React.useState(task)
+  const [loading, setLoading] = React.useState(false)
+
   React.useEffect(() => {
-    if (task) {
+    if (task?.id) {
+      // Set initial data
+      setFullTask(task)
+      setTitle(task.title ?? "")
+      setDescription(task.description ?? "")
       setStatus(task.status ?? "BACKLOG")
       setAssignments(task.assignments?.map((a: any) => ({ userId: a.userId, role: a.role })) ?? [])
       setReporterId(task.creatorId || task.reporter?.id || "")
@@ -85,9 +93,19 @@ export function TaskModal({
         branch: task.branchName ?? "",
         commit: task.commitIds ?? ""
       })
-      setTitle(task.title ?? "")
-      setDescription(task.description ?? "")
       setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "")
+
+      // Fetch fresh data with comments
+      const fetchFullTask = async () => {
+        setLoading(true)
+        const { getTaskById } = await import("@/actions/task")
+        const res = await getTaskById(task.id)
+        if (res.success && res.task) {
+          setFullTask(res.task)
+        }
+        setLoading(false)
+      }
+      fetchFullTask()
     }
   }, [task?.id])
 
@@ -255,31 +273,16 @@ export function TaskModal({
             </section>
 
             <section>
-              <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+              <div className="flex items-center gap-2 mb-6 text-muted-foreground">
                 <MessageSquare className="w-4 h-4" />
-                <h3 className="text-sm font-bold uppercase tracking-widest">Activity</h3>
+                <h3 className="text-sm font-bold uppercase tracking-widest">Activity & Discussion</h3>
               </div>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 text-sm font-bold shadow-lg shadow-primary/20">
-                  {session?.user?.name?.[0]?.toUpperCase() ?? "U"}
-                </div>
-                <div className="flex-1 space-y-3">
-                  <textarea
-                    value={comment}
-                    onChange={e => setComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="w-full bg-background border border-border rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[100px] resize-none transition-all placeholder:text-muted-foreground/50"
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      disabled={!comment.trim()}
-                      className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-all disabled:opacity-40 shadow-md shadow-primary/10"
-                    >
-                      Comment
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <CommentSection
+                taskId={task.id}
+                projectId={task.projectId}
+                initialComments={fullTask?.comments || []}
+                projectMembers={projectMembers as any}
+              />
             </section>
           </div>
 

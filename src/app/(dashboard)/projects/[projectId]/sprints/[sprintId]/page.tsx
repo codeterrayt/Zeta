@@ -1,11 +1,12 @@
 import Link from "next/link"
-import { ChevronLeft, LayoutDashboard, BarChart3, Users, Calendar } from "lucide-react"
+import { ChevronLeft, LayoutDashboard, BarChart3, Users, Calendar, MessageSquare } from "lucide-react"
 import { getSprintById, getProjectSprints } from "@/actions/sprint"
 import { getProjectMembersForAssign } from "@/actions/project-members"
 import { KanbanBoard } from "@/components/kanban/board"
 import { WorkloadView } from "@/components/projects/workload-view"
 import { ActiveUsersView } from "@/components/sprints/active-users-view"
 import { CreateTaskModal } from "@/components/kanban/create-task-modal"
+import { CommentSection } from "@/components/kanban/comment-section"
 import { notFound } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -22,11 +23,14 @@ export default async function SprintDetailsPage({
   const { tab } = await searchParams
   const activeTab = tab || "kanban"
 
-  const [{ sprint }, projectMembers, { sprints }] = await Promise.all([
+  const [sprintRes, projectMembers, sprintsRes] = await Promise.all([
     getSprintById(sprintId),
     getProjectMembersForAssign(projectId),
     getProjectSprints(projectId),
   ])
+
+  const sprint = sprintRes.success ? sprintRes.sprint : null
+  const sprints = sprintsRes.success ? sprintsRes.sprints : []
 
   if (!sprint) return notFound()
 
@@ -66,6 +70,7 @@ export default async function SprintDetailsPage({
     { id: "kanban", label: "Kanban", icon: LayoutDashboard },
     { id: "workload", label: "Workload", icon: BarChart3 },
     { id: "users", label: "Active Users", icon: Users },
+    { id: "activity", label: "Activity", icon: MessageSquare },
   ]
 
   return (
@@ -148,6 +153,15 @@ export default async function SprintDetailsPage({
         {activeTab === "users" && (
           <div className="h-full overflow-y-auto">
             <ActiveUsersView tasks={sprint.tasks} />
+          </div>
+        )}
+        {activeTab === "activity" && (
+          <div className="h-full overflow-y-auto px-8">
+            <CommentSection 
+              sprintId={sprintId}
+              initialComments={sprint.comments || []}
+              projectMembers={projectMembers as any}
+            />
           </div>
         )}
       </div>
