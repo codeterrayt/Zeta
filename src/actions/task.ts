@@ -138,3 +138,22 @@ export async function updateTaskSprint(taskId: string, sprintId: string | null, 
     return { success: false, error: "Failed to update task sprint" }
   }
 }
+export async function getProjectBacklog(projectId: string) {
+  try {
+    const tasks = await prisma.task.findMany({
+      where: { 
+        projectId,
+        status: "BACKLOG"
+      },
+      include: {
+        assignee: { select: { name: true, image: true } },
+        sprint: { select: { name: true } }
+      },
+      orderBy: { createdAt: "desc" },
+    })
+    return { success: true, tasks }
+  } catch (error) {
+    console.error("getProjectBacklog error:", error)
+    return { success: false, error: "Failed to fetch backlog" }
+  }
+}

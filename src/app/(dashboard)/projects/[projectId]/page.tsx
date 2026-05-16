@@ -3,9 +3,11 @@ import { LayoutDashboard, BarChart3, Settings2, CalendarRange } from "lucide-rea
 import { prisma } from "@/lib/prisma"
 import { getProjectMembersForAssign } from "@/actions/project-members"
 import { getProjectSprints } from "@/actions/sprint"
+import { getProjectBacklog } from "@/actions/task"
 import { CreateSprintModal } from "@/components/sprints/create-sprint-modal"
 import { SprintList } from "@/components/sprints/sprint-list"
 import { CreateTaskModal } from "@/components/kanban/create-task-modal"
+import { BacklogView } from "@/components/projects/backlog-view"
 
 async function getProjectData(projectId: string) {
   const project = await prisma.project.findUnique({
@@ -26,14 +28,16 @@ export default async function ProjectBoardPage({
   const { tab } = await searchParams
   const activeTab = tab || "sprints"
 
-  const [project, { sprints }, projectMembers] = await Promise.all([
+  const [project, { sprints }, projectMembers, { tasks: backlogTasks }] = await Promise.all([
     getProjectData(projectId),
     getProjectSprints(projectId),
     getProjectMembersForAssign(projectId),
+    getProjectBacklog(projectId),
   ])
 
   const tabs = [
     { id: "sprints", label: "Sprints", icon: CalendarRange },
+    { id: "backlog", label: "Backlog", icon: BarChart3 },
     { id: "settings", label: "Settings", icon: Settings2 },
   ]
 
@@ -99,6 +103,12 @@ export default async function ProjectBoardPage({
           </div>
         )}
 
+        {activeTab === "backlog" && (
+          <div className="space-y-6">
+            <BacklogView tasks={backlogTasks as any} />
+          </div>
+        )}
+        
         {activeTab === "settings" && (
           <SettingsInline projectId={projectId} />
         )}

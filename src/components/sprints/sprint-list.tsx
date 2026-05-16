@@ -31,6 +31,17 @@ export function SprintList({ sprints, projectId }: { sprints: Sprint[], projectI
     if (res.success) router.refresh()
   }
 
+  const getStatus = (start: Date | null, end: Date | null) => {
+    if (!start || !end) return { label: "Draft", color: "bg-secondary text-muted-foreground" }
+    const now = new Date()
+    const startDate = new Date(start)
+    const endDate = new Date(end)
+
+    if (now < startDate) return { label: "Planned", color: "bg-sky-500/15 text-sky-600 border-sky-500/20" }
+    if (now > endDate) return { label: "Completed", color: "bg-emerald-500/15 text-emerald-600 border-emerald-500/20" }
+    return { label: "Active", color: "bg-indigo-500/15 text-indigo-600 border-indigo-500/20" }
+  }
+
   return (
     <div className="space-y-4">
       {sprints.length === 0 && (
@@ -41,44 +52,46 @@ export function SprintList({ sprints, projectId }: { sprints: Sprint[], projectI
         </div>
       )}
 
-      {sprints.map(sprint => (
-        <div key={sprint.id} className="group bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all shadow-sm">
-          <div 
-            onClick={() => router.push(`/projects/${projectId}/sprints/${sprint.id}`)}
-            className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors"
-          >
-            <div className="flex items-center gap-4 min-w-0">
-              <button 
-                onClick={(e) => toggle(sprint.id, e)}
-                className="p-1 rounded-md hover:bg-secondary transition-colors"
-              >
-                {expanded[sprint.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-              </button>
-              <div>
-                <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">{sprint.name}</h3>
-                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString() : "—"} to {sprint.endDate ? new Date(sprint.endDate).toLocaleDateString() : "—"}
-                  </span>
-                  <span>•</span>
-                  <span>{sprint.tasks.length} tasks</span>
+      {sprints.map(sprint => {
+        const status = getStatus(sprint.startDate, sprint.endDate)
+        return (
+          <div key={sprint.id} className="group bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all shadow-sm">
+            <div 
+              onClick={() => router.push(`/projects/${projectId}/sprints/${sprint.id}`)}
+              className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <button 
+                  onClick={(e) => toggle(sprint.id, e)}
+                  className="p-1 rounded-md hover:bg-secondary transition-colors"
+                >
+                  {expanded[sprint.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                </button>
+                <div>
+                  <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">{sprint.name}</h3>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString("en-GB", { day: 'numeric', month: 'short' }) : "—"} to {sprint.endDate ? new Date(sprint.endDate).toLocaleDateString("en-GB", { day: 'numeric', month: 'short', year: 'numeric' }) : "—"}
+                    </span>
+                    <span>•</span>
+                    <span>{sprint.tasks.length} tasks</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={(e) => handleDelete(sprint.id, e)}
+                  className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <div className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border", status.color)}>
+                  {status.label}
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={(e) => handleDelete(sprint.id, e)}
-                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                Active
-              </div>
-            </div>
-          </div>
 
           {expanded[sprint.id] && (
             <div className="border-t border-border bg-secondary/5 divide-y divide-border">
@@ -113,9 +126,10 @@ export function SprintList({ sprints, projectId }: { sprints: Sprint[], projectI
                 ))
               )}
             </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
