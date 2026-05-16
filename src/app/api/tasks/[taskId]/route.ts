@@ -10,24 +10,46 @@ export async function PATCH(
     const { taskId } = await params
     const body = await req.json()
 
-    const task = await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        title: body.title !== undefined ? body.title : undefined,
-        description: body.description !== undefined ? body.description : undefined,
-        status: body.status,
-        points: body.points !== undefined ? body.points : undefined,
-        assigneeId: body.assigneeId !== undefined ? body.assigneeId : undefined,
-        creatorId: body.creatorId !== undefined ? body.creatorId : undefined,
-        githubUrl: body.githubUrl !== undefined ? body.githubUrl : undefined,
-        commitIds: body.commitIds !== undefined ? body.commitIds : undefined,
-        branchName: body.branchName !== undefined ? body.branchName : undefined,
-        repoName: body.repoName !== undefined ? body.repoName : undefined,
-      },
-      include: {
-        assignee: { select: { id: true, name: true, email: true } },
-        reporter: { select: { id: true, name: true, email: true } }
+    const { assignments, ...rest } = body
+
+    const task = await prisma.$transaction(async (tx) => {
+      const updatedTask = await tx.task.update({
+        where: { id: taskId },
+        data: {
+          title: rest.title,
+          description: rest.description,
+          status: rest.status,
+          points: rest.points,
+          creatorId: rest.creatorId,
+          githubUrl: rest.githubUrl,
+          commitIds: rest.commitIds,
+          branchName: rest.branchName,
+          repoName: rest.repoName,
+        }
+      })
+
+      if (assignments !== undefined) {
+        await tx.taskAssignment.deleteMany({ where: { taskId } })
+        if (assignments.length > 0) {
+          await tx.taskAssignment.createMany({
+            data: assignments.map((a: any) => ({
+              taskId,
+              userId: a.userId,
+              role: a.role
+            }))
+          })
+        }
       }
+
+      return tx.task.findUnique({
+        where: { id: taskId },
+        include: {
+          assignments: {
+            include: { user: { select: { id: true, name: true, email: true, image: true } } }
+          },
+          reporter: { select: { id: true, name: true, email: true } }
+        }
+      })
     })
 
     revalidatePath("/", "layout")

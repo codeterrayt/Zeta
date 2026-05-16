@@ -16,19 +16,21 @@ export function ActiveUsersView({ tasks }: { tasks: any[] }) {
   const userMap = new Map<string, ActiveUser>()
 
   tasks.forEach(task => {
-    if (task.assignee) {
-      const u = task.assignee
-      if (userMap.has(u.id)) {
-        userMap.get(u.id)!.taskCount += 1
-      } else {
-        userMap.set(u.id, {
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          image: u.image,
-          taskCount: 1
-        })
-      }
+    if (task.assignments && task.assignments.length > 0) {
+      task.assignments.forEach((assignment: any) => {
+        const u = assignment.user
+        if (userMap.has(u.id)) {
+          userMap.get(u.id)!.taskCount += 1
+        } else {
+          userMap.set(u.id, {
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            image: u.image,
+            taskCount: 1
+          })
+        }
+      })
     }
   })
 

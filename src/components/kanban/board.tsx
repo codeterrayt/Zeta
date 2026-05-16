@@ -15,8 +15,12 @@ export type Task = {
   status: string
   points?: number | null
   description?: string | null
-  assigneeId?: string | null
-  assignee?: { name: string | null; email?: string | null; image?: string | null } | null
+  creatorId?: string | null
+  assignments: Array<{
+    userId: string
+    role: string
+    user: { id: string; name: string | null; email: string | null; image: string | null }
+  }>
 }
 
 export type ColumnData = {
@@ -124,7 +128,10 @@ export function KanbanBoard({
                 >
                   <div className="flex flex-col gap-3 min-h-[150px]">
                     {column.tasks.map((task, index) => {
-                      const canDrag = task.assigneeId === currentUserId
+                      const isAssigned = task.assignments?.some(a => a.userId === currentUserId)
+                      const isReporter = task.creatorId === currentUserId
+                      const canDrag = isAssigned || isReporter
+                      
                       return (
                         <Draggable 
                           key={task.id} 

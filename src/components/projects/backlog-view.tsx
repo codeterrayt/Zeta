@@ -8,7 +8,10 @@ interface BacklogTask {
   id: string
   title: string
   points: number | null
-  assignee: { name: string | null; image: string | null } | null
+  assignments: Array<{
+    role: string
+    user: { name: string | null; email: string | null; image: string | null }
+  }>
   sprint: { name: string } | null
 }
 
@@ -67,16 +70,21 @@ export function BacklogView({ tasks = [] }: { tasks?: BacklogTask[] }) {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                        {task.assignee?.image ? (
-                          <img src={task.assignee.image} className="w-full h-full rounded-full" />
-                        ) : (
-                          <User className="w-3 h-3 text-muted-foreground" />
-                        )}
-                      </div>
-                      <span className="text-xs truncate max-w-[100px]">{task.assignee?.name ?? "Unassigned"}</span>
-                    </div>
+                    {(() => {
+                      const owner = task.assignments?.find(a => a.role === "OWNER") || task.assignments?.[0]
+                      return (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                            {owner?.user.image ? (
+                              <img src={owner.user.image} className="w-full h-full rounded-full" />
+                            ) : (
+                              <User className="w-3 h-3 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="text-xs truncate max-w-[100px]">{owner?.user.name ?? "Unassigned"}</span>
+                        </div>
+                      )
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {task.points ? (

@@ -2,12 +2,13 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil } from "lucide-react"
+import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { cn } from "@/lib/utils"
+import { TaskAssignmentRole } from "@prisma/client"
 
 const COMPLEXITY_LABELS: Record<number, string> = {
   1: "Very Low",
@@ -15,6 +16,13 @@ const COMPLEXITY_LABELS: Record<number, string> = {
   3: "Medium",
   4: "High",
   5: "Very High",
+}
+
+const ROLE_CONFIG: Record<TaskAssignmentRole, { label: string; icon: any; color: string; bg: string }> = {
+  OWNER: { label: "Primary Owner", icon: ShieldCheck, color: "text-amber-600", bg: "bg-amber-500/10" },
+  SECONDARY_OWNER: { label: "Secondary Owner", icon: UserCheck, color: "text-blue-600", bg: "bg-blue-500/10" },
+  POC: { label: "Point of Contact", icon: PhoneCall, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+  ASSIGNEE: { label: "Assignee", icon: Users, color: "text-primary", bg: "bg-primary/10" },
 }
 
 export function TaskModal({
@@ -35,7 +43,9 @@ export function TaskModal({
   const { data: session } = useSession()
   const router = useRouter()
   const [status, setStatus] = React.useState(task?.status ?? "BACKLOG")
-  const [assigneeId, setAssigneeId] = React.useState(task?.assigneeId ?? "")
+  const [assignments, setAssignments] = React.useState<Array<{ userId: string; role: TaskAssignmentRole }>>(
+    task?.assignments?.map((a: any) => ({ userId: a.userId, role: a.role })) ?? []
+  )
   const [reporterId, setReporterId] = React.useState(task?.creatorId || task?.reporter?.id || "")
   const [points, setPoints] = React.useState<number | "">(task?.points ?? "")
   const [githubUrl, setGithubUrl] = React.useState(task?.githubUrl ?? "")
@@ -51,12 +61,14 @@ export function TaskModal({
 
   // Permissions check
   const currentUserId = (session?.user as any)?.id
-  const canEdit = currentUserId === (task?.creatorId || task?.reporter?.id) || currentUserId === task?.assigneeId
+  const isReporter = currentUserId === (task?.creatorId || task?.reporter?.id)
+  const isAssigned = assignments.some(a => a.userId === currentUserId)
+  const canEdit = isReporter || isAssigned
 
   React.useEffect(() => {
     if (task) {
       setStatus(task.status ?? "BACKLOG")
-      setAssigneeId(task.assigneeId ?? "")
+      setAssignments(task.assignments?.map((a: any) => ({ userId: a.userId, role: a.role })) ?? [])
       setReporterId(task.creatorId || task.reporter?.id || "")
       setPoints(task.points ?? "")
       setGithubUrl(task.githubUrl ?? "")
@@ -75,8 +87,6 @@ export function TaskModal({
   const parseGithubUrl = (url: string) => {
     setGithubUrl(url)
     try {
-      // Regex for commit: github.com/owner/repo/commit/hash
-      // Regex for PR: github.com/owner/repo/pull/id
       const commitMatch = url.match(/github\.com\/([^\/]+\/[^\/]+)\/commit\/([a-f0-9]+)/)
       const prMatch = url.match(/github\.com\/([^\/]+\/[^\/]+)\/pull\/(\d+)/)
 
@@ -102,11 +112,9 @@ export function TaskModal({
         githubUrl: githubUrl || null,
         repoName: devMeta.repo || null,
         branchName: devMeta.branch || null,
-        commitIds: devMeta.commit || null
+        commitIds: devMeta.commit || null,
+        assignments
       }
-
-      if (assigneeId) payload.assigneeId = assigneeId
-      else payload.assigneeId = null
 
       if (reporterId) payload.creatorId = reporterId
 
@@ -117,7 +125,7 @@ export function TaskModal({
       })
       if (res.ok) {
         router.refresh()
-        if (!standalone) onClose()
+        if (!standalone) onClose?.()
       } else {
         const error = await res.json()
         alert(`Failed to save: ${error.error || "Unknown error"}`)
@@ -128,6 +136,18 @@ export function TaskModal({
     } finally {
       setSaving(false)
     }
+  }
+
+  const toggleAssignment = (userId: string) => {
+    setAssignments(prev => {
+      const exists = prev.find(a => a.userId === userId)
+      if (exists) return prev.filter(a => a.userId !== userId)
+      return [...prev, { userId, role: "ASSIGNEE" }]
+    })
+  }
+
+  const updateRole = (userId: string, role: TaskAssignmentRole) => {
+    setAssignments(prev => prev.map(a => a.userId === userId ? { ...a, role } : a))
   }
 
   const modalContent = (
@@ -254,13 +274,15 @@ export function TaskModal({
           {/* Right Column (Sidebar) */}
           <div className="lg:col-span-4 p-8 bg-secondary/5 space-y-6">
             <div className="space-y-5">
-              {/* Status */}
+              {/* Task ID */}
               <div>
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Task ID</label>
                 <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-3 py-1 rounded-full shrink-0 border border-primary/20 uppercase">
                   OPEN-{task.id.slice(0, 6).toUpperCase()}
                 </span>
               </div>
+
+              {/* Status */}
               <div>
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Status</label>
                 <select
@@ -283,22 +305,86 @@ export function TaskModal({
                 </select>
               </div>
 
-              {/* Assignee */}
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-2">Assignee</label>
-                <select
-                  value={assigneeId}
-                  onChange={e => setAssigneeId(e.target.value)}
-                  disabled={!canEdit}
-                  className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-70"
-                >
-                  <option value="">— Unassigned —</option>
-                  {projectMembers.map(m => (
-                    <option key={m.id} value={m.id}>
-                      {m.name ?? m.email} {m.id === currentUserId ? "(You)" : ""}
-                    </option>
-                  ))}
-                </select>
+              {/* Multiple Assignees Section */}
+              <div className="pt-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] block mb-3 flex items-center justify-between">
+                  Assignments 
+                  <span className="bg-secondary px-1.5 py-0.5 rounded text-[8px]">{assignments.length}</span>
+                </label>
+                
+                <div className="space-y-3 mb-4 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                  {assignments.map((assignment) => {
+                    const member = projectMembers.find(m => m.id === assignment.userId)
+                    const config = ROLE_CONFIG[assignment.role]
+                    const RoleIcon = config.icon
+                    
+                    return (
+                      <div key={assignment.userId} className="p-3 bg-background border border-border rounded-xl shadow-sm space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                              {member?.name?.[0] ?? member?.email?.[0] ?? "?"}
+                            </div>
+                            <span className="text-xs font-bold truncate max-w-[120px]">{member?.name ?? member?.email}</span>
+                          </div>
+                          {canEdit && (
+                            <button 
+                              onClick={() => toggleAssignment(assignment.userId)}
+                              className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5">
+                          {canEdit ? (
+                            <select
+                              value={assignment.role}
+                              onChange={(e) => updateRole(assignment.userId, e.target.value as TaskAssignmentRole)}
+                              className={cn(
+                                "text-[10px] font-black uppercase tracking-wider rounded px-2 py-1 outline-none w-full border-none appearance-none cursor-pointer",
+                                config.bg, config.color
+                              )}
+                            >
+                              {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
+                                <option key={key} value={key}>{cfg.label}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className={cn("text-[10px] font-black uppercase tracking-wider rounded px-2 py-1 flex items-center gap-1.5", config.bg, config.color)}>
+                              <RoleIcon className="w-3 h-3" />
+                              {config.label}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  
+                  {assignments.length === 0 && (
+                    <div className="text-[10px] text-muted-foreground italic text-center py-4 bg-secondary/20 rounded-xl border border-dashed border-border/50">
+                      No one assigned yet.
+                    </div>
+                  )}
+                </div>
+
+                {canEdit && (
+                  <div className="relative">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) toggleAssignment(e.target.value)
+                        e.target.value = ""
+                      }}
+                      className="w-full bg-secondary/50 hover:bg-secondary border border-border rounded-xl px-4 py-2 text-xs font-bold transition-all outline-none cursor-pointer"
+                    >
+                      <option value="">+ Add Assignee</option>
+                      {projectMembers.filter(m => !assignments.some(a => a.userId === m.id)).map(m => (
+                        <option key={m.id} value={m.id}>{m.name ?? m.email}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Reporter */}
@@ -395,7 +481,7 @@ export function TaskModal({
   if (standalone) return modalContent
 
   return (
-    <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 lg:p-4 pointer-events-none">

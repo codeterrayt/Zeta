@@ -57,15 +57,17 @@ export function CreateTaskModal({
     setError("")
 
     const formData = new FormData(e.currentTarget)
+    const assigneeId = formData.get("assigneeId") as string
+    
     const res = await createTask({
       title: formData.get("title") as string,
       description,
       projectId,
       status: formData.get("status") as string || defaultStatus,
       points: formData.get("points") ? Number(formData.get("points")) : undefined,
-      assigneeId: formData.get("assigneeId") as string || undefined,
+      assignments: assigneeId ? [{ userId: assigneeId, role: "OWNER" }] : [],
       sprintId: formData.get("sprintId") as string || undefined,
-      reporterId: currentUserId,
+      creatorId: currentUserId,
     })
 
     setLoading(false)

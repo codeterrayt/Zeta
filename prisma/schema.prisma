@@ -47,7 +47,7 @@ model User {
   // Custom Jira fields
   role          Role      @default(USER)
   projects      ProjectMember[]
-  tasks         Task[]    @relation("AssignedTasks")
+  assignments   TaskAssignment[]
   reportedTasks Task[]    @relation("ReportedTasks")
   comments      Comment[]
   auditLogs     AuditLog[]
@@ -162,13 +162,10 @@ model Task {
   
   folderId    String?
   folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
-
-  assigneeId  String?
-  assignee    User?    @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
   
   creatorId   String?
   reporter    User?    @relation("ReportedTasks", fields: [creatorId], references: [id], onDelete: Cascade)
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -178,12 +175,33 @@ model Task {
   repoName    String?
   githubUrl   String?
 
+  assignments TaskAssignment[]
   comments    Comment[]
   documents   DocLink[]
   
   // Closure Table Relationships
   ancestors   TaskClosure[] @relation("AncestorRelation")
   descendants TaskClosure[] @relation("DescendantRelation")
+}
+
+enum TaskAssignmentRole {
+  OWNER
+  SECONDARY_OWNER
+  POC
+  ASSIGNEE
+}
+
+model TaskAssignment {
+  id        String             @id @default(cuid())
+  taskId    String
+  userId    String
+  role      TaskAssignmentRole @default(ASSIGNEE)
+  createdAt DateTime           @default(now())
+  
+  task      Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
 }
 
 model TaskClosure {

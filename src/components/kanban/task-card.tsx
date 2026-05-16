@@ -14,9 +14,17 @@ export function TaskCard({
   onClick?: () => void;
   canDrag?: boolean;
 }) {
-  const initials = task.assignee?.name 
-    ? task.assignee.name.split(" ").map(n => n[0]).join("").toUpperCase()
-    : task.assignee?.email?.[0]?.toUpperCase() ?? "?"
+  const firstThree = (task.assignments || []).slice(0, 3)
+  const remainingCount = (task.assignments || []).length - 3
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "OWNER": return "Primary Owner"
+      case "SECONDARY_OWNER": return "Secondary Owner"
+      case "POC": return "Point of Contact"
+      default: return "Assignee"
+    }
+  }
 
   return (
     <div
@@ -30,24 +38,48 @@ export function TaskCard({
       <div className="flex items-start justify-between gap-3 mb-3">
         <h4 className="font-medium text-sm leading-tight text-foreground/90 flex-1">{task.title}</h4>
         
-        {task.assignee && (
-          <div className="relative group/assignee">
-            <div className="w-6 h-6 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0 overflow-hidden">
-              {task.assignee.image ? (
-                <img src={task.assignee.image} alt="" className="w-full h-full object-cover" />
-              ) : (
-                initials
-              )}
-            </div>
-            
-            {/* Tooltip */}
-            <div className="absolute right-0 top-full mt-2 z-50 opacity-0 group-hover/assignee:opacity-100 transition-opacity pointer-events-none">
-              <div className="bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded shadow-xl border border-border whitespace-nowrap font-bold">
-                {task.assignee.name} {task.assignee.email && `(${task.assignee.email})`}
+        <div className="flex -space-x-1.5 items-center shrink-0">
+          {firstThree.map((assignment, i) => {
+            const user = assignment.user
+            const initials = user.name 
+              ? user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+              : user.email?.[0]?.toUpperCase() ?? "?"
+              
+            return (
+              <div key={user.id} className="relative group/assignee z-[10]" style={{ zIndex: 10 - i }}>
+                <div className={cn(
+                  "w-6 h-6 rounded-full border-2 border-card flex items-center justify-center text-[8px] font-black shrink-0 overflow-hidden",
+                  assignment.role === "OWNER" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
+                  assignment.role === "SECONDARY_OWNER" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
+                  assignment.role === "POC" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                  "bg-primary/10 text-primary border-primary/20"
+                )}>
+                  {user.image ? (
+                    <img src={user.image} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                
+                {/* Tooltip */}
+                <div className="absolute right-0 top-full mt-2 z-[100] opacity-0 group-hover/assignee:opacity-100 transition-opacity pointer-events-none">
+                  <div className="bg-popover text-popover-foreground p-2 rounded shadow-xl border border-border whitespace-nowrap min-w-[120px]">
+                    <div className="text-[10px] font-black uppercase text-muted-foreground mb-0.5 tracking-tighter">
+                      {getRoleLabel(assignment.role)}
+                    </div>
+                    <div className="text-xs font-bold">{user.name || "Unknown User"}</div>
+                    <div className="text-[9px] text-muted-foreground">{user.email}</div>
+                  </div>
+                </div>
               </div>
+            )
+          })}
+          {remainingCount > 0 && (
+            <div className="w-6 h-6 rounded-full bg-secondary border-2 border-card flex items-center justify-center text-[8px] font-bold text-muted-foreground z-0">
+              +{remainingCount}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       
       <div className="flex items-center justify-between mt-auto">

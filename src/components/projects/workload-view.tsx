@@ -7,13 +7,18 @@ export function WorkloadView({ tasks }: { tasks: any[] }) {
   const workloadMap = new Map<string, number>()
 
   tasks.forEach(task => {
-    // If no assignee, we group them under "Unassigned"
-    const assigneeName = task.assignee?.name || "Unassigned"
-    const currentPoints = workloadMap.get(assigneeName) || 0
-    // If points is null/undefined, default to 1 (Very Low) for charting purposes, or 0.
     const taskPoints = task.points || 0
-
-    workloadMap.set(assigneeName, currentPoints + taskPoints)
+    
+    if (!task.assignments || task.assignments.length === 0) {
+      const currentPoints = workloadMap.get("Unassigned") || 0
+      workloadMap.set("Unassigned", currentPoints + taskPoints)
+    } else {
+      task.assignments.forEach((assignment: any) => {
+        const assigneeName = assignment.user.name || "Unknown"
+        const currentPoints = workloadMap.get(assigneeName) || 0
+        workloadMap.set(assigneeName, currentPoints + taskPoints)
+      })
+    }
   })
 
   const chartData = Array.from(workloadMap.entries()).map(([name, workload]) => ({

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { TaskAssignmentRole } from "@prisma/client"
 
 export async function createTask(data: {
   title: string
@@ -11,11 +12,10 @@ export async function createTask(data: {
   parentId?: string
   status?: string
   points?: number
-  assigneeId?: string
+  assignments?: Array<{ userId: string; role: TaskAssignmentRole }>
   sprintId?: string
 }) {
   try {
-    // Ensure we have a valid reporter — find or create a system placeholder
     let creatorId = data.creatorId
     if (!creatorId || creatorId === "system") {
       let systemUser = await prisma.user.findFirst({ where: { email: "system@openjira.local" } })
@@ -27,7 +27,6 @@ export async function createTask(data: {
       creatorId = systemUser.id
     }
 
-    // We use a transaction because we need to insert the task and update the closure table
     const result = await prisma.$transaction(async (tx) => {
       const task = await tx.task.create({
         data: {
@@ -37,21 +36,20 @@ export async function createTask(data: {
           creatorId,
           status: data.status || "BACKLOG",
           points: data.points,
-          assigneeId: data.assigneeId || null,
           sprintId: data.sprintId || null,
+          assignments: {
+            create: data.assignments?.map(a => ({
+              userId: a.userId,
+              role: a.role
+            }))
+          }
         },
       })
 
-      // Insert self-reference (depth 0)
       await tx.taskClosure.create({
-        data: {
-          ancestorId: task.id,
-          descendantId: task.id,
-          depth: 0,
-        },
+        data: { ancestorId: task.id, descendantId: task.id, depth: 0 },
       })
 
-      // If there is a parent, copy all ancestors of the parent and link to the new task
       if (data.parentId) {
         const parentAncestors = await tx.taskClosure.findMany({
           where: { descendantId: data.parentId },
@@ -64,9 +62,7 @@ export async function createTask(data: {
         }))
 
         if (newClosures.length > 0) {
-          await tx.taskClosure.createMany({
-            data: newClosures,
-          })
+          await tx.taskClosure.createMany({ data: newClosures })
         }
       }
 
@@ -82,10 +78,74 @@ export async function createTask(data: {
   }
 }
 
+export async function updateTask(taskId: string, data: {
+  title?: string
+  description?: string
+  status?: string
+  points?: number | null
+  sprintId?: string | null
+  projectId: string
+}) {
+  try {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        points: data.points,
+        sprintId: data.sprintId
+      }
+    })
+    revalidatePath(`/projects/${data.projectId}`)
+    revalidatePath(`/tasks/${taskId}`)
+    revalidatePath("/", "layout")
+    return { success: true }
+  } catch (error) {
+    console.error("updateTask error:", error)
+    return { success: false, error: "Failed to update task" }
+  }
+}
+
+export async function updateTaskAssignments(taskId: string, assignments: Array<{ userId: string; role: TaskAssignmentRole }>, projectId: string) {
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Remove all current assignments
+      await tx.taskAssignment.deleteMany({
+        where: { taskId }
+      })
+
+      // Add new ones
+      if (assignments.length > 0) {
+        await tx.taskAssignment.createMany({
+          data: assignments.map(a => ({
+            taskId,
+            userId: a.userId,
+            role: a.role
+          }))
+        })
+      }
+    })
+
+    revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/tasks/${taskId}`)
+    revalidatePath("/", "layout")
+    return { success: true }
+  } catch (error) {
+    console.error("updateTaskAssignments error:", error)
+    return { success: false, error: "Failed to update assignments" }
+  }
+}
+
 export async function getTasksByProject(projectId: string) {
   try {
     const tasks = await prisma.task.findMany({
       where: { projectId },
+      include: {
+        assignments: {
+          include: { user: { select: { id: true, name: true, email: true, image: true } } }
+        }
+      },
       orderBy: { createdAt: "desc" },
     })
     return { success: true, tasks }
@@ -94,22 +154,6 @@ export async function getTasksByProject(projectId: string) {
   }
 }
 
-export async function getTaskSubtree(taskId: string) {
-  try {
-    // Get all descendants using the closure table
-    const descendants = await prisma.taskClosure.findMany({
-      where: { ancestorId: taskId },
-      include: {
-        descendant: true,
-      },
-      orderBy: { depth: "asc" },
-    })
-    
-    return { success: true, tasks: descendants.map((d) => ({ ...d.descendant, depth: d.depth })) }
-  } catch (error) {
-    return { success: false, error: "Failed to fetch task subtree" }
-  }
-}
 export async function updateTaskStatus(taskId: string, status: string, projectId: string) {
   try {
     await prisma.task.update({
@@ -117,6 +161,7 @@ export async function updateTaskStatus(taskId: string, status: string, projectId
       data: { status },
     })
     revalidatePath(`/projects/${projectId}`)
+    revalidatePath(`/tasks/${taskId}`)
     revalidatePath("/", "layout")
     return { success: true }
   } catch (error) {
@@ -125,21 +170,6 @@ export async function updateTaskStatus(taskId: string, status: string, projectId
   }
 }
 
-export async function updateTaskSprint(taskId: string, sprintId: string | null, projectId: string) {
-  try {
-    await prisma.task.update({
-      where: { id: taskId },
-      data: { sprintId },
-    })
-    revalidatePath(`/projects/${projectId}`)
-    if (sprintId) revalidatePath(`/projects/${projectId}/sprints/${sprintId}`)
-    revalidatePath("/", "layout")
-    return { success: true }
-  } catch (error) {
-    console.error("updateTaskSprint error:", error)
-    return { success: false, error: "Failed to update task sprint" }
-  }
-}
 export async function getProjectBacklog(projectId: string) {
   try {
     const tasks = await prisma.task.findMany({
@@ -147,20 +177,10 @@ export async function getProjectBacklog(projectId: string) {
         projectId,
         status: "BACKLOG"
       },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        points: true,
-        creatorId: true,
-        assigneeId: true,
-        githubUrl: true,
-        repoName: true,
-        branchName: true,
-        commitIds: true,
-        createdAt: true,
-        assignee: { select: { id: true, name: true, email: true, image: true } },
+      include: {
+        assignments: {
+          include: { user: { select: { id: true, name: true, email: true, image: true } } }
+        },
         reporter: { select: { id: true, name: true, email: true, image: true } },
         sprint: { select: { name: true } },
       },
@@ -178,7 +198,9 @@ export async function getTaskById(taskId: string) {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        assignee: { select: { id: true, name: true, email: true, image: true } },
+        assignments: {
+          include: { user: { select: { id: true, name: true, email: true, image: true } } }
+        },
         reporter: { select: { id: true, name: true, email: true, image: true } },
         project: {
           select: {

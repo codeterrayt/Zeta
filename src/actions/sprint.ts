@@ -54,20 +54,10 @@ export async function getProjectSprints(projectId: string) {
       where: { projectId },
       include: {
         tasks: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            status: true,
-            points: true,
-            creatorId: true,
-            assigneeId: true,
-            githubUrl: true,
-            repoName: true,
-            branchName: true,
-            commitIds: true,
-            createdAt: true,
-            assignee: { select: { id: true, name: true, email: true, image: true } },
+          include: {
+            assignments: {
+              include: { user: { select: { id: true, name: true, email: true, image: true } } }
+            },
             reporter: { select: { id: true, name: true, email: true, image: true } }
           }
         }
@@ -87,20 +77,10 @@ export async function getSprintById(sprintId: string) {
       where: { id: sprintId },
       include: {
         tasks: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            status: true,
-            points: true,
-            creatorId: true,
-            assigneeId: true,
-            githubUrl: true,
-            repoName: true,
-            branchName: true,
-            commitIds: true,
-            createdAt: true,
-            assignee: { select: { id: true, name: true, email: true, image: true } },
+          include: {
+            assignments: {
+              include: { user: { select: { id: true, name: true, email: true, image: true } } }
+            },
             reporter: { select: { id: true, name: true, email: true, image: true } }
           }
         },

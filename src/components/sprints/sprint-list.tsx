@@ -17,7 +17,10 @@ type Sprint = {
     title: string
     status: string
     points: number | null
-    assignee?: { id: string, name: string | null }
+    assignments: Array<{
+      role: string
+      user: { id: string; name: string | null }
+    }>
   }>
 }
 
@@ -147,12 +150,16 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
                       <span className="text-sm font-medium truncate">{task.title}</span>
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
-                      {task.assignee && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <User className="w-3 h-3" />
-                          <span>{task.assignee.name}</span>
-                        </div>
-                      )}
+                      {(() => {
+                        const owner = task.assignments?.find(a => a.role === "OWNER") || task.assignments?.[0]
+                        if (!owner) return null
+                        return (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <User className="w-3 h-3" />
+                            <span>{owner.user.name ?? "Unknown"}</span>
+                          </div>
+                        )
+                      })()}
                       <span className={cn(
                         "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
                         task.status === "DONE" ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"

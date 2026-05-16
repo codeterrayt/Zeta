@@ -33,11 +33,7 @@ export default async function SprintDetailsPage({
     id: section.name,
     title: section.name,
     tasks: sprint.tasks
-      .filter((t: any) => t.status === section.name)
-      .map((t: any) => ({
-        ...t,
-        assignee: t.assignee ? { name: t.assignee.name ?? "?" } : null,
-      })),
+      .filter((t: any) => t.status === section.name),
   }))
 
   const tabs = [
