@@ -72,7 +72,16 @@ export async function getAllDocuments() {
         author: { select: { id: true, name: true, image: true } },
         taskLinks: {
           include: {
-            task: { select: { id: true, title: true, projectId: true } }
+            task: { 
+              select: { 
+                id: true, 
+                title: true, 
+                projectId: true,
+                sprintId: true,
+                sprint: { select: { id: true, name: true } },
+                assignments: { select: { userId: true } }
+              } 
+            }
           }
         },
         project: { select: { id: true, name: true } }

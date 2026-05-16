@@ -87,7 +87,7 @@ export default function NewDocumentationPage() {
             <div className="flex items-center gap-4 text-sm text-muted-foreground border-b border-border pb-6">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                <span>Article</span>
+                <span>Document</span>
               </div>
               <span>•</span>
               <div className="flex items-center gap-2">
@@ -103,6 +103,7 @@ export default function NewDocumentationPage() {
               onChange={setContent}
               placeholder="Start writing your documentation here... (Use @ to mention teammates)"
               minHeight="500px"
+              projectId={projectId}
             />
           </div>
         </div>

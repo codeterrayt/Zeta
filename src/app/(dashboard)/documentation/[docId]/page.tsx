@@ -200,6 +200,7 @@ export default function DocumentDetailsPage() {
                 onChange={setContent}
                 placeholder="Start writing..."
                 minHeight="500px"
+                projectId={doc.projectId}
               />
             ) : (
               <div 
