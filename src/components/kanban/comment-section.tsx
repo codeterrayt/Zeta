@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useSession } from "next-auth/react"
 import { formatDistanceToNow } from "date-fns"
-import { MessageSquare, Reply, Trash2, AtSign, Send, Smile } from "lucide-react"
+import { MessageSquare, Reply, Trash2, Send } from "lucide-react"
 import { addComment, deleteComment } from "@/actions/comment"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -24,6 +24,7 @@ interface Comment {
   userId: string
   parentId: string | null
   user: User
+  children?: Comment[]
 }
 
 interface CommentSectionProps {
@@ -47,7 +48,6 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
     setComments(initialComments)
   }, [initialComments])
 
-  // Build comment tree
   const commentTree = React.useMemo(() => {
     const map: Record<string, any> = {}
     const roots: any[] = []
@@ -103,7 +103,82 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
     }
   }
 
-  const CommentItem = ({ comment, depth = 0 }: { comment: any, depth?: number }) => (
+  return (
+    <div className="space-y-8 pb-10">
+      <div className="p-6 bg-secondary/10 rounded-[2rem] border border-border/50 shadow-inner">
+        <div className="flex gap-4 mb-4">
+          <div className="shrink-0">
+            <div className="w-12 h-12 rounded-[1.25rem] bg-primary text-primary-foreground flex items-center justify-center font-black text-xl shadow-xl shadow-primary/30">
+              {session?.user?.name?.[0]?.toUpperCase() ?? "U"}
+            </div>
+          </div>
+          <div className="flex-1">
+            <TiptapEditor
+              content={newComment}
+              onChange={setNewComment}
+              placeholder="Type @ to mention or share your thoughts..."
+              minHeight="120px"
+              projectId={projectId}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={() => handleAddComment()}
+            disabled={submitting || !newComment.trim() || newComment === "<p></p>"}
+            className="bg-primary text-primary-foreground px-8 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-all flex items-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-40"
+          >
+            {submitting ? "Posting..." : "Post Comment"}
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {commentTree.length > 0 ? (
+          commentTree.map(comment => (
+            <CommentItem 
+              key={comment.id} 
+              comment={comment} 
+              session={session}
+              replyTo={replyTo}
+              setReplyTo={setReplyTo}
+              replyContent={replyContent}
+              setReplyContent={setReplyContent}
+              handleAddComment={handleAddComment}
+              handleDelete={handleDelete}
+              submitting={submitting}
+              projectId={projectId}
+            />
+          ))
+        ) : (
+          <div className="py-20 text-center space-y-4 bg-secondary/5 rounded-[2.5rem] border border-dashed border-border/50">
+            <div className="w-16 h-16 bg-secondary rounded-[1.5rem] flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="w-8 h-8 text-muted-foreground/30" />
+            </div>
+            <h3 className="text-sm font-bold text-muted-foreground">No activity yet</h3>
+            <p className="text-xs text-muted-foreground/60 max-w-[200px] mx-auto">Be the first to share an update or start a discussion.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CommentItem({ 
+  comment, 
+  depth = 0, 
+  session, 
+  replyTo, 
+  setReplyTo, 
+  replyContent, 
+  setReplyContent, 
+  handleAddComment, 
+  handleDelete,
+  submitting,
+  projectId
+}: any) {
+  return (
     <div className={cn(
       "group flex gap-4 transition-all duration-300",
       depth > 0 ? "ml-12 mt-4" : "mt-8 border-b border-border/40 pb-8 last:border-0"
@@ -189,60 +264,21 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
           <div className="relative">
             <div className="absolute left-[-26px] top-0 bottom-8 w-px bg-border/40" />
             {comment.children.map((child: any) => (
-              <CommentItem key={child.id} comment={child} depth={depth + 1} />
+              <CommentItem 
+                key={child.id} 
+                comment={child} 
+                depth={depth + 1} 
+                session={session}
+                replyTo={replyTo}
+                setReplyTo={setReplyTo}
+                replyContent={replyContent}
+                setReplyContent={setReplyContent}
+                handleAddComment={handleAddComment}
+                handleDelete={handleDelete}
+                submitting={submitting}
+                projectId={projectId}
+              />
             ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-
-  return (
-    <div className="space-y-8 pb-10">
-      {/* New Comment Input */}
-      <div className="p-6 bg-secondary/10 rounded-[2rem] border border-border/50 shadow-inner">
-        <div className="flex gap-4 mb-4">
-          <div className="shrink-0">
-            <div className="w-12 h-12 rounded-[1.25rem] bg-primary text-primary-foreground flex items-center justify-center font-black text-xl shadow-xl shadow-primary/30">
-              {session?.user?.name?.[0]?.toUpperCase() ?? "U"}
-            </div>
-          </div>
-          <div className="flex-1">
-            <TiptapEditor
-              content={newComment}
-              onChange={setNewComment}
-              placeholder="Type @ to mention or share your thoughts..."
-              minHeight="120px"
-              projectId={projectId}
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <button
-            onClick={() => handleAddComment()}
-            disabled={submitting || !newComment.trim() || newComment === "<p></p>"}
-            className="bg-primary text-primary-foreground px-8 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition-all flex items-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-40"
-          >
-            {submitting ? "Posting..." : "Post Comment"}
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Comment List */}
-      <div className="space-y-2">
-        {commentTree.length > 0 ? (
-          commentTree.map(comment => (
-            <CommentItem key={comment.id} comment={comment} />
-          ))
-        ) : (
-          <div className="py-20 text-center space-y-4 bg-secondary/5 rounded-[2.5rem] border border-dashed border-border/50">
-            <div className="w-16 h-16 bg-secondary rounded-[1.5rem] flex items-center justify-center mx-auto mb-4">
-              <MessageSquare className="w-8 h-8 text-muted-foreground/30" />
-            </div>
-            <h3 className="text-sm font-bold text-muted-foreground">No activity yet</h3>
-            <p className="text-xs text-muted-foreground/60 max-w-[200px] mx-auto">Be the first to share an update or start a discussion.</p>
           </div>
         )}
       </div>
