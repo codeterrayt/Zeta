@@ -15,6 +15,10 @@ import { ContentRenderer } from "@/components/editor/content-renderer"
 import { getAttachmentsForContext } from "@/actions/get-attachments"
 import { deleteAttachment } from "@/actions/attachment"
 import { toast } from "sonner"
+import tippy, { Instance } from "tippy.js"
+import "tippy.js/dist/tippy.css"
+import "tippy.js/animations/shift-away.css"
+import { createPortal } from "react-dom"
 
 const COMPLEXITY_LABELS: Record<number, string> = {
   1: "Very Low",
@@ -610,6 +614,7 @@ export function TaskModal({
                         <p className="text-[8px] text-muted-foreground">{formatBytes(file.size)}</p>
                       </div>
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <AttachmentEyePreview file={file} />
                         <a href={file.url} download className="p-1.5 hover:bg-secondary rounded-lg transition-colors" title="Download">
                           <Download className="w-3 h-3" />
                         </a>
@@ -676,6 +681,86 @@ export function TaskModal({
         </div>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
+  )
+}
+
+function AttachmentEyePreview({ file }: { file: any }) {
+  const iconRef = React.useRef<HTMLButtonElement>(null)
+  const tippyInstance = React.useRef<Instance | null>(null)
+  const [tippyContainer, setTippyContainer] = React.useState<HTMLElement | null>(null)
+  
+  const isImage = file.type?.startsWith("image/")
+  const isPdf = file.type === "application/pdf"
+  const canPreview = isImage || isPdf
+  const emoji = getFileEmoji(file.type, file.name)
+
+  React.useEffect(() => {
+    if (!iconRef.current || !canPreview || !file.url) return
+
+    const container = document.createElement("div")
+    container.style.display = "flex"
+    setTippyContainer(container)
+
+    tippyInstance.current = tippy(iconRef.current, {
+      content: container,
+      interactive: true,
+      trigger: "mouseenter focus",
+      placement: "top",
+      animation: "shift-away",
+      theme: "light",
+      maxWidth: "none",
+      appendTo: () => document.body,
+    })
+
+    return () => {
+      tippyInstance.current?.destroy()
+    }
+  }, [file.url, canPreview])
+
+  if (!canPreview) return null
+
+  return (
+    <>
+      <button 
+        ref={iconRef}
+        type="button"
+        className="p-1.5 hover:bg-secondary rounded-lg transition-colors text-amber-600"
+        title="Preview"
+        onClick={(e) => {
+          e.preventDefault()
+          window.open(file.url, "_blank")
+        }}
+      >
+        <Eye className="w-3 h-3" />
+      </button>
+
+      {tippyContainer && createPortal(
+        <div className="flex flex-col bg-popover text-popover-foreground border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[240px] max-w-[320px] pointer-events-auto">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/50 bg-secondary/30">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-base">{emoji}</span>
+              <span className="text-[11px] font-bold truncate">{file.name}</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <a href={file.url} download className="flex items-center gap-1 px-2 py-1 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold hover:bg-primary/90 transition-colors">
+                <Download className="w-3 h-3" />
+              </a>
+              <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary border border-border/50 text-[10px] font-bold hover:bg-secondary/80 text-amber-600 transition-colors">
+                <Eye className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+          <div className="overflow-hidden flex items-center justify-center bg-secondary/20 relative group/preview" style={{ minHeight: 120 }}>
+            {isImage ? (
+              <img src={file.url} alt={file.name} className="max-w-full max-h-48 object-contain transition-transform duration-300 group-hover/preview:scale-[1.02]" />
+            ) : isPdf ? (
+              <iframe src={file.url} className="w-full border-none bg-white pointer-events-none" style={{ height: 250 }} title={file.name} />
+            ) : null}
+          </div>
+        </div>,
+        tippyContainer
+      )}
+    </>
   )
 }
 
