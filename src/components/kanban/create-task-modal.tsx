@@ -18,6 +18,8 @@ interface CreateTaskModalProps {
   projectId: string
   projectMembers?: ProjectMember[]
   boardSections?: { id: string; name: string }[]
+  sprints?: { id: string; name: string }[]
+  defaultSprintId?: string
 }
 
 const COMPLEXITY_OPTIONS = [
@@ -31,7 +33,9 @@ const COMPLEXITY_OPTIONS = [
 export function CreateTaskModal({ 
   projectId, 
   projectMembers = [], 
-  boardSections = [] 
+  boardSections = [],
+  sprints = [],
+  defaultSprintId
 }: CreateTaskModalProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
@@ -60,6 +64,7 @@ export function CreateTaskModal({
       status: formData.get("status") as string || defaultStatus,
       points: formData.get("points") ? Number(formData.get("points")) : undefined,
       assigneeId: formData.get("assigneeId") as string || undefined,
+      sprintId: formData.get("sprintId") as string || undefined,
       creatorId: currentUserId,
     })
 
@@ -151,6 +156,20 @@ export function CreateTaskModal({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Sprint</label>
+                <select
+                  name="sprintId"
+                  defaultValue={defaultSprintId}
+                  className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">— Backlog (No Sprint) —</option>
+                  {sprints.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

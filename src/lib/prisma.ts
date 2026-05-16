@@ -1,3 +1,4 @@
+// Prisma client initialization with adapter-pg
 import { Pool } from "pg"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"

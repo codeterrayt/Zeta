@@ -7,7 +7,7 @@ export default async function ProjectsPage() {
   const { projects } = await getProjects()
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-8xl mx-auto space-y-8">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Projects</h1>

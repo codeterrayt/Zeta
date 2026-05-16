@@ -12,6 +12,7 @@ export async function createTask(data: {
   status?: string
   points?: number
   assigneeId?: string
+  sprintId?: string
 }) {
   try {
     // Ensure we have a valid creator — find or create a system placeholder
@@ -37,6 +38,7 @@ export async function createTask(data: {
           status: data.status || "BACKLOG",
           points: data.points,
           assigneeId: data.assigneeId || null,
+          sprintId: data.sprintId || null,
         },
       })
 
@@ -119,5 +121,20 @@ export async function updateTaskStatus(taskId: string, status: string, projectId
   } catch (error) {
     console.error("updateTaskStatus error:", error)
     return { success: false, error: "Failed to update task status" }
+  }
+}
+
+export async function updateTaskSprint(taskId: string, sprintId: string | null, projectId: string) {
+  try {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { sprintId },
+    })
+    revalidatePath(`/projects/${projectId}`)
+    if (sprintId) revalidatePath(`/projects/${projectId}/sprints/${sprintId}`)
+    return { success: true }
+  } catch (error) {
+    console.error("updateTaskSprint error:", error)
+    return { success: false, error: "Failed to update task sprint" }
   }
 }
