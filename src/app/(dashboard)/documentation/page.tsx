@@ -13,7 +13,7 @@ export default function DocumentationPage() {
   const [documents, setDocuments] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
-  const [filterSelf, setFilterSelf] = React.useState(false)
+  const [filterType, setFilterType] = React.useState<"ALL" | "SELF" | "MENTIONED">("ALL")
 
   React.useEffect(() => {
     async function load() {
@@ -31,9 +31,14 @@ export default function DocumentationPage() {
       doc.project.name.toLowerCase().includes(search.toLowerCase()) ||
       doc.taskLinks.some((l: any) => l.task.title.toLowerCase().includes(search.toLowerCase()))
     
-    const matchesSelf = !filterSelf || doc.authorId === session?.user?.id
+    let matchesType = true
+    if (filterType === "SELF") {
+      matchesType = doc.authorId === session?.user?.id
+    } else if (filterType === "MENTIONED") {
+      matchesType = doc.content.includes(`data-id="${session?.user?.id}"`)
+    }
     
-    return matchesSearch && matchesSelf
+    return matchesSearch && matchesType
   })
 
   return (
@@ -60,18 +65,18 @@ export default function DocumentationPage() {
           />
         </div>
 
-        <button
-          onClick={() => setFilterSelf(!filterSelf)}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border",
-            filterSelf 
-              ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-              : "bg-secondary/50 border-border text-muted-foreground hover:bg-secondary"
-          )}
-        >
-          <UserIcon className="w-4 h-4" />
-          Created by Me
-        </button>
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl border bg-secondary/50 border-border">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as any)}
+            className="bg-transparent border-none outline-none text-sm font-bold cursor-pointer pr-4"
+          >
+            <option value="ALL">All Documents</option>
+            <option value="SELF">Created by Me</option>
+            <option value="MENTIONED">Mentioned Me</option>
+          </select>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
