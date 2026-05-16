@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown, ChevronRight, Calendar, User, MoreVertical, Trash2, ChevronLeft, ExternalLink, Shield, GitBranch, Eye, Users } from "lucide-react"
+import { ChevronDown, ChevronRight, Calendar, User, Trash2, ChevronLeft, ExternalLink, Shield, GitBranch, Eye, Users, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { deleteSprint } from "@/actions/sprint"
+import { deleteSprint, getSprintTasks } from "@/actions/sprint"
 import { useRouter } from "next/navigation"
 import { format, isPast, isToday, differenceInDays } from "date-fns"
 
@@ -18,7 +18,7 @@ type Sprint = {
     status: string
     points: number | null
     dueDate?: string | null
-    assignments: Array<{
+    assignments?: Array<{
       role: string
       userId: string
       user: { id: string; name: string | null; email: string | null; image: string | null }
@@ -35,6 +35,9 @@ const ROLE_CONFIG: Record<string, { label: string; icon: any; color: string; bg:
 
 export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], projectId: string }) {
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({})
+  const [sprintTasks, setSprintTasks] = React.useState<Record<string, any[]>>({})
+  const [loadingTasks, setLoadingTasks] = React.useState<Record<string, boolean>>({})
+  
   const router = useRouter()
 
   // Pagination State
@@ -48,9 +51,24 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
     setCurrentPage(1)
   }, [sprints.length, pageSize])
 
-  const toggle = (id: string, e: React.MouseEvent) => {
+  const toggle = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
+    const isExpanding = !expanded[id]
+    setExpanded(prev => ({ ...prev, [id]: isExpanding }))
+
+    if (isExpanding && !sprintTasks[id]) {
+      setLoadingTasks(prev => ({ ...prev, [id]: true }))
+      try {
+        const res = await getSprintTasks(id)
+        if (res.success) {
+          setSprintTasks(prev => ({ ...prev, [id]: res.tasks }))
+        }
+      } catch (error) {
+        console.error("Failed to fetch tasks:", error)
+      } finally {
+        setLoadingTasks(prev => ({ ...prev, [id]: false }))
+      }
+    }
   }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -94,6 +112,9 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
       <div className="space-y-4">
         {paginatedSprints.map(sprint => {
           const status = getStatus(sprint.startDate, sprint.endDate, sprint.tasks)
+          const tasks = sprintTasks[sprint.id] || []
+          const isLoading = loadingTasks[sprint.id]
+
           return (
             <div key={sprint.id} className="group bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all shadow-sm">
               <div 
@@ -166,13 +187,17 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
               </div>
 
             {expanded[sprint.id] && (
-              <div className="border-t border-border bg-secondary/5 divide-y divide-border">
-                {sprint.tasks.length === 0 ? (
+              <div className="border-t border-border bg-secondary/5 divide-y divide-border min-h-[100px] flex flex-col">
+                {isLoading ? (
+                  <div className="flex-1 flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                  </div>
+                ) : tasks.length === 0 ? (
                   <div className="p-8 text-center text-sm text-muted-foreground italic">
                     No tasks assigned to this sprint.
                   </div>
                 ) : (
-                  sprint.tasks.map(task => (
+                  tasks.map(task => (
                     <div key={task.id} className="flex items-center justify-between px-6 py-4 hover:bg-secondary/10 transition-colors">
                       <div className="flex items-center gap-4 min-w-0 flex-1">
                         <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-1 rounded-md shrink-0 border border-border">
@@ -195,10 +220,10 @@ export function SprintList({ sprints = [], projectId }: { sprints?: Sprint[], pr
                       <div className="flex items-center gap-8 shrink-0">
                         {/* Multiple Assignees - Stack Layout */}
                         <div className="w-32 hidden md:flex items-center justify-end -space-x-2">
-                          {task.assignments.length === 0 ? (
+                          {task.assignments?.length === 0 ? (
                             <span className="text-[10px] text-muted-foreground italic uppercase">Unassigned</span>
                           ) : (
-                            task.assignments.map((assignment, idx) => {
+                            task.assignments?.map((assignment: any, idx: number) => {
                               const config = ROLE_CONFIG[assignment.role] || ROLE_CONFIG.ASSIGNEE
                               return (
                                 <div 

@@ -53,12 +53,14 @@ export async function getProjectSprints(projectId: string) {
     const sprints = await prisma.sprint.findMany({
       where: { projectId },
       include: {
+        _count: {
+          select: { tasks: true }
+        },
         tasks: {
-          include: {
-            assignments: {
-              include: { user: { select: { id: true, name: true, email: true, image: true } } }
-            },
-            reporter: { select: { id: true, name: true, email: true, image: true } }
+          select: {
+            status: true,
+            points: true,
+            dueDate: true,
           }
         }
       },
@@ -123,5 +125,23 @@ export async function updateSprint(sprintId: string, data: any, projectId: strin
   } catch (error) {
     console.error("updateSprint error:", error)
     return { success: false, error: "Failed to update sprint" }
+  }
+}
+export async function getSprintTasks(sprintId: string) {
+  try {
+    const tasks = await prisma.task.findMany({
+      where: { sprintId },
+      include: {
+        assignments: {
+          include: { user: { select: { id: true, name: true, email: true, image: true } } }
+        },
+        reporter: { select: { id: true, name: true, email: true, image: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    })
+    return { success: true, tasks }
+  } catch (error) {
+    console.error("getSprintTasks error:", error)
+    return { success: false, error: "Failed to fetch tasks", tasks: [] }
   }
 }
