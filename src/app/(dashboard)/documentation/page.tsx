@@ -199,12 +199,12 @@ export default function DocumentationPage() {
               {filteredDocs.map((doc) => {
                 const hasEditAccess = doc.authorId === userId ||
                   doc.taskLinks?.some((l: any) => l.task?.assignments?.some((a: any) => a.userId === userId))
-                  
+
                 return (
                   <div key={doc.id} className="group flex flex-col bg-card border border-border/60 rounded-[2.5rem] overflow-hidden hover:border-primary/40 transition-all shadow-sm hover:shadow-2xl hover:-translate-y-2 duration-500">
                     <div className="p-8 space-y-6 flex-1">
                       <div className="flex items-start justify-between gap-4">
-                        <Link 
+                        <Link
                           href={`/projects/${doc.projectId}`}
                           className="text-[10px] font-black uppercase tracking-[0.2em] text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all"
                         >
@@ -214,9 +214,9 @@ export default function DocumentationPage() {
                           {format(new Date(doc.createdAt), "MMM d, yyyy")}
                         </span>
                       </div>
-                      
+
                       <div className="space-y-3">
-                        <Link 
+                        <Link
                           href={`/documentation/${doc.id}?mode=view`}
                           target="_blank"
                           className="block group-hover:text-primary transition-colors"
@@ -225,7 +225,7 @@ export default function DocumentationPage() {
                             {toTitleCase(doc.title)}
                           </h3>
                         </Link>
-                        
+
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden border-2 border-background shadow-sm">
                             {doc.author.image ? (
@@ -262,16 +262,16 @@ export default function DocumentationPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="px-8 py-4 bg-secondary/10 border-t border-border/40 flex items-center justify-between">
-                      <Link 
+                      <Link
                         href={`/documentation/${doc.id}?mode=view`}
                         target="_blank"
                         className="text-xs font-black text-primary hover:tracking-widest transition-all uppercase"
                       >
                         Read Document →
                       </Link>
-                      
+
                       {hasEditAccess && (
                         <Link
                           href={`/documentation/${doc.id}?mode=edit`}
@@ -290,30 +290,34 @@ export default function DocumentationPage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold hover:bg-secondary disabled:opacity-50 transition-all"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={cn(
-                        "w-10 h-10 rounded-xl text-xs font-bold transition-all border",
-                        currentPage === i + 1 
-                          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-                          : "bg-card border-border hover:bg-secondary text-muted-foreground"
-                      )}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-6 border-t border-border/40">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                  Showing <span className="text-foreground">{Math.min(filteredDocsAll.length, (currentPage - 1) * itemsPerPage + 1)}</span> to <span className="text-foreground">{Math.min(filteredDocsAll.length, currentPage * itemsPerPage)}</span> of <span className="text-foreground">{filteredDocsAll.length}</span> documents
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold hover:bg-secondary disabled:opacity-50 transition-all"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i + 1)}
+                        className={cn(
+                          "w-10 h-10 rounded-xl text-xs font-bold transition-all border",
+                          currentPage === i + 1
+                            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                            : "bg-card border-border hover:bg-secondary text-muted-foreground"
+                        )}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
@@ -322,9 +326,10 @@ export default function DocumentationPage() {
                   Next
                 </button>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+      )}
       </div>
     </div>
   )
