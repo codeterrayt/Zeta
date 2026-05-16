@@ -8,6 +8,7 @@ import { getMyTasks } from "@/actions/task"
 import { getProjects } from "@/actions/project"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { CustomDropdown } from "@/components/ui/custom-dropdown"
 
 const STATUS_COLORS: Record<string, string> = {
@@ -27,6 +28,7 @@ const STATUS_ICONS: Record<string, any> = {
 export default function MyTasksPage() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id
+  const router = useRouter()
 
   const [tasks, setTasks] = React.useState<any[]>([])
   const [projects, setProjects] = React.useState<any[]>([])
@@ -190,10 +192,10 @@ export default function MyTasksPage() {
             {filteredTasks.map((task) => {
               const StatusIcon = STATUS_ICONS[task.status] || Clock
               return (
-                <Link
+                <div
                   key={task.id}
-                  href={`/tasks/${task.id}`}
-                  className="group bg-card border border-border/60 rounded-[1.5rem] p-5 mt-1 hover:border-primary/40 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 grid grid-cols-1 md:grid-cols-12 gap-6 items-center"
+                  onClick={() => router.push(`/tasks/${task.id}`)}
+                  className="group bg-card border border-border/60 rounded-[1.5rem] p-5 mt-1 hover:border-primary/40 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 duration-300 grid grid-cols-1 md:grid-cols-12 gap-6 items-center cursor-pointer"
                 >
                   {/* Task Info */}
                   <div className="col-span-1 md:col-span-5 flex items-center gap-5 min-w-0">
@@ -210,9 +212,13 @@ export default function MyTasksPage() {
 
                   {/* Project */}
                   <div className="col-span-1 md:col-span-2 flex md:justify-center items-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-primary/20">
+                    <Link
+                      href={`/projects/${task.project.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-primary/20 hover:bg-primary hover:text-white transition-all"
+                    >
                       <Tag className="w-3.5 h-3.5" /> {task.project.name}
-                    </span>
+                    </Link>
                   </div>
 
                   {/* Points */}
@@ -236,7 +242,7 @@ export default function MyTasksPage() {
                       {task.status.replace("_", " ")}
                     </div>
                   </div>
-                </Link>
+                </div>
               )
             })}
 
