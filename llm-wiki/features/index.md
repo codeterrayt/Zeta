@@ -6,9 +6,9 @@ This section provides functional specifications for the core features of Zeta.
 
 - [**Sprint Lifecycle**](./sprints.md) - How sprints move from Planned to Completed.
 - [**Task Management**](./tasks.md) - Kanban, Backlog, and Details Modal.
-- [**Collaboration**](./collaboration.md) - Comments and Mentions.
+- [**Collaboration**](./collaboration.md) - Comments, Mentions, and notifications.
+- [**File Attachments & Mentions**](./attachments.md) - Secure uploads, dynamic auth serving, and Tippy.js previews.
 
 ## 🛠️ Upcoming / In-Progress
 - GitHub Pull Request status syncing.
-- Real-time notifications for mentions.
 - Burndown charts for active sprints.

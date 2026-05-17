@@ -34,6 +34,13 @@ Threaded discussion system.
 - `content`: Supports text and potential markdown.
 - `userId`: Link to the author.
 
+### 6. Attachment
+System-wide secure file upload and reference model.
+- `name` / `url`: Original filename and secure dynamic route path `/uploads/[...path]`.
+- `size` / `type`: File size in bytes and MIME type.
+- `userId`: The uploader/creator.
+- `taskId` / `sprintId` / `commentId`: Optional context relations.
+
 ## 🔗 Relationships Diagram (Conceptual)
 ```mermaid
 erDiagram
@@ -44,4 +51,8 @@ erDiagram
     User ||--o{ Task : creates
     User ||--o{ Task : assigned
     Comment ||--o{ Comment : replies
+    Task ||--o{ Attachment : has
+    Sprint ||--o{ Attachment : has
+    Comment ||--o{ Attachment : has
+    User ||--o{ Attachment : uploads
 ```
