@@ -11,6 +11,7 @@ import { updateTaskStatus } from "@/actions/task"
 import { Search, Filter, X, Calendar } from "lucide-react"
 import { format, isPast, isToday, differenceInDays } from "date-fns"
 import { useSearchParams } from "next/navigation"
+import { useRealtime } from "@/components/providers/realtime-provider"
 
 export type Task = {
   id: string
@@ -54,6 +55,37 @@ export function KanbanBoard({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const searchParams = useSearchParams()
 
+  const { socket } = useRealtime()
+  const [activeDragTaskId, setActiveDragTaskId] = useState<string | null>(null)
+
+  // Track collaborative dragging relative user cursors
+  React.useEffect(() => {
+    if (!socket || !activeDragTaskId || !currentUserId) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const container = document.getElementById("kanban-board-container")
+      if (!container) return
+      const rect = container.getBoundingClientRect()
+      // Relative offset bounds matching viewport coordinates inside the container
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      socket.emit("drag_cursor_move", {
+        projectId,
+        taskId: activeDragTaskId,
+        x,
+        y,
+        userName: session?.user?.name,
+        userEmail: session?.user?.email,
+        userId: currentUserId
+      })
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+    }
+  }, [socket, activeDragTaskId, currentUserId, projectId, session])
+
   React.useEffect(() => {
     const taskIdParam = searchParams?.get("taskId")
     if (taskIdParam) {
@@ -81,7 +113,16 @@ export function KanbanBoard({
     }
   }, [initialData])
 
+  const onDragStart = (start: any) => {
+    setActiveDragTaskId(start.draggableId)
+  }
+
   const onDragEnd = async (result: DropResult) => {
+    setActiveDragTaskId(null)
+    if (socket) {
+      socket.emit("drag_cursor_end", { projectId, userId: currentUserId })
+    }
+
     const { destination, source, draggableId } = result
 
     if (!destination) return
@@ -166,7 +207,7 @@ export function KanbanBoard({
   }))
 
   return (
-    <div className="flex flex-col h-[700px] space-y-6">
+    <div id="kanban-board-container" className="flex flex-col h-[700px] space-y-6 relative">
       {/* Kanban Filter Bar */}
       <div className="flex flex-wrap items-center gap-3 bg-card border border-border p-3 rounded-xl shadow-sm shrink-0">
         <div className="relative flex-1 min-w-[200px]">
@@ -231,7 +272,7 @@ export function KanbanBoard({
         </div>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden min-h-0 pb-4 custom-scrollbar">
           {filteredColumns.map(column => (
             <div key={column.id} className="flex flex-col w-80 shrink-0 min-h-0">

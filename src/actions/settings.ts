@@ -9,7 +9,8 @@ export async function updateSettings(data: {
   mediumFocusMax: number,
   aiEnabled: boolean,
   aiModel: string,
-  askTimelineComment: boolean
+  askTimelineComment: boolean,
+  notificationsEnabled?: boolean
 }) {
   const session = await auth()
   const userId = (session?.user as any)?.id
@@ -23,7 +24,8 @@ export async function updateSettings(data: {
         mediumFocusMax: data.mediumFocusMax,
         aiEnabled: data.aiEnabled,
         aiModel: data.aiModel,
-        askTimelineComment: data.askTimelineComment
+        askTimelineComment: data.askTimelineComment,
+        notificationsEnabled: data.notificationsEnabled ?? true
       }
     })
 

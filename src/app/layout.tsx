@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SessionProvider } from "next-auth/react"
 import { Toaster } from "sonner"
 
+import { RealtimeProvider } from "@/components/providers/realtime-provider"
+
 const inter = Inter({ subsets: ["latin"] })
 
 import { auth } from "@/auth"
@@ -35,8 +37,10 @@ export default async function RootLayout({
           }}
         >
           <SessionProvider session={session}>
-            {children}
-            <Toaster richColors position="top-right" />
+            <RealtimeProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+            </RealtimeProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>

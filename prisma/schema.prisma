@@ -84,6 +84,9 @@ model Settings {
   // Timeline comment options
   askTimelineComment Boolean @default(true)
 
+  // Real-time Notification Preference
+  notificationsEnabled Boolean @default(true)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

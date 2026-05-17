@@ -27,6 +27,23 @@ export default function DocumentDetailsPage() {
   const [content, setContent] = React.useState("")
   const [saving, setSaving] = React.useState(false)
   const [projectAttachments, setProjectAttachments] = React.useState<any[]>([])
+  const [readers, setReaders] = React.useState<any[]>([])
+
+  // Listen to real-time active readers list changes from WebSocket server
+  React.useEffect(() => {
+    if (!userId) return
+
+    const handleReadersUpdate = (e: Event) => {
+      const viewers = (e as CustomEvent).detail || []
+      // Render only OTHER active users currently reading this doc
+      setReaders(viewers.filter((v: any) => v.id !== userId))
+    }
+
+    window.addEventListener("readers:updated", handleReadersUpdate)
+    return () => {
+      window.removeEventListener("readers:updated", handleReadersUpdate)
+    }
+  }, [userId])
 
   React.useEffect(() => {
     async function load() {
@@ -153,7 +170,34 @@ export default function DocumentDetailsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
+          {/* Real-time active readers avatars list */}
+          {readers.length > 0 && (
+            <div className="flex items-center -space-x-2 animate-in fade-in slide-in-from-right-3 duration-300">
+              <span className="text-[10px] text-muted-foreground font-black tracking-widest mr-2 uppercase">Active Readers:</span>
+              {readers.map((v) => (
+                <div
+                  key={v.id}
+                  className="relative group w-8 h-8 rounded-full border-2 border-background bg-secondary flex items-center justify-center overflow-hidden shrink-0 shadow-sm transition-all hover:scale-110"
+                  title={v.name || "Anonymous User"}
+                >
+                  {v.image ? (
+                    <img src={v.image} alt={v.name || ""} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[10px] font-black uppercase text-secondary-foreground">
+                      {(v.name || v.email || "?").slice(0, 2)}
+                    </span>
+                  )}
+                  {/* Floating tooltip */}
+                  <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-popover border border-border px-2 py-1 rounded-md text-[9px] font-black uppercase text-popover-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-md">
+                    {v.name || "Team Member"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
           {canEdit && (
             <button
               onClick={async () => {
@@ -183,6 +227,7 @@ export default function DocumentDetailsPage() {
               {saving ? "Saving..." : "Save Changes"}
             </button>
           )}
+        </div>
         </div>
       </header>
 
