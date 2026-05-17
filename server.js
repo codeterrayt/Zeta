@@ -476,7 +476,27 @@ app.prepare().then(async () => {
 
         else if (table === "AuditLog") {
           if (taskId) {
-            io.to(`task:${taskId}`).emit("timeline_updated", { taskId });
+            if (action === "INSERT") {
+              const logRes = await pgClient.query(`
+                SELECT al.*, 
+                  json_build_object(
+                    'id', u.id,
+                    'name', u.name,
+                    'email', u.email,
+                    'image', u.image
+                  ) as user,
+                  '[]'::json as comments
+                FROM "AuditLog" al
+                JOIN "User" u ON al."userId" = u.id
+                WHERE al.id = $1
+              `, [id]);
+              if (logRes.rows[0]) {
+                const log = logRes.rows[0];
+                io.to(`task:${taskId}`).emit("timeline_log_created", log);
+              }
+            } else {
+              io.to(`task:${taskId}`).emit("timeline_updated", { taskId });
+            }
           }
         }
 

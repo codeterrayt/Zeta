@@ -281,6 +281,10 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(new CustomEvent("timeline:updated", { detail: data }))
     })
 
+    socketClient.on("timeline_log_created", (log) => {
+      window.dispatchEvent(new CustomEvent("timeline:log_created", { detail: log }))
+    })
+
     socketClient.on("timeline_comment_created", (comment) => {
       window.dispatchEvent(new CustomEvent("timeline:comment_created", { detail: comment }))
     })

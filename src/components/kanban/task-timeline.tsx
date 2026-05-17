@@ -207,6 +207,15 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
       }))
     }
 
+    const handleLogCreated = (e: Event) => {
+      const log = (e as CustomEvent).detail
+      if (!log) return
+      setLogs(prev => {
+        if (prev.some(l => l.id === log.id)) return prev
+        return [...prev, log]
+      })
+    }
+
     const handleTimelineUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (!detail || detail.taskId === taskId) {
@@ -216,11 +225,13 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
 
     window.addEventListener("timeline:comment_created", handleCommentCreated)
     window.addEventListener("timeline:comment_deleted", handleCommentDeleted)
+    window.addEventListener("timeline:log_created", handleLogCreated)
     window.addEventListener("timeline:updated", handleTimelineUpdate)
 
     return () => {
       window.removeEventListener("timeline:comment_created", handleCommentCreated)
       window.removeEventListener("timeline:comment_deleted", handleCommentDeleted)
+      window.removeEventListener("timeline:log_created", handleLogCreated)
       window.removeEventListener("timeline:updated", handleTimelineUpdate)
     }
   }, [isOpen, taskId])
