@@ -46,6 +46,33 @@ export default function DocumentDetailsPage() {
   }, [userId])
 
   React.useEffect(() => {
+    if (!docId) return
+
+    const handleDocUpdate = (e: Event) => {
+      const updatedDoc = (e as CustomEvent).detail
+      if (updatedDoc && updatedDoc.id === docId) {
+        setDoc(updatedDoc)
+        // Dynamically sync fields
+        setTitle(updatedDoc.title || "")
+        setContent(updatedDoc.content || "")
+      }
+    }
+
+    const handleDocDelete = () => {
+      toast.error("This document has been deleted by another user.")
+      router.push("/documentation")
+    }
+
+    window.addEventListener(`document:updated:${docId}`, handleDocUpdate)
+    window.addEventListener(`document:deleted:${docId}`, handleDocDelete)
+
+    return () => {
+      window.removeEventListener(`document:updated:${docId}`, handleDocUpdate)
+      window.removeEventListener(`document:deleted:${docId}`, handleDocDelete)
+    }
+  }, [docId])
+
+  React.useEffect(() => {
     async function load() {
       const res = await getDocumentById(docId as string)
       if (res.success && res.document) {

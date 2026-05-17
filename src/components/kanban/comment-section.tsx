@@ -144,11 +144,16 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
     const map: Record<string, any> = {}
     const roots: any[] = []
 
-    comments.forEach(c => {
+    // Robust deduplication filter to absolutely guarantee zero duplicate react keys
+    const uniqueComments = comments.filter((c, index, self) => 
+      self.findIndex(t => t.id === c.id) === index
+    )
+
+    uniqueComments.forEach(c => {
       map[c.id] = { ...c, children: [] }
     })
 
-    comments.forEach(c => {
+    uniqueComments.forEach(c => {
       if (c.parentId && map[c.parentId]) {
         map[c.parentId].children.push(map[c.id])
       } else {
@@ -156,6 +161,12 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
       }
     })
 
+    // Sort nested replies chronologically (oldest first)
+    Object.values(map).forEach((c: any) => {
+      c.children.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    })
+
+    // Sort roots chronologically (new to old - newest first)
     return roots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [comments])
 
@@ -172,7 +183,10 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
       parentId
     })
     if (res.success && res.comment) {
-      setComments(prev => [...prev, res.comment as any])
+      setComments(prev => {
+        if (prev.some(c => c.id === res.comment.id)) return prev
+        return [...prev, res.comment as any]
+      })
       if (parentId) {
         setReplyTo(null)
         setReplyContent("")

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TaskAssignmentRole } from "@prisma/client"
 import { auth } from "@/auth"
-import { notifyMentions, notifyTaskAssignment } from "./notifications"
+import { notifyMentions, notifyTaskAssignment, notifyTaskUnassignment } from "./notifications"
 import { unstable_noStore as noStore } from "next/cache"
 
 export async function createTask(data: {
@@ -263,6 +263,22 @@ export async function updateTaskAssignments(taskId: string, assignments: Array<{
             userId: currentUserId,
             taskId
           }
+        })
+      }
+
+      if (added.length > 0) {
+        await notifyTaskAssignment({
+          taskId,
+          addedUserIds: added.map(a => a.userId),
+          actorId: currentUserId
+        })
+      }
+
+      if (removed.length > 0) {
+        await notifyTaskUnassignment({
+          taskId,
+          removedUserIds: removed.map(r => r.userId),
+          actorId: currentUserId
         })
       }
     }

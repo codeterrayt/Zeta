@@ -73,6 +73,10 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
   const [submittingCommentId, setSubmittingCommentId] = React.useState<string | null>(null)
   const [attachments, setAttachments] = React.useState<any[]>([])
 
+  const sortedLogs = React.useMemo(() => {
+    return [...logs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [logs])
+
   const loadLogs = async () => {
     setLoading(true)
     const [res, atts] = await Promise.all([
@@ -125,6 +129,7 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
           return l
         }))
         setAddingComments(prev => ({ ...prev, [logId]: "" }))
+        window.dispatchEvent(new CustomEvent("timeline:updated", { detail: { taskId } }))
       } else {
         alert("Failed to add comment")
       }
@@ -150,6 +155,7 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
           }
           return l
         }))
+        window.dispatchEvent(new CustomEvent("timeline:updated", { detail: { taskId } }))
       } else {
         alert("Failed to delete comment")
       }
@@ -277,7 +283,7 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
                   </div>
                 ) : (
                   <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border/60 before:to-transparent">
-                    {logs.map((log, index) => (
+                    {sortedLogs.map((log, index) => (
                       <div key={log.id} className="relative flex items-start gap-8 group">
                         {/* Avatar/Indicator */}
                         <div className="relative z-10 flex items-center justify-center shrink-0 w-10 h-10 rounded-2xl bg-card border border-border/60 shadow-sm group-hover:scale-110 transition-transform">
@@ -335,7 +341,7 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
                             {/* Thread Comments List */}
                             {log.comments && log.comments.length > 0 && (
                               <div className="space-y-3 pl-3 border-l border-border/40">
-                                {log.comments.map((c) => (
+                                {[...log.comments].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((c) => (
                                   <div key={c.id} className="group/item flex items-start gap-2.5">
                                     {c.user.image ? (
                                       <img src={c.user.image} alt={c.user.name || ""} className="w-6 h-6 rounded-full border border-border/40 shrink-0" />

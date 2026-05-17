@@ -197,6 +197,14 @@ app.prepare().then(async () => {
             SELECT "taskId" INTO tsk_id FROM "AuditLog" WHERE id = NEW."auditLogId";
             usr_id := NEW."userId";
           END IF;
+        ELSIF TG_TABLE_NAME = 'Document' THEN
+          IF TG_OP = 'DELETE' THEN
+            proj_id := OLD."projectId";
+            usr_id := OLD."authorId";
+          ELSE
+            proj_id := NEW."projectId";
+            usr_id := NEW."authorId";
+          END IF;
         END IF;
 
         payload := jsonb_build_object(
@@ -215,15 +223,48 @@ app.prepare().then(async () => {
       $$ LANGUAGE plpgsql;
     `);
 
+    await pgClient.query(`
+      CREATE OR REPLACE FUNCTION notify_project_delete() RETURNS TRIGGER AS $$
+      DECLARE
+        payload JSONB;
+      BEGIN
+        payload := jsonb_build_object(
+          'table', 'Project',
+          'action', 'DELETE',
+          'id', OLD.id::TEXT,
+          'projectId', OLD.id::TEXT,
+          'projectName', OLD.name
+        );
+        PERFORM pg_notify('zeta_realtime', payload::text);
+        RETURN NULL;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
     // Attach Table triggers
-    const tablesToTrigger = ["Task", "Comment", "Attachment", "Sprint", "Project", "ProjectMember", "Notification", "TaskAssignment", "AuditLog", "AuditLogComment"];
+    const tablesToTrigger = ["Task", "Comment", "Attachment", "Sprint", "Project", "ProjectMember", "Notification", "TaskAssignment", "AuditLog", "AuditLogComment", "Document"];
     for (const table of tablesToTrigger) {
       await pgClient.query(`DROP TRIGGER IF EXISTS trg_${table.toLowerCase()}_realtime ON "${table}";`);
-      await pgClient.query(`
-        CREATE TRIGGER trg_${table.toLowerCase()}_realtime
-        AFTER INSERT OR UPDATE OR DELETE ON "${table}"
-        FOR EACH ROW EXECUTE FUNCTION notify_realtime();
-      `);
+      await pgClient.query(`DROP TRIGGER IF EXISTS trg_${table.toLowerCase()}_delete_realtime ON "${table}";`);
+      
+      if (table === "Project") {
+        await pgClient.query(`
+          CREATE TRIGGER trg_project_realtime
+          AFTER INSERT OR UPDATE ON "Project"
+          FOR EACH ROW EXECUTE FUNCTION notify_realtime();
+        `);
+        await pgClient.query(`
+          CREATE TRIGGER trg_project_delete_realtime
+          AFTER DELETE ON "Project"
+          FOR EACH ROW EXECUTE FUNCTION notify_project_delete();
+        `);
+      } else {
+        await pgClient.query(`
+          CREATE TRIGGER trg_${table.toLowerCase()}_realtime
+          AFTER INSERT OR UPDATE OR DELETE ON "${table}"
+          FOR EACH ROW EXECUTE FUNCTION notify_realtime();
+        `);
+      }
     }
 
     console.log("> Real-time PostgreSQL DB triggers synchronized successfully.");
@@ -233,7 +274,7 @@ app.prepare().then(async () => {
     pgClient.on("notification", async (msg) => {
       try {
         const payload = JSON.parse(msg.payload);
-        const { table, action, id, projectId, taskId, sprintId, userId } = payload;
+        const { table, action, id, projectId, taskId, sprintId, userId, projectName } = payload;
 
         if (table === "Task") {
           if (action === "DELETE") {
@@ -350,17 +391,38 @@ app.prepare().then(async () => {
           if (action === "INSERT") {
             io.to(`user:${userId}`).emit("added_to_project", { projectId });
           } else if (action === "DELETE") {
-            io.to(`user:${userId}`).emit("removed_from_project", { projectId });
+            let pName = "the project";
+            try {
+              const projRes = await pgClient.query('SELECT name FROM "Project" WHERE id = $1', [projectId]);
+              if (projRes.rows[0]) pName = projRes.rows[0].name;
+            } catch(e) {}
+            io.to(`user:${userId}`).emit("removed_from_project", { projectId, projectName: pName });
           }
         }
 
         else if (table === "Project") {
           if (action === "DELETE") {
-            io.to(`project:${id}`).emit("project_deleted", { projectId: id });
+            io.to(`project:${id}`).emit("project_deleted", { projectId: id, projectName });
           } else {
             const projRes = await pgClient.query('SELECT * FROM "Project" WHERE id = $1', [id]);
             if (projRes.rows[0]) {
               io.to(`project:${id}`).emit("project_updated", projRes.rows[0]);
+            }
+          }
+        }
+
+        else if (table === "Document") {
+          if (action === "DELETE") {
+            io.to(`project:${projectId}`).emit("document_deleted", { id });
+          } else {
+            const docRes = await pgClient.query('SELECT * FROM "Document" WHERE id = $1', [id]);
+            if (docRes.rows[0]) {
+              const doc = docRes.rows[0];
+              if (action === "INSERT") {
+                io.to(`project:${doc.projectId}`).emit("document_created", doc);
+              } else {
+                io.to(`project:${doc.projectId}`).emit("document_updated", doc);
+              }
             }
           }
         }

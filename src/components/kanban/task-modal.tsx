@@ -107,8 +107,7 @@ export function TaskModal({
   const currentUserId = (session?.user as any)?.id
   const isReporter = currentUserId === (task?.creatorId || task?.reporter?.id)
   const isAssigned = assignments.some(a => a.userId === currentUserId)
-  const isProjectMember = projectMembers?.some(m => m.id === currentUserId) ?? false
-  const canEdit = isReporter || isAssigned || isProjectMember
+  const canEdit = isReporter || isAssigned
 
   const [fullTask, setFullTask] = React.useState(task)
   const [loading, setLoading] = React.useState(false)
@@ -152,7 +151,7 @@ export function TaskModal({
         })
       }
     }
-  }, [task?.id])
+  }, [task?.id, task?.title, task?.description, task?.status, task?.points, task?.dueDate, task?.assignments])
 
   React.useEffect(() => {
     if (isOpen && !loading && task?.id) {

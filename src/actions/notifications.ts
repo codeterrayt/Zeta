@@ -384,6 +384,64 @@ export async function notifyTaskAssignment({
 }
 
 /**
+ * Creates UNASSIGNED notification when a user is removed from a task.
+ */
+export async function notifyTaskUnassignment({
+  taskId,
+  removedUserIds,
+  actorId,
+  taskTitle
+}: {
+  taskId: string
+  removedUserIds: string[]
+  actorId?: string
+  taskTitle?: string
+}) {
+  try {
+    if (removedUserIds.length === 0) return
+
+    let resolvedTitle = taskTitle
+    let resolvedProjectId = ""
+    let resolvedSprintId = ""
+
+    if (!resolvedTitle || !resolvedProjectId) {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        select: { title: true, projectId: true, sprintId: true }
+      })
+      if (task) {
+        resolvedTitle = task.title
+        resolvedProjectId = task.projectId
+        resolvedSprintId = task.sprintId || ""
+      }
+    }
+
+    const actor = actorId
+      ? await prisma.user.findUnique({ where: { id: actorId }, select: { name: true } })
+      : null
+    const actorName = actor?.name || "Someone"
+
+    const link = `/projects/${resolvedProjectId}/sprints/${resolvedSprintId || 'backlog'}?taskId=${taskId}`
+
+    for (const userId of removedUserIds) {
+      if (userId === actorId) continue // Don't notify yourself
+
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: "UNASSIGNED",
+          title: "Removed from Task",
+          content: `${actorName} removed you from the task "${resolvedTitle || 'Untitled Task'}"`,
+          link
+        }
+      })
+    }
+  } catch (error) {
+    console.error("notifyTaskUnassignment error:", error)
+  }
+}
+
+/**
  * Creates TASK_CHANGED notifications for all participating/present users on a task.
  * Participating users are: assignees, reporter, and anyone who commented.
  */

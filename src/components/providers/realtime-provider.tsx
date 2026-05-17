@@ -186,22 +186,42 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       router.refresh()
     })
 
-    socketClient.on("removed_from_project", ({ projectId: targetProjId }) => {
+    socketClient.on("removed_from_project", ({ projectId: targetProjId, projectName }) => {
       if (projectId === targetProjId) {
-        toast.error("Your access to this project has been revoked.")
-        router.push("/")
+        toast.error(`Your access to "${projectName || 'the project'}" has been revoked.`)
+        router.push("/projects?modalAlert=removed")
       } else {
         router.refresh()
       }
     })
 
-    socketClient.on("project_deleted", ({ projectId: targetProjId }) => {
+    socketClient.on("project_deleted", ({ projectId: targetProjId, projectName }) => {
       if (projectId === targetProjId) {
-        toast.error("This project has been deleted by an administrator.")
-        router.push("/")
+        toast.error(`The project "${projectName || 'the project'}" was deleted by an administrator.`)
+        router.push(`/projects?modalAlert=deleted&projectName=${encodeURIComponent(projectName || 'the project')}`)
       } else {
         router.refresh()
       }
+    })
+
+    socketClient.on("document_created", (doc) => {
+      window.dispatchEvent(new CustomEvent("document:created", { detail: doc }))
+      toast.info(`New document "${doc.title || 'Untitled'}" was created!`)
+      router.refresh()
+    })
+
+    socketClient.on("document_updated", (doc) => {
+      window.dispatchEvent(new CustomEvent(`document:updated:${doc.id}`, { detail: doc }))
+      window.dispatchEvent(new CustomEvent("document:updated", { detail: doc }))
+      toast.info(`Document "${doc.title || 'Untitled'}" was updated.`)
+      router.refresh()
+    })
+
+    socketClient.on("document_deleted", (data) => {
+      window.dispatchEvent(new CustomEvent(`document:deleted:${data.id}`))
+      window.dispatchEvent(new CustomEvent("document:deleted", { detail: data }))
+      toast.error("A document was deleted.")
+      router.refresh()
     })
 
     socketClient.on("project_updated", (project) => {

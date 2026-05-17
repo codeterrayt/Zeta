@@ -3,6 +3,7 @@ import { Folder, ListTodo, Users } from "lucide-react"
 import { getProjects } from "@/actions/project"
 import { CreateProjectModal } from "@/components/projects/create-project-modal"
 import { EditProjectModal } from "@/components/projects/edit-project-modal"
+import { ProjectsPageAlerts } from "@/components/projects/projects-page-alerts"
 
 export default async function ProjectsPage() {
   const { projects } = await getProjects()
@@ -59,6 +60,7 @@ export default async function ProjectsPage() {
           </div>
         )}
       </section>
+      <ProjectsPageAlerts />
     </div>
   )
 }
