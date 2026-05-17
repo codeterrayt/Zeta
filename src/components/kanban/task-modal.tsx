@@ -800,7 +800,7 @@ export function TaskModal({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-[110] bg-background/80 backdrop-blur-md animate-in fade-in duration-300" />
         <div className="fixed inset-0 z-[111] flex items-center justify-center p-4">
-          <DialogPrimitive.Content className="w-full max-w-lg bg-card border border-border/60 p-8 shadow-2xl rounded-[2.5rem] focus:outline-none animate-in zoom-in-95 duration-200">
+          <DialogPrimitive.Content className="w-[94vw] max-w-3xl bg-card border border-border/60 p-8 shadow-2xl rounded-[2.5rem] focus:outline-none animate-in zoom-in-95 duration-200">
             <DialogPrimitive.Title className="text-2xl font-black tracking-tight mb-2">
               Timeline Comments
             </DialogPrimitive.Title>
@@ -808,12 +808,12 @@ export function TaskModal({
               Provide optional context comments for your changes to help the team keep track.
             </DialogPrimitive.Description>
 
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
               {pendingChanges.map((change, index) => (
                 <div key={change.field} className="space-y-2 border-b border-border/40 pb-4 last:border-b-0 last:pb-0">
                   <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
                     <span>{change.label}</span>
-                    <span className="text-[10px] font-medium normal-case bg-secondary/80 px-2 py-0.5 rounded-lg border border-border/30 truncate max-w-[200px]">
+                    <span className="text-[10px] font-medium normal-case bg-secondary/80 px-2 py-0.5 rounded-lg border border-border/30 truncate max-w-[250px]">
                       {change.oldVal} → {change.newVal}
                     </span>
                   </div>
@@ -826,7 +826,7 @@ export function TaskModal({
                         setPendingChanges(updated)
                       }}
                       placeholder="Add an optional comment... (type @ or @file:)"
-                      minHeight="60px"
+                      minHeight="70px"
                       projectId={task.projectId}
                     />
                   </div>

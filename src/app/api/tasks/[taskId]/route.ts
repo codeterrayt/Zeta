@@ -67,7 +67,7 @@ export async function PATCH(
       const comments = timelineComments || {}
 
       const createLogWithComment = async (tx: any, data: { action: string, details: string, commentKey: string }) => {
-        const log = await tx.auditLog.create({
+        await tx.auditLog.create({
           data: {
             action: data.action,
             details: data.details,
@@ -76,15 +76,6 @@ export async function PATCH(
             taskId
           }
         })
-        if (comments[data.commentKey]) {
-          await tx.auditLogComment.create({
-            data: {
-              content: comments[data.commentKey],
-              auditLogId: log.id,
-              userId: currentUserId
-            }
-          })
-        }
       }
 
       if (rest.title !== undefined && rest.title !== oldTask.title) {
