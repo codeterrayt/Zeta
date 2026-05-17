@@ -10,7 +10,7 @@ services:
     environment:
       - AUTH_TRUST_HOST=true
       - NEXTAUTH_URL=http://localhost:3000
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-Zeta}?schema=${POSTGRES_SCHEMA:-zeta}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-Zeta}?schema=${POSTGRES_SCHEMA:-public}
       - AUTH_SECRET=${AUTH_SECRET:-${NEXTAUTH_SECRET}}
     env_file:
       - .docker.env
@@ -18,7 +18,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./uploads:/app/public/uploads
+      - ./uploads:/app/uploads
     restart: always
 
   db:
@@ -45,6 +45,18 @@ services:
       - "8888:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: Zeta-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      - db
     restart: always
 
 volumes:

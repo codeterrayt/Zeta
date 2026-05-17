@@ -28,10 +28,10 @@ RUN npm run build
 # 2. SET PRODUCTION ENV ONLY AFTER THE BUILD IS FINISHED
 ENV NODE_ENV production
 
-# Ensure uploads directory exists
-RUN mkdir -p public/uploads
+# Ensure uploads directory exists and startup script is executable
+RUN mkdir -p uploads && chmod +x start.sh
 
 EXPOSE 3000
 
-# Push database schema updates, then start the server
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm run start"]
+# Push database schema updates, then start the server via start.sh
+CMD ["./start.sh"]

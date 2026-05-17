@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile } from "fs/promises"
+import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
@@ -25,8 +25,12 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes)
 
     const uniqueId = Math.random().toString(36).substring(2, 15)
-    const fileName = `${uniqueId}-${file.name}`
-    const path = join(process.cwd(), "public", "uploads", fileName)
+    const ext = file.name.includes(".") ? file.name.split(".").pop() : "bin"
+    const fileName = `${uniqueId}-${Date.now()}.${ext}`
+    
+    const uploadsDir = join(process.cwd(), "uploads")
+    await mkdir(uploadsDir, { recursive: true })
+    const path = join(uploadsDir, fileName)
     
     await writeFile(path, buffer)
 
