@@ -66,107 +66,92 @@ export async function PATCH(
 
       const comments = timelineComments || {}
 
-      if (rest.title !== undefined && rest.title !== oldTask.title) {
-        await tx.auditLog.create({
+      const createLogWithComment = async (tx: any, data: { action: string, details: string, commentKey: string }) => {
+        const log = await tx.auditLog.create({
           data: {
-            action: "UPDATE_TASK",
-            details: `Title: "${oldTask.title}" → "${rest.title}"`,
-            comment: comments.title || null,
+            action: data.action,
+            details: data.details,
+            comment: comments[data.commentKey] || null,
             userId: currentUserId,
             taskId
           }
+        })
+        if (comments[data.commentKey]) {
+          await tx.auditLogComment.create({
+            data: {
+              content: comments[data.commentKey],
+              auditLogId: log.id,
+              userId: currentUserId
+            }
+          })
+        }
+      }
+
+      if (rest.title !== undefined && rest.title !== oldTask.title) {
+        await createLogWithComment(tx, {
+          action: "UPDATE_TASK",
+          details: `Title: "${oldTask.title}" → "${rest.title}"`,
+          commentKey: "title"
         })
       }
       if (rest.status !== undefined && rest.status !== oldTask.status) {
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_STATUS",
-            details: `Status: ${oldTask.status} → ${rest.status}`,
-            comment: comments.status || null,
-            userId: currentUserId,
-            taskId
-          }
+        await createLogWithComment(tx, {
+          action: "UPDATE_STATUS",
+          details: `Status: ${oldTask.status} → ${rest.status}`,
+          commentKey: "status"
         })
       }
       if (rest.points !== undefined && rest.points !== oldTask.points) {
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_TASK",
-            details: `Complexity: ${oldTask.points ?? "None"} → ${rest.points ?? "None"}`,
-            comment: comments.points || null,
-            userId: currentUserId,
-            taskId
-          }
+        await createLogWithComment(tx, {
+          action: "UPDATE_TASK",
+          details: `Complexity: ${oldTask.points ?? "None"} → ${rest.points ?? "None"}`,
+          commentKey: "points"
         })
       }
       if (rest.sprintId !== undefined && rest.sprintId !== oldTask.sprintId) {
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_TASK",
-            details: `Sprint: ${oldTask.sprint?.name ?? "Backlog"} → ${updatedTask.sprint?.name ?? "Backlog"}`,
-            comment: comments.sprintId || null,
-            userId: currentUserId,
-            taskId
-          }
+        await createLogWithComment(tx, {
+          action: "UPDATE_TASK",
+          details: `Sprint: ${oldTask.sprint?.name ?? "Backlog"} → ${updatedTask.sprint?.name ?? "Backlog"}`,
+          commentKey: "sprintId"
         })
       }
       if (rest.dueDate !== undefined) {
         const oldD = oldTask.dueDate ? new Date(oldTask.dueDate).toLocaleDateString() : "None"
         const newD = rest.dueDate ? new Date(rest.dueDate).toLocaleDateString() : "None"
         if (oldD !== newD) {
-          await tx.auditLog.create({
-            data: {
-              action: "UPDATE_TASK",
-              details: `Due Date: ${oldD} → ${newD}`,
-              comment: comments.dueDate || null,
-              userId: currentUserId,
-              taskId
-            }
+          await createLogWithComment(tx, {
+            action: "UPDATE_TASK",
+            details: `Due Date: ${oldD} → ${newD}`,
+            commentKey: "dueDate"
           })
         }
       }
       if (rest.creatorId !== undefined && rest.creatorId !== oldTask.creatorId) {
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_TASK",
-            details: `Reporter: ${oldTask.reporter?.name || "Unknown"} → ${updatedTask.reporter?.name || "Unknown"}`,
-            comment: comments.creatorId || null,
-            userId: currentUserId,
-            taskId
-          }
+        await createLogWithComment(tx, {
+          action: "UPDATE_TASK",
+          details: `Reporter: ${oldTask.reporter?.name || "Unknown"} → ${updatedTask.reporter?.name || "Unknown"}`,
+          commentKey: "creatorId"
         })
       }
       if (rest.githubUrl !== undefined && rest.githubUrl !== oldTask.githubUrl) {
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_TASK",
-            details: `GitHub Link updated`,
-            comment: comments.githubUrl || null,
-            userId: currentUserId,
-            taskId
-          }
+        await createLogWithComment(tx, {
+          action: "UPDATE_TASK",
+          details: `GitHub Link updated`,
+          commentKey: "githubUrl"
         })
       }
       if (rest.repoName !== undefined && rest.repoName !== oldTask.repoName) {
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_TASK",
-            details: `Repository: ${oldTask.repoName || "None"} → ${rest.repoName || "None"}`,
-            comment: comments.repoName || null,
-            userId: currentUserId,
-            taskId
-          }
+        await createLogWithComment(tx, {
+          action: "UPDATE_TASK",
+          details: `Repository: ${oldTask.repoName || "None"} → ${rest.repoName || "None"}`,
+          commentKey: "repoName"
         })
       }
       if (rest.branchName !== undefined && rest.branchName !== oldTask.branchName) {
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_TASK",
-            details: `Branch: ${oldTask.branchName || "None"} → ${rest.branchName || "None"}`,
-            comment: comments.branchName || null,
-            userId: currentUserId,
-            taskId
-          }
+        await createLogWithComment(tx, {
+          action: "UPDATE_TASK",
+          details: `Branch: ${oldTask.branchName || "None"} → ${rest.branchName || "None"}`,
+          commentKey: "branchName"
         })
       }
 
@@ -183,14 +168,10 @@ export async function PATCH(
           removed.forEach(r => attendeeDetails.push(`Removed attendee: ${r.user.name || "Unknown"}`))
           added.forEach(a => attendeeDetails.push(`Added attendee: ${a.user.name || "Unknown"} (${a.role})`))
           
-          await tx.auditLog.create({
-            data: {
-              action: "UPDATE_ASSIGNMENTS",
-              details: attendeeDetails.join("\n"),
-              comment: comments.assignments || null,
-              userId: currentUserId,
-              taskId
-            }
+          await createLogWithComment(tx, {
+            action: "UPDATE_ASSIGNMENTS",
+            details: attendeeDetails.join("\n"),
+            commentKey: "assignments"
           })
         }
       }

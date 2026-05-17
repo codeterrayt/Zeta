@@ -54,6 +54,7 @@ model User {
   auditLogs     AuditLog[]
   settings      Settings?
   authoredDocuments Document[] @relation("AuthoredDocuments")
+  auditLogComments AuditLogComment[]
 }
 
 model VerificationToken {
@@ -306,6 +307,18 @@ model AuditLog {
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  comments  AuditLogComment[]
+}
+
+model AuditLogComment {
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  auditLogId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  auditLog   AuditLog @relation(fields: [auditLogId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model EmailQueue {

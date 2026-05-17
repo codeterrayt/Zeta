@@ -40,6 +40,21 @@ export async function getTaskAuditLogs(taskId: string) {
             image: true,
             email: true
           }
+        },
+        comments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                email: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: "asc"
+          }
         }
       },
       orderBy: {
@@ -68,5 +83,57 @@ export async function updateAuditLogComment(logId: string, comment: string) {
   } catch (error) {
     console.error("updateAuditLogComment error:", error)
     return { success: false, error: "Failed to update timeline comment" }
+  }
+}
+
+export async function addAuditLogComment(auditLogId: string, content: string) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    const newComment = await prisma.auditLogComment.create({
+      data: {
+        auditLogId,
+        content,
+        userId: session.user.id
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    return { success: true, comment: newComment }
+  } catch (error) {
+    console.error("addAuditLogComment error:", error)
+    return { success: false, error: "Failed to add comment" }
+  }
+}
+
+export async function deleteAuditLogComment(commentId: string) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    const existing = await prisma.auditLogComment.findUnique({
+      where: { id: commentId }
+    })
+    if (!existing) return { success: false, error: "Comment not found" }
+    if (existing.userId !== session.user.id) return { success: false, error: "Forbidden" }
+
+    await prisma.auditLogComment.delete({
+      where: { id: commentId }
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("deleteAuditLogComment error:", error)
+    return { success: false, error: "Failed to delete comment" }
   }
 }

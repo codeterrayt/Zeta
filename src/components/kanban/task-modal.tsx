@@ -342,7 +342,7 @@ export function TaskModal({
           )}
         </div>
         <div className="flex items-center gap-3">
-          <TaskTimeline taskId={task.id} taskTitle={task.title} />
+          <TaskTimeline taskId={task.id} taskTitle={task.title} projectId={task.projectId} />
           
           {!standalone && (
             <Link
@@ -808,7 +808,7 @@ export function TaskModal({
               Provide optional context comments for your changes to help the team keep track.
             </DialogPrimitive.Description>
 
-            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {pendingChanges.map((change, index) => (
                 <div key={change.field} className="space-y-2 border-b border-border/40 pb-4 last:border-b-0 last:pb-0">
                   <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
@@ -817,17 +817,19 @@ export function TaskModal({
                       {change.oldVal} → {change.newVal}
                     </span>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Add an optional comment..."
-                    value={change.comment}
-                    onChange={(e) => {
-                      const updated = [...pendingChanges]
-                      updated[index].comment = e.target.value
-                      setPendingChanges(updated)
-                    }}
-                    className="w-full bg-secondary/40 border border-border/50 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/45"
-                  />
+                  <div className="border border-border/50 rounded-2xl overflow-hidden bg-background/50">
+                    <TiptapEditor
+                      content={change.comment}
+                      onChange={(val) => {
+                        const updated = [...pendingChanges]
+                        updated[index].comment = val
+                        setPendingChanges(updated)
+                      }}
+                      placeholder="Add an optional comment... (type @ or @file:)"
+                      minHeight="60px"
+                      projectId={task.projectId}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

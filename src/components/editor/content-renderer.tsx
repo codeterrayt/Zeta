@@ -30,29 +30,29 @@ interface ContentRendererProps {
 export function ContentRenderer({ html, attachments = [], className }: ContentRendererProps) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [portals, setPortals] = React.useState<React.ReactPortal[]>([])
-  const [currentHtml, setCurrentHtml] = React.useState(html)
+
+  // Stringify to prevent reference-equality trigger loops
+  const attachmentsKey = JSON.stringify(attachments)
 
   React.useLayoutEffect(() => {
-    // If the incoming HTML changed, we must clear portals first
-    // to let React cleanly unmount them before we destroy their DOM containers.
-    if (html !== currentHtml) {
-      setPortals([])
-      setCurrentHtml(html)
-      return
-    }
-
     const el = containerRef.current
     if (!el) return
 
-    // Inject the raw HTML (safe to do now because portals are empty)
-    el.innerHTML = currentHtml || ""
+    // Inject the raw HTML
+    el.innerHTML = html || ""
 
-    if (!currentHtml) return
+    if (!html) {
+      setPortals([])
+      return
+    }
 
     // Find all file mention spans
     const spans = el.querySelectorAll<HTMLElement>("[data-type='file-mention'], .file-mention")
     
-    if (spans.length === 0) return
+    if (spans.length === 0) {
+      setPortals([])
+      return
+    }
 
     const newPortals: React.ReactPortal[] = []
 
@@ -83,7 +83,7 @@ export function ContentRenderer({ html, attachments = [], className }: ContentRe
     })
 
     setPortals(newPortals)
-  }, [html, currentHtml, attachments])
+  }, [html, attachmentsKey])
 
   return (
     <>
