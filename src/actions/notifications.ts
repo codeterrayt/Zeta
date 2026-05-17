@@ -310,6 +310,17 @@ export async function notifyMentions({
     for (const userId of mentionedUserIds) {
       if (userId === actorId) continue // Don't notify yourself
 
+      if (link) {
+        const existing = await prisma.notification.findFirst({
+          where: {
+            userId,
+            type: "MENTION",
+            link
+          }
+        })
+        if (existing) continue
+      }
+
       await prisma.notification.create({
         data: {
           userId,

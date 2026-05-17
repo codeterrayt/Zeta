@@ -21,8 +21,11 @@ export function ProjectsPageAlerts() {
       setAlertType("deleted")
       setDeletedProjName(searchParams?.get("projectName") || "the project")
       setOpen(true)
+    } else {
+      setOpen(false)
+      setAlertType(null)
     }
-  }, [searchParams])
+  }, [searchParams?.get("modalAlert"), searchParams?.get("projectName")])
 
   const handleClose = () => {
     setOpen(false)

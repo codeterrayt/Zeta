@@ -156,17 +156,14 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     // 4. Live Comments & Replies
     socketClient.on("comment_created", (comment) => {
       window.dispatchEvent(new CustomEvent("comment:refresh", { detail: comment }))
-      router.refresh()
     })
 
     socketClient.on("comment_deleted", (data) => {
       window.dispatchEvent(new CustomEvent("comment:refresh", { detail: data }))
-      router.refresh()
     })
 
     socketClient.on("sprint_comment_created", (comment) => {
       window.dispatchEvent(new CustomEvent("sprint_comment:refresh", { detail: comment }))
-      router.refresh()
     })
 
     // 5. Live Attachments triggers
@@ -187,7 +184,10 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     })
 
     socketClient.on("removed_from_project", ({ projectId: targetProjId, projectName }) => {
-      if (projectId === targetProjId) {
+      const currentPathProjectMatch = window.location.pathname.match(/^\/projects\/([^\/]+)/)
+      const activeProjId = currentPathProjectMatch ? currentPathProjectMatch[1] : null
+
+      if (activeProjId === targetProjId) {
         toast.error(`Your access to "${projectName || 'the project'}" has been revoked.`)
         router.push("/projects?modalAlert=removed")
       } else {
@@ -196,7 +196,14 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     })
 
     socketClient.on("project_deleted", ({ projectId: targetProjId, projectName }) => {
-      if (projectId === targetProjId) {
+      if (typeof window !== "undefined" && (window as any).__deletingProject === targetProjId) {
+        return
+      }
+
+      const currentPathProjectMatch = window.location.pathname.match(/^\/projects\/([^\/]+)/)
+      const activeProjId = currentPathProjectMatch ? currentPathProjectMatch[1] : null
+
+      if (activeProjId === targetProjId) {
         toast.error(`The project "${projectName || 'the project'}" was deleted by an administrator.`)
         router.push(`/projects?modalAlert=deleted&projectName=${encodeURIComponent(projectName || 'the project')}`)
       } else {
@@ -205,16 +212,35 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     })
 
     socketClient.on("document_created", (doc) => {
-      window.dispatchEvent(new CustomEvent("document:created", { detail: doc }))
-      toast.info(`New document "${doc.title || 'Untitled'}" was created!`)
-      router.refresh()
+      const currentUserId = session?.user?.id
+      if (!currentUserId) return
+
+      const isAuthor = doc.authorId === currentUserId
+      const isMentioned = doc.content?.includes(`data-id="${currentUserId}"`)
+      const isAssignee = doc.assigneeIds?.includes(currentUserId)
+
+      if (isAuthor || isMentioned || isAssignee) {
+        window.dispatchEvent(new CustomEvent("document:created", { detail: doc }))
+        toast.info(`New document "${doc.title || 'Untitled'}" was created!`)
+        router.refresh()
+      }
     })
 
     socketClient.on("document_updated", (doc) => {
+      const currentUserId = session?.user?.id
+      if (!currentUserId) return
+
+      const isAuthor = doc.authorId === currentUserId
+      const isMentioned = doc.content?.includes(`data-id="${currentUserId}"`)
+      const isAssignee = doc.assigneeIds?.includes(currentUserId)
+
       window.dispatchEvent(new CustomEvent(`document:updated:${doc.id}`, { detail: doc }))
       window.dispatchEvent(new CustomEvent("document:updated", { detail: doc }))
-      toast.info(`Document "${doc.title || 'Untitled'}" was updated.`)
-      router.refresh()
+
+      if (isAuthor || isMentioned || isAssignee) {
+        toast.info(`Document "${doc.title || 'Untitled'}" was updated.`)
+        router.refresh()
+      }
     })
 
     socketClient.on("document_deleted", (data) => {
@@ -253,6 +279,14 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     socketClient.on("timeline_updated", (data) => {
       window.dispatchEvent(new CustomEvent("timeline:updated", { detail: data }))
+    })
+
+    socketClient.on("timeline_comment_created", (comment) => {
+      window.dispatchEvent(new CustomEvent("timeline:comment_created", { detail: comment }))
+    })
+
+    socketClient.on("timeline_comment_deleted", (data) => {
+      window.dispatchEvent(new CustomEvent("timeline:comment_deleted", { detail: data }))
     })
 
     setSocket(socketClient)

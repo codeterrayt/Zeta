@@ -61,11 +61,18 @@ export function ProjectSettingsView({
       return
     }
 
+    if (typeof window !== "undefined") {
+      (window as any).__deletingProject = projectId
+    }
+
     const res = await deleteProject(projectId)
     if (res.success) {
       router.push("/projects")
     } else {
       alert(res.error || "Failed to delete project")
+      if (typeof window !== "undefined") {
+        delete (window as any).__deletingProject
+      }
     }
   }
 

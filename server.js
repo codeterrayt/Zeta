@@ -193,9 +193,11 @@ app.prepare().then(async () => {
           IF TG_OP = 'DELETE' THEN
             SELECT "taskId" INTO tsk_id FROM "AuditLog" WHERE id = OLD."auditLogId";
             usr_id := OLD."userId";
+            spr_id := OLD."auditLogId";
           ELSE
             SELECT "taskId" INTO tsk_id FROM "AuditLog" WHERE id = NEW."auditLogId";
             usr_id := NEW."userId";
+            spr_id := NEW."auditLogId";
           END IF;
         ELSIF TG_TABLE_NAME = 'Document' THEN
           IF TG_OP = 'DELETE' THEN
@@ -413,9 +415,35 @@ app.prepare().then(async () => {
 
         else if (table === "Document") {
           if (action === "DELETE") {
-            io.to(`project:${projectId}`).emit("document_deleted", { id });
+            let deletedBy = "an administrator";
+            try {
+              const auditRes = await pgClient.query(`
+                SELECT u.name, u.email 
+                FROM "AuditLog" al 
+                JOIN "User" u ON al."userId" = u.id 
+                WHERE al.action = 'DELETE_DOCUMENT' 
+                ORDER BY al."createdAt" DESC 
+                LIMIT 1
+              `);
+              if (auditRes.rows[0]) {
+                const user = auditRes.rows[0];
+                deletedBy = `${user.name} (${user.email || 'Admin'})`;
+              }
+            } catch(e) {}
+            io.to(`project:${projectId}`).emit("document_deleted", { id, deletedBy });
           } else {
-            const docRes = await pgClient.query('SELECT * FROM "Document" WHERE id = $1', [id]);
+            const docRes = await pgClient.query(`
+              SELECT d.*, 
+                COALESCE(
+                  (SELECT json_agg(ta."userId") 
+                   FROM "DocLink" dl 
+                   JOIN "TaskAssignment" ta ON dl."taskId" = ta."taskId" 
+                   WHERE dl."documentId" = d.id), 
+                  '[]'::json
+                ) as "assigneeIds"
+              FROM "Document" d 
+              WHERE d.id = $1
+            `, [id]);
             if (docRes.rows[0]) {
               const doc = docRes.rows[0];
               if (action === "INSERT") {
@@ -446,9 +474,34 @@ app.prepare().then(async () => {
           }
         }
 
-        else if (table === "AuditLog" || table === "AuditLogComment") {
+        else if (table === "AuditLog") {
           if (taskId) {
             io.to(`task:${taskId}`).emit("timeline_updated", { taskId });
+          }
+        }
+
+        else if (table === "AuditLogComment") {
+          if (taskId) {
+            if (action === "DELETE") {
+              io.to(`task:${taskId}`).emit("timeline_comment_deleted", { id, auditLogId: sprintId });
+            } else {
+              const commentRes = await pgClient.query(`
+                SELECT alc.*, 
+                  json_build_object(
+                    'id', u.id,
+                    'name', u.name,
+                    'email', u.email,
+                    'image', u.image
+                  ) as user
+                FROM "AuditLogComment" alc
+                JOIN "User" u ON alc."userId" = u.id
+                WHERE alc.id = $1
+              `, [id]);
+              if (commentRes.rows[0]) {
+                const comment = commentRes.rows[0];
+                io.to(`task:${taskId}`).emit("timeline_comment_created", comment);
+              }
+            }
           }
         }
 

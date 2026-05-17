@@ -163,11 +163,19 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
 
     // Sort nested replies chronologically (oldest first)
     Object.values(map).forEach((c: any) => {
-      c.children.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      c.children.sort((a: any, b: any) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return timeA - timeB
+      })
     })
 
     // Sort roots chronologically (new to old - newest first)
-    return roots.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return roots.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return timeB - timeA
+    })
   }, [comments])
 
   const handleAddComment = async (parentId?: string) => {

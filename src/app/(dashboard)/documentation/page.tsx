@@ -46,6 +46,25 @@ export default function DocumentationPage() {
     load()
   }, [])
 
+  // Listen for real-time document updates to sync lists instantly
+  React.useEffect(() => {
+    const handleRefresh = () => {
+      getAllDocuments().then(res => {
+        if (res.success) setDocuments(res.documents || [])
+      })
+    }
+
+    window.addEventListener("document:created", handleRefresh)
+    window.addEventListener("document:updated", handleRefresh)
+    window.addEventListener("document:deleted", handleRefresh)
+
+    return () => {
+      window.removeEventListener("document:created", handleRefresh)
+      window.removeEventListener("document:updated", handleRefresh)
+      window.removeEventListener("document:deleted", handleRefresh)
+    }
+  }, [])
+
   const filteredDocsAll = documents.filter(doc => {
     // 1. Search Filter
     const matchesSearch = doc.title.toLowerCase().includes(search.toLowerCase()) ||

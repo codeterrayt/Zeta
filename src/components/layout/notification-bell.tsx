@@ -29,11 +29,13 @@ export function NotificationBell() {
     }
   }, [])
 
-  // Poll for notifications every 30 seconds for real-time responsiveness
+  // Sync real-time notifications from WebSocket events globally (removes polling)
   React.useEffect(() => {
     fetchUnread()
-    const interval = setInterval(fetchUnread, 30000)
-    return () => clearInterval(interval)
+    window.addEventListener("notification:refresh", fetchUnread)
+    return () => {
+      window.removeEventListener("notification:refresh", fetchUnread)
+    }
   }, [fetchUnread])
 
   // Handle click outside to close dropdown

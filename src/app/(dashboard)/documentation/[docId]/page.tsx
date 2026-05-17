@@ -58,8 +58,10 @@ export default function DocumentDetailsPage() {
       }
     }
 
-    const handleDocDelete = () => {
-      toast.error("This document has been deleted by another user.")
+    const handleDocDelete = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {}
+      const deletedBy = detail.deletedBy || "an administrator"
+      toast.error(`This document was deleted by ${deletedBy}.`)
       router.push("/documentation")
     }
 

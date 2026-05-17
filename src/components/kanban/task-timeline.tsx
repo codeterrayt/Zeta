@@ -77,8 +77,8 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
     return [...logs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [logs])
 
-  const loadLogs = async () => {
-    setLoading(true)
+  const loadLogs = async (showLoading = true) => {
+    if (showLoading) setLoading(true)
     const [res, atts] = await Promise.all([
       getTaskAuditLogs(taskId),
       getAttachmentsForContext({ projectId })
@@ -89,7 +89,7 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
     if (atts) {
       setAttachments(atts)
     }
-    setLoading(false)
+    if (showLoading) setLoading(false)
   }
 
   const handleSaveComment = async (logId: string) => {
@@ -177,15 +177,50 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
   React.useEffect(() => {
     if (!isOpen) return
 
+    const handleCommentCreated = (e: Event) => {
+      const comment = (e as CustomEvent).detail
+      if (!comment) return
+      setLogs(prev => prev.map(l => {
+        if (l.id === comment.auditLogId) {
+          const list = l.comments || []
+          if (list.some((c: any) => c.id === comment.id)) return l
+          return {
+            ...l,
+            comments: [...list, comment]
+          }
+        }
+        return l
+      }))
+    }
+
+    const handleCommentDeleted = (e: Event) => {
+      const data = (e as CustomEvent).detail
+      if (!data) return
+      setLogs(prev => prev.map(l => {
+        if (l.id === data.auditLogId) {
+          return {
+            ...l,
+            comments: (l.comments || []).filter((c: any) => c.id !== data.id)
+          }
+        }
+        return l
+      }))
+    }
+
     const handleTimelineUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (!detail || detail.taskId === taskId) {
-        loadLogs()
+        loadLogs(false)
       }
     }
 
+    window.addEventListener("timeline:comment_created", handleCommentCreated)
+    window.addEventListener("timeline:comment_deleted", handleCommentDeleted)
     window.addEventListener("timeline:updated", handleTimelineUpdate)
+
     return () => {
+      window.removeEventListener("timeline:comment_created", handleCommentCreated)
+      window.removeEventListener("timeline:comment_deleted", handleCommentDeleted)
       window.removeEventListener("timeline:updated", handleTimelineUpdate)
     }
   }, [isOpen, taskId])
