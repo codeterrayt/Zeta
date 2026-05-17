@@ -60,6 +60,19 @@ Make sure you have **Docker** and **Docker Compose** installed.
 
 ---
 
+## 🗺️ Roadmap & Upcoming Features
+
+We are actively developing Zeta to expand its collaborative power. The following features are planned for upcoming releases:
+
+1. **⚡ Real-time Updates**: Real-time synchronization and alerts for each activity, comment, and card movement.
+2. **📁 Folder Storage Arrangements**: Nesting directory arrangements and custom file/folder management structures inside projects.
+3. **💬 Team Chat Rooms**: In-app group channels equipped with file mentions, user tagging, and channel mute controls.
+4. **🔔 Chrome Push Notifications**: Native browser push alerts for immediate mention notifications.
+5. **📧 Email Notifications**: Automated update alerts and task assignment digests sent straight to team mailboxes.
+6. **✍️ Native Markdown Support**: Direct keyboard Markdown input shortcuts parsing inside our rich-text editor canvas.
+
+---
+
 ## 🤝 Open Source Contributions
 
 We warmly welcome open-source contributions! Whether you want to build custom visual templates, expand agile metrics dashboard charts, or add new automation rules:
