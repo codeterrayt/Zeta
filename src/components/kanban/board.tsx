@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { updateTaskStatus } from "@/actions/task"
 import { Search, Filter, X, Calendar } from "lucide-react"
 import { format, isPast, isToday, differenceInDays } from "date-fns"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useParams } from "next/navigation"
 import { useRealtime } from "@/components/providers/realtime-provider"
 
 export type Task = {
@@ -54,6 +54,8 @@ export function KanbanBoard({
   const [columns, setColumns] = useState(initialData)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const searchParams = useSearchParams()
+  const params = useParams()
+  const sprintId = params?.sprintId as string
 
   const { socket } = useRealtime()
   const [activeDragTaskId, setActiveDragTaskId] = useState<string | null>(null)
@@ -62,18 +64,17 @@ export function KanbanBoard({
   React.useEffect(() => {
     if (!socket || !activeDragTaskId || !currentUserId) return
 
+    const activeTask = columns.flatMap(c => c.tasks).find(t => t.id === activeDragTaskId)
+    const taskTitle = activeTask?.title
+
     const handleMouseMove = (e: MouseEvent) => {
-      const container = document.getElementById("kanban-board-container")
-      if (!container) return
-      const rect = container.getBoundingClientRect()
-      // Relative offset bounds matching viewport coordinates inside the container
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
       socket.emit("drag_cursor_move", {
         projectId,
+        sprintId,
         taskId: activeDragTaskId,
-        x,
-        y,
+        taskTitle,
+        x: e.clientX,
+        y: e.clientY,
         userName: session?.user?.name,
         userEmail: session?.user?.email,
         userId: currentUserId
@@ -84,7 +85,7 @@ export function KanbanBoard({
     return () => {
       window.removeEventListener("mousemove", handleMouseMove)
     }
-  }, [socket, activeDragTaskId, currentUserId, projectId, session])
+  }, [socket, activeDragTaskId, currentUserId, projectId, sprintId, session, columns])
 
   React.useEffect(() => {
     const taskIdParam = searchParams?.get("taskId")
@@ -120,7 +121,7 @@ export function KanbanBoard({
   const onDragEnd = async (result: DropResult) => {
     setActiveDragTaskId(null)
     if (socket) {
-      socket.emit("drag_cursor_end", { projectId, userId: currentUserId })
+      socket.emit("drag_cursor_end", { projectId, sprintId, userId: currentUserId })
     }
 
     const { destination, source, draggableId } = result

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useSession } from "next-auth/react"
-import { useParams, useRouter, usePathname } from "next/navigation"
+import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
 import { io, Socket } from "socket.io-client"
 import { toast } from "sonner"
 import { getUserSettings } from "@/actions/settings"
@@ -24,16 +24,22 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const params = useParams()
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const [socket, setSocket] = React.useState<Socket | null>(null)
   const [activeCursors, setActiveCursors] = React.useState<any[]>([])
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true)
 
+  const notificationsEnabledRef = React.useRef(notificationsEnabled)
+  React.useEffect(() => {
+    notificationsEnabledRef.current = notificationsEnabled
+  }, [notificationsEnabled])
+
   // Track room parameters dynamically from url
   const projectId = params?.projectId as string
   const sprintId = params?.sprintId as string
   const docId = params?.docId as string
-  const taskId = params?.taskId as string
+  const taskId = searchParams?.get("taskId") as string
 
   // Fetch settings to respect user-specific popup preferences
   React.useEffect(() => {
@@ -82,6 +88,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       // Join rooms if parameters already exist on load
       if (projectId) socketClient.emit("join_project", projectId)
       if (sprintId) socketClient.emit("join_sprint", sprintId)
+      if (taskId) socketClient.emit("join_task", taskId)
       if (docId) {
         socketClient.emit("join_doc", {
           docId,
@@ -99,7 +106,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       // Trigger notifications counts reload event globally
       window.dispatchEvent(new CustomEvent("notification:refresh"))
 
-      if (notificationsEnabled) {
+      if (notificationsEnabledRef.current) {
         toast(notif.title, {
           description: notif.content,
           action: notif.link
@@ -219,6 +226,15 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       setActiveCursors((prev) => prev.filter((c) => c.userId !== data.userId))
     })
 
+    socketClient.on("task_assignment_changed", (data) => {
+      window.dispatchEvent(new CustomEvent("task_assignment:changed", { detail: data }))
+      router.refresh()
+    })
+
+    socketClient.on("timeline_updated", (data) => {
+      window.dispatchEvent(new CustomEvent("timeline:updated", { detail: data }))
+    })
+
     setSocket(socketClient)
 
     return () => {
@@ -230,6 +246,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!socket) return
 
+    // Dynamic Board Room isolation join
+    const boardRoom = projectId ? (sprintId ? `project:${projectId}:sprint:${sprintId}` : `project:${projectId}:backlog`) : null;
+    if (boardRoom) {
+      socket.emit("join_board", boardRoom)
+    }
+
     // Dynamic Project Room join
     if (projectId) {
       socket.emit("join_project", projectId)
@@ -238,6 +260,11 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     // Dynamic Sprint Room join
     if (sprintId) {
       socket.emit("join_sprint", sprintId)
+    }
+
+    // Dynamic Task Room join
+    if (taskId) {
+      socket.emit("join_task", taskId)
     }
 
     // Dynamic Document Room join
@@ -253,12 +280,17 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
-      // Dynamic Document Room leave
+      if (boardRoom) {
+        socket.emit("leave_board", boardRoom)
+      }
+      if (taskId) {
+        socket.emit("leave_task", taskId)
+      }
       if (docId) {
         socket.emit("leave_doc", { docId })
       }
     }
-  }, [socket, projectId, sprintId, docId])
+  }, [socket, projectId, sprintId, docId, taskId, session])
 
   // Renders the high-end canvas-style floating cursor overlay
   const renderCollaborativeCursors = () => {
@@ -268,8 +300,16 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <div className="absolute inset-0 pointer-events-none z-[9999] overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
         {activeCursors.map((cursor) => {
+          // Double-check project + sprint matching to guarantee perfect isolation
+          const cursorProj = cursor.projectId
+          const cursorSprint = cursor.sprintId ?? undefined
+          const currentSprint = sprintId ?? undefined
+          if (cursorProj !== projectId || cursorSprint !== currentSprint) {
+            return null
+          }
+
           // Unique color tag based on userId hash
           const colors = [
             "bg-red-500 text-white",
@@ -286,7 +326,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={cursor.userId}
-              className="absolute transition-all duration-75 ease-out animate-in fade-in zoom-in duration-300"
+              className="fixed transition-all duration-75 ease-out animate-in fade-in zoom-in duration-300 flex items-start"
               style={{
                 left: `${cursor.x}px`,
                 top: `${cursor.y}px`,
@@ -294,18 +334,26 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             >
               {/* Sleek dynamic cursor arrow */}
               <svg
-                className="w-5 h-5 drop-shadow-md text-primary"
+                className="w-5 h-5 drop-shadow-md text-primary shrink-0"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path d="M4.5 3V17.5L9.3 12.7L15.3 21L18.5 18.7L12.5 10.5L18.5 10.5L4.5 3Z" />
               </svg>
 
-              {/* Dynamic user label */}
-              <div
-                className={`ml-3 mt-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg ${cursorColor}`}
-              >
-                {cursor.userName || "Team Member"}
+              {/* Dynamic user label + ghost card ticket badge */}
+              <div className="flex flex-col gap-1 items-start ml-2">
+                <div
+                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg ${cursorColor}`}
+                >
+                  {cursor.userName || "Team Member"}
+                </div>
+                {cursor.taskTitle && (
+                  <div className="bg-popover/95 backdrop-blur border border-border/70 px-2 py-1 rounded-xl text-[10px] font-bold text-foreground max-w-[150px] truncate shadow-2xl scale-95 origin-top-left flex items-center gap-1.5 animate-in fade-in duration-300 ring-1 ring-primary/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                    <span>Holding: {cursor.taskTitle}</span>
+                  </div>
+                )}
               </div>
             </div>
           )

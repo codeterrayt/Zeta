@@ -41,8 +41,20 @@ app.prepare().then(async () => {
       socket.join(`task:${taskId}`);
     });
 
+    socket.on("leave_task", (taskId) => {
+      socket.leave(`task:${taskId}`);
+    });
+
     socket.on("join_sprint", (sprintId) => {
       socket.join(`sprint:${sprintId}`);
+    });
+
+    socket.on("join_board", (room) => {
+      socket.join(room);
+    });
+
+    socket.on("leave_board", (room) => {
+      socket.leave(room);
     });
 
     // Collaborative document reading presence
@@ -161,6 +173,30 @@ app.prepare().then(async () => {
           ELSE
             usr_id := NEW."userId";
           END IF;
+        ELSIF TG_TABLE_NAME = 'TaskAssignment' THEN
+          IF TG_OP = 'DELETE' THEN
+            tsk_id := OLD."taskId";
+            usr_id := OLD."userId";
+          ELSE
+            tsk_id := NEW."taskId";
+            usr_id := NEW."userId";
+          END IF;
+        ELSIF TG_TABLE_NAME = 'AuditLog' THEN
+          IF TG_OP = 'DELETE' THEN
+            tsk_id := OLD."taskId";
+            usr_id := OLD."userId";
+          ELSE
+            tsk_id := NEW."taskId";
+            usr_id := NEW."userId";
+          END IF;
+        ELSIF TG_TABLE_NAME = 'AuditLogComment' THEN
+          IF TG_OP = 'DELETE' THEN
+            SELECT "taskId" INTO tsk_id FROM "AuditLog" WHERE id = OLD."auditLogId";
+            usr_id := OLD."userId";
+          ELSE
+            SELECT "taskId" INTO tsk_id FROM "AuditLog" WHERE id = NEW."auditLogId";
+            usr_id := NEW."userId";
+          END IF;
         END IF;
 
         payload := jsonb_build_object(
@@ -180,7 +216,7 @@ app.prepare().then(async () => {
     `);
 
     // Attach Table triggers
-    const tablesToTrigger = ["Task", "Comment", "Attachment", "Sprint", "Project", "ProjectMember", "Notification"];
+    const tablesToTrigger = ["Task", "Comment", "Attachment", "Sprint", "Project", "ProjectMember", "Notification", "TaskAssignment", "AuditLog", "AuditLogComment"];
     for (const table of tablesToTrigger) {
       await pgClient.query(`DROP TRIGGER IF EXISTS trg_${table.toLowerCase()}_realtime ON "${table}";`);
       await pgClient.query(`
@@ -336,6 +372,21 @@ app.prepare().then(async () => {
               const notif = notifRes.rows[0];
               io.to(`user:${notif.userId}`).emit("notification_received", notif);
             }
+          }
+        }
+
+        else if (table === "TaskAssignment") {
+          io.to(`user:${userId}`).emit("task_assignment_changed", { taskId, action });
+          const taskRes = await pgClient.query('SELECT "projectId" FROM "Task" WHERE id = $1', [taskId]);
+          if (taskRes.rows[0]) {
+            const projId = taskRes.rows[0].projectId;
+            io.to(`project:${projId}`).emit("task_updated", { id: taskId });
+          }
+        }
+
+        else if (table === "AuditLog" || table === "AuditLogComment") {
+          if (taskId) {
+            io.to(`task:${taskId}`).emit("timeline_updated", { taskId });
           }
         }
 

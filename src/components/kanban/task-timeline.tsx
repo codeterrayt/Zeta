@@ -167,6 +167,23 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
     }
   }, [isOpen])
 
+  // Sync real-time timeline logs / comment events in background
+  React.useEffect(() => {
+    if (!isOpen) return
+
+    const handleTimelineUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (!detail || detail.taskId === taskId) {
+        loadLogs()
+      }
+    }
+
+    window.addEventListener("timeline:updated", handleTimelineUpdate)
+    return () => {
+      window.removeEventListener("timeline:updated", handleTimelineUpdate)
+    }
+  }, [isOpen, taskId])
+
   const getActionIcon = (action: string) => {
     switch (action) {
       case "CREATE_TASK": return <Plus className="w-4 h-4 text-green-500" />

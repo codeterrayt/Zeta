@@ -78,6 +78,68 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
     }
   }, [projectId])
 
+  // Sync real-time comment updates in the background
+  React.useEffect(() => {
+    const handleCommentRefresh = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (!detail) return
+
+      const isDelete = detail.action === "DELETE" || !detail.content
+
+      if (isDelete) {
+        setComments(prev => prev.filter(c => c.id !== detail.id))
+      } else {
+        const isTaskMatch = taskId && detail.taskId === taskId
+        const isSprintMatch = sprintId && detail.sprintId === sprintId
+
+        if (isTaskMatch || isSprintMatch) {
+          setComments(prev => {
+            if (prev.some(c => c.id === detail.id)) return prev
+            return [...prev, detail]
+          })
+        }
+      }
+    }
+
+    window.addEventListener("comment:refresh", handleCommentRefresh)
+    window.addEventListener("sprint_comment:refresh", handleCommentRefresh)
+    return () => {
+      window.removeEventListener("comment:refresh", handleCommentRefresh)
+      window.removeEventListener("sprint_comment:refresh", handleCommentRefresh)
+    }
+  }, [taskId, sprintId])
+
+  // Sync real-time uploaded attachments to hydrate mentions hovers immediately
+  React.useEffect(() => {
+    const handleAttachmentRefresh = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (!detail) return
+
+      if (detail.action === "DELETE" || !detail.name) {
+        if (detail.id) {
+          setAttachments(prev => prev.filter(a => a.id !== detail.id))
+        }
+        return
+      }
+
+      const isTaskMatch = taskId && detail.taskId === taskId
+      const isSprintMatch = sprintId && detail.sprintId === sprintId
+      const isProjectMatch = projectId && detail.projectId === projectId
+
+      if (isTaskMatch || isSprintMatch || isProjectMatch) {
+        setAttachments(prev => {
+          if (prev.some(a => a.id === detail.id)) return prev
+          return [detail, ...prev]
+        })
+      }
+    }
+
+    window.addEventListener("attachment:refresh", handleAttachmentRefresh)
+    return () => {
+      window.removeEventListener("attachment:refresh", handleAttachmentRefresh)
+    }
+  }, [taskId, sprintId, projectId])
+
   const commentTree = React.useMemo(() => {
     const map: Record<string, any> = {}
     const roots: any[] = []

@@ -4,6 +4,7 @@ import { Task } from "./board"
 import { cn } from "@/lib/utils"
 import { format, differenceInDays, isPast, isToday } from "date-fns"
 import { Calendar, Lock, ExternalLink } from "lucide-react"
+import { useRealtime } from "@/components/providers/realtime-provider"
 
 export function TaskCard({ 
   task, 
@@ -13,9 +14,12 @@ export function TaskCard({
 }: { 
   task: Task; 
   isDragging: boolean; 
-  onClick?: () => void;
+  onClick?: () => void; 
   canDrag?: boolean;
 }) {
+  const { activeCursors } = useRealtime()
+  const isDraggedByOther = activeCursors.some(c => c.taskId === task.id)
+
   const firstThree = (task.assignments || []).slice(0, 3)
   const remainingCount = (task.assignments || []).length - 3
 
@@ -34,6 +38,7 @@ export function TaskCard({
       className={cn(
         "bg-card border border-border p-4 rounded-lg shadow-sm hover:border-primary/50 transition-all group relative",
         isDragging && "shadow-lg border-primary rotate-2",
+        isDraggedByOther && "ring-2 ring-primary/40 bg-primary/5 opacity-40 shadow-2xl scale-[1.01] pointer-events-none transition-all duration-300 animate-pulse border-primary/50",
         canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       )}
     >
