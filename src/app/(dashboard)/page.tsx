@@ -57,14 +57,14 @@ export default function DashboardPage() {
     { label: "Total Sprints", value: data?.sprintsCount || 0, icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10", trend: data?.trends?.docs || 0 },
   ]
 
-  const availableSprints = selectedProjectId === "ALL" 
-    ? [] 
+  const availableSprints = selectedProjectId === "ALL"
+    ? []
     : data?.projects?.find((p: any) => p.id === selectedProjectId)?.sprints || []
 
   return (
     <div className="p-6 lg:p-10 space-y-10">
       {/* Header & Filters */}
-      <header className="flex flex-col gap-8 relative z-50">
+      <header className="flex flex-col gap-8 relative z-11">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-4xl font-black tracking-tight mb-2">Workspace Overview</h1>
@@ -76,7 +76,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="bg-card/50 backdrop-blur-xl border border-border/40 p-4 rounded-[2rem] flex flex-wrap items-center gap-4 shadow-sm relative z-50">
+        <div className="bg-card/50 backdrop-blur-xl border border-border/40 p-4 rounded-[2rem] flex flex-wrap items-center gap-4 shadow-sm relative z-12">
           <CustomDropdown
             label="Project"
             value={selectedProjectId}
@@ -250,7 +250,7 @@ export default function DashboardPage() {
           <div className="absolute inset-0 rounded-[3rem] overflow-hidden pointer-events-none">
             <div className="absolute right-0 bottom-0 w-1/2 h-1/2 bg-white/10 blur-3xl rounded-full translate-x-1/2 translate-y-1/2" />
           </div>
-          
+
           {/* Info Button & Tooltip */}
           <div className="absolute top-8 right-8 z-30 group/info">
             <button className="p-2 hover:bg-white/10 rounded-full transition-colors border border-white/20">
@@ -282,17 +282,17 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <TrendingUp className="w-10 h-10" />
               <h2 className="text-3xl font-black tracking-tight">
-                {data?.velocityChange && data.velocityChange > 0 
-                  ? "You're crushing it!" 
-                  : data?.velocityChange && data.velocityChange < 0 
-                    ? "Time to refocus!" 
+                {data?.velocityChange && data.velocityChange > 0
+                  ? "You're crushing it!"
+                  : data?.velocityChange && data.velocityChange < 0
+                    ? "Time to refocus!"
                     : "Steady progress!"}
               </h2>
             </div>
             <p className="text-lg opacity-80 max-w-xl font-medium leading-relaxed">
-              {data?.velocityChange && data.velocityChange > 0 
+              {data?.velocityChange && data.velocityChange > 0
                 ? `Your task completion rate is up by ${data.velocityChange}% this week. Keep maintaining this velocity to finish the current sprint ahead of schedule.`
-                : data?.velocityChange && data.velocityChange < 0 
+                : data?.velocityChange && data.velocityChange < 0
                   ? `Your completion rate has slowed down by ${Math.abs(data.velocityChange)}% compared to last week. Let's tackle those blockers and get back on track.`
                   : "You're maintaining a consistent pace. Focus on your top priorities to ensure a successful sprint completion."}
             </p>
@@ -301,10 +301,10 @@ export default function DashboardPage() {
                 <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Focus Level</span>
                 <span className="text-2xl font-black">
                   {data?.inProgressTasks !== undefined ? (
-                    data.inProgressTasks <= (data?.thresholds?.high || 3) 
-                      ? "High" 
-                      : data.inProgressTasks <= (data?.thresholds?.medium || 6) 
-                        ? "Medium" 
+                    data.inProgressTasks <= (data?.thresholds?.high || 3)
+                      ? "High"
+                      : data.inProgressTasks <= (data?.thresholds?.medium || 6)
+                        ? "Medium"
                         : "Overloaded"
                   ) : "—"}
                 </span>

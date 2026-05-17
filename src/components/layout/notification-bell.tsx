@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { 
-  Bell, AtSign, UserCheck, FolderPlus, RefreshCw, AlertCircle, 
-  CheckSquare, Inbox, Eye 
+import {
+  Bell, AtSign, UserCheck, FolderPlus, RefreshCw, AlertCircle,
+  CheckSquare, Inbox, Eye
 } from "lucide-react"
 import { getNotifications, markNotificationAsViewed, markAllNotificationsAsViewed } from "@/actions/notifications"
 import Link from "next/link"
@@ -14,7 +14,7 @@ export function NotificationBell() {
   const [notifications, setNotifications] = React.useState<any[]>([])
   const [unreadCount, setUnreadCount] = React.useState(0)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
-  
+
   const containerRef = React.useRef<HTMLDivElement>(null)
 
   const fetchUnread = React.useCallback(async () => {
@@ -95,7 +95,7 @@ export function NotificationBell() {
   return (
     <div className="relative" ref={containerRef}>
       {/* Bell Button */}
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2.5 rounded-full hover:bg-secondary text-muted-foreground transition-all duration-300 relative border border-transparent hover:border-border/40"
       >
@@ -109,14 +109,14 @@ export function NotificationBell() {
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-card/95 border border-border/60 shadow-2xl rounded-3xl overflow-hidden z-[99999] backdrop-blur-xl animate-in fade-in-50 slide-in-from-top-3 duration-200">
+        <div className="absolute right-0 mt-7 w-80 sm:w-96 bg-card/95 border border-border/60 shadow-2xl rounded-3xl overflow-hidden z-20 backdrop-blur-xl animate-in fade-in-50 slide-in-from-top-3 duration-200">
           {/* Header */}
           <div className="p-4 border-b border-border/40 flex items-center justify-between bg-secondary/10">
             <h3 className="font-black text-sm bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
               Notifications
             </h3>
             {unreadCount > 0 && (
-              <button 
+              <button
                 onClick={handleMarkAllAsRead}
                 className="text-[10px] font-extrabold text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
               >
@@ -136,16 +136,15 @@ export function NotificationBell() {
               </div>
             ) : (
               notifications.map((n) => (
-                <div 
+                <div
                   key={n.id}
-                  className={`p-4 transition-all flex items-start gap-3 hover:bg-secondary/40 relative ${
-                    n.isViewed ? "opacity-75" : "bg-primary/[0.02]"
-                  }`}
+                  className={`p-4 transition-all flex items-start gap-3 hover:bg-secondary/40 relative ${n.isViewed ? "opacity-75" : "bg-primary/[0.02]"
+                    }`}
                 >
                   {!n.isViewed && (
                     <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
                   )}
-                  
+
                   {/* Micro Icon */}
                   <div className="mt-0.5 shrink-0">
                     {getSmallIcon(n.type)}
@@ -153,8 +152,8 @@ export function NotificationBell() {
 
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                     {n.link ? (
-                      <Link 
-                        href={n.link} 
+                      <Link
+                        href={n.link}
                         onClick={() => {
                           markNotificationAsViewed(n.id)
                           setIsOpen(false)
@@ -183,7 +182,7 @@ export function NotificationBell() {
 
                   {/* Actions */}
                   {!n.isViewed && (
-                    <button 
+                    <button
                       onClick={(e) => handleMarkAsRead(n.id, e)}
                       className="p-1 rounded-md bg-secondary/80 border border-border/50 hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all shrink-0 self-center"
                       title="Mark as read"
@@ -198,7 +197,7 @@ export function NotificationBell() {
 
           {/* Footer Actions */}
           <div className="p-3 border-t border-border/40 bg-secondary/20 flex items-center justify-center">
-            <button 
+            <button
               onClick={() => {
                 setIsOpen(false)
                 setIsModalOpen(true)
@@ -213,8 +212,8 @@ export function NotificationBell() {
       )}
 
       {/* Paginated modal */}
-      <ViewAllNotificationsModal 
-        isOpen={isModalOpen} 
+      <ViewAllNotificationsModal
+        isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         onRefreshBell={fetchUnread}
       />

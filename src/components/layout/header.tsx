@@ -4,7 +4,7 @@ import { NotificationBell } from "./notification-bell"
 
 export function Header() {
   return (
-    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 sticky top-0 z-10 w-full">
+    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 sticky top-0 z-50 w-full">
       <div className="flex-1 flex items-center gap-4">
         <MobileSidebar />
         <div className="relative w-96 hidden md:block">
