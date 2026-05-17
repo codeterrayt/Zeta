@@ -7,16 +7,20 @@ import { Toaster } from "sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
+import { auth } from "@/auth"
+
 export const metadata: Metadata = {
   title: "OpenJira",
   description: "A professional, high-performance Jira alternative.",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const session = await auth()
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased bg-background text-foreground min-h-screen flex flex-col`} suppressHydrationWarning>
@@ -30,7 +34,7 @@ export default function RootLayout({
             'theme-monaco': 'theme-monaco'
           }}
         >
-          <SessionProvider>
+          <SessionProvider session={session}>
             {children}
             <Toaster richColors position="top-right" />
           </SessionProvider>
