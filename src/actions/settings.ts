@@ -8,7 +8,8 @@ export async function updateSettings(data: {
   highFocusMax: number,
   mediumFocusMax: number,
   aiEnabled: boolean,
-  aiModel: string
+  aiModel: string,
+  askTimelineComment: boolean
 }) {
   const session = await auth()
   const userId = (session?.user as any)?.id
@@ -21,7 +22,8 @@ export async function updateSettings(data: {
         highFocusMax: data.highFocusMax,
         mediumFocusMax: data.mediumFocusMax,
         aiEnabled: data.aiEnabled,
-        aiModel: data.aiModel
+        aiModel: data.aiModel,
+        askTimelineComment: data.askTimelineComment
       }
     })
 

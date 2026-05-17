@@ -79,6 +79,9 @@ model Settings {
   highFocusMax    Int     @default(3)
   mediumFocusMax  Int     @default(6)
   
+  // Timeline comment options
+  askTimelineComment Boolean @default(true)
+  
   user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -296,6 +299,7 @@ model AuditLog {
   id        String   @id @default(cuid())
   action    String
   details   String   @db.Text
+  comment   String?  @db.Text
   userId    String
   taskId    String?
   createdAt DateTime @default(now())

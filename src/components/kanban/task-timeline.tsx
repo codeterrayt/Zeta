@@ -12,17 +12,21 @@ import {
   Plus,
   Trash2,
   Edit3,
-  RefreshCw
+  RefreshCw,
+  MessageSquare,
+  Check,
+  BookOpen
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { getTaskAuditLogs } from "@/actions/audit-log"
+import { getTaskAuditLogs, updateAuditLogComment } from "@/actions/audit-log"
 
 type AuditLog = {
   id: string
   action: string
   details: string
+  comment: string | null
   createdAt: Date
   user: {
     id: string
@@ -36,6 +40,9 @@ export function TaskTimeline({ taskId, taskTitle }: { taskId: string, taskTitle:
   const [isOpen, setIsOpen] = React.useState(false)
   const [logs, setLogs] = React.useState<AuditLog[]>([])
   const [loading, setLoading] = React.useState(false)
+  const [editingLogId, setEditingLogId] = React.useState<string | null>(null)
+  const [commentText, setCommentText] = React.useState("")
+  const [savingComment, setSavingComment] = React.useState(false)
 
   const loadLogs = async () => {
     setLoading(true)
@@ -44,6 +51,25 @@ export function TaskTimeline({ taskId, taskTitle }: { taskId: string, taskTitle:
       setLogs(res.logs as any)
     }
     setLoading(false)
+  }
+
+  const handleSaveComment = async (logId: string) => {
+    setSavingComment(true)
+    try {
+      const res = await updateAuditLogComment(logId, commentText)
+      if (res.success) {
+        setLogs(prev => prev.map(l => l.id === logId ? { ...l, comment: commentText || null } : l))
+        setEditingLogId(null)
+        setCommentText("")
+      } else {
+        alert("Failed to update comment: " + res.error)
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Failed to update comment.")
+    } finally {
+      setSavingComment(false)
+    }
   }
 
   React.useEffect(() => {
@@ -159,6 +185,56 @@ export function TaskTimeline({ taskId, taskTitle }: { taskId: string, taskTitle:
                               </p>
                             ))}
                           </div>
+
+                          {/* Comment Display/Editor */}
+                          {editingLogId === log.id ? (
+                            <div className="mt-4 space-y-2 bg-background/50 p-3 rounded-2xl border border-border/50">
+                              <input
+                                type="text"
+                                placeholder="Add or edit timeline comment..."
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                className="w-full bg-secondary/50 border border-border/40 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none placeholder:text-muted-foreground/50"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => setEditingLogId(null)}
+                                  className="px-2.5 py-1 rounded-lg bg-secondary text-[10px] font-bold hover:bg-secondary/80 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleSaveComment(log.id)}
+                                  disabled={savingComment}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold hover:bg-primary/95 transition-colors disabled:opacity-50"
+                                >
+                                  {savingComment ? <div className="w-2.5 h-2.5 border-2 border-primary-foreground/35 border-t-primary-foreground rounded-full animate-spin" /> : <Check className="w-3 h-3" />}
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-4 mt-4 pt-1">
+                              {log.comment ? (
+                                <div className="flex-1 px-3 py-2 bg-background/60 border border-border/40 rounded-2xl text-xs font-semibold text-foreground/80 italic flex items-start gap-2">
+                                  <MessageSquare className="w-3.5 h-3.5 mt-0.5 text-primary/75 shrink-0" />
+                                  <span className="flex-1 leading-relaxed">{log.comment}</span>
+                                </div>
+                              ) : (
+                                <span />
+                              )}
+                              <button
+                                onClick={() => {
+                                  setEditingLogId(log.id)
+                                  setCommentText(log.comment || "")
+                                }}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-secondary/60 hover:bg-secondary border border-border/40 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-all shrink-0"
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                {log.comment ? "Edit Comment" : "Comment"}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

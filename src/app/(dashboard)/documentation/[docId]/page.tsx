@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { BookOpen, ChevronLeft, Save, Loader2, FileText, Info, ShieldAlert, Edit3, Eye } from "lucide-react"
+import { BookOpen, ChevronLeft, Save, Loader2, FileText, Info, ShieldAlert, Edit3, Eye, Trash2 } from "lucide-react"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { ContentRenderer } from "@/components/editor/content-renderer"
 import { getDocumentById, updateDocument } from "@/actions/document"
@@ -26,6 +26,7 @@ export default function DocumentDetailsPage() {
   const [title, setTitle] = React.useState("")
   const [content, setContent] = React.useState("")
   const [saving, setSaving] = React.useState(false)
+  const [projectAttachments, setProjectAttachments] = React.useState<any[]>([])
 
   React.useEffect(() => {
     async function load() {
@@ -34,6 +35,8 @@ export default function DocumentDetailsPage() {
         setDoc(res.document)
         setTitle(res.document.title)
         setContent(res.document.content)
+        const atts = await getAttachmentsForContext({ projectId: res.document.projectId })
+        setProjectAttachments(atts)
       }
       setLoading(false)
     }

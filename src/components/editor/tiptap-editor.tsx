@@ -214,7 +214,7 @@ export function TiptapEditor({
       ],
       attachments, // Pass attachments here so NodeView can access them
       content,
-      onUpdate: ({ editor }) => {
+      onUpdate: ({ editor }: { editor: any }) => {
         onChange?.(editor.getHTML())
       },
       editorProps: {
@@ -223,14 +223,14 @@ export function TiptapEditor({
           style: `min-height: ${minHeight}`,
         },
       },
-    },
+    } as any,
     [members, FileMention, attachments]
   )
 
   // Sync attachments with editor options for NodeView access
   React.useEffect(() => {
     if (editor) {
-      editor.setOptions({ attachments })
+      editor.setOptions({ attachments } as any)
     }
   }, [editor, attachments])
 

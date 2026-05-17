@@ -53,3 +53,20 @@ export async function getTaskAuditLogs(taskId: string) {
     return { success: false, error: "Failed to fetch audit logs", logs: [] }
   }
 }
+
+export async function updateAuditLogComment(logId: string, comment: string) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    await prisma.auditLog.update({
+      where: { id: logId },
+      data: { comment: comment || null }
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("updateAuditLogComment error:", error)
+    return { success: false, error: "Failed to update timeline comment" }
+  }
+}

@@ -15,7 +15,7 @@ export async function PATCH(
     const { taskId } = await params
     const body = await req.json()
 
-    const { assignments, ...rest } = body
+    const { assignments, timelineComments, ...rest } = body
 
     // Fetch old task for logging
     const oldTask = await prisma.task.findUnique({
@@ -29,9 +29,6 @@ export async function PATCH(
 
     if (!oldTask) return NextResponse.json({ error: "Task not found" }, { status: 404 })
 
-    // Prepare Logs
-    const logs: string[] = []
-    
     const task = await prisma.$transaction(async (tx) => {
       const updatedTask = await tx.task.update({
         where: { id: taskId },
@@ -67,22 +64,111 @@ export async function PATCH(
         }
       }
 
-      // Build log details
-      if (rest.title !== undefined && rest.title !== oldTask.title) logs.push(`Title: "${oldTask.title}" → "${rest.title}"`)
-      if (rest.status !== undefined && rest.status !== oldTask.status) logs.push(`Status: ${oldTask.status} → ${rest.status}`)
-      if (rest.points !== undefined && rest.points !== oldTask.points) logs.push(`Complexity: ${oldTask.points ?? "None"} → ${rest.points ?? "None"}`)
-      if (rest.sprintId !== undefined && rest.sprintId !== oldTask.sprintId) logs.push(`Sprint: ${oldTask.sprint?.name ?? "Backlog"} → ${updatedTask.sprint?.name ?? "Backlog"}`)
+      const comments = timelineComments || {}
+
+      if (rest.title !== undefined && rest.title !== oldTask.title) {
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_TASK",
+            details: `Title: "${oldTask.title}" → "${rest.title}"`,
+            comment: comments.title || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
+      }
+      if (rest.status !== undefined && rest.status !== oldTask.status) {
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_STATUS",
+            details: `Status: ${oldTask.status} → ${rest.status}`,
+            comment: comments.status || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
+      }
+      if (rest.points !== undefined && rest.points !== oldTask.points) {
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_TASK",
+            details: `Complexity: ${oldTask.points ?? "None"} → ${rest.points ?? "None"}`,
+            comment: comments.points || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
+      }
+      if (rest.sprintId !== undefined && rest.sprintId !== oldTask.sprintId) {
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_TASK",
+            details: `Sprint: ${oldTask.sprint?.name ?? "Backlog"} → ${updatedTask.sprint?.name ?? "Backlog"}`,
+            comment: comments.sprintId || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
+      }
       if (rest.dueDate !== undefined) {
         const oldD = oldTask.dueDate ? new Date(oldTask.dueDate).toLocaleDateString() : "None"
         const newD = rest.dueDate ? new Date(rest.dueDate).toLocaleDateString() : "None"
-        if (oldD !== newD) logs.push(`Due Date: ${oldD} → ${newD}`)
+        if (oldD !== newD) {
+          await tx.auditLog.create({
+            data: {
+              action: "UPDATE_TASK",
+              details: `Due Date: ${oldD} → ${newD}`,
+              comment: comments.dueDate || null,
+              userId: currentUserId,
+              taskId
+            }
+          })
+        }
       }
       if (rest.creatorId !== undefined && rest.creatorId !== oldTask.creatorId) {
-        logs.push(`Reporter: ${oldTask.reporter?.name || "Unknown"} → ${updatedTask.reporter?.name || "Unknown"}`)
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_TASK",
+            details: `Reporter: ${oldTask.reporter?.name || "Unknown"} → ${updatedTask.reporter?.name || "Unknown"}`,
+            comment: comments.creatorId || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
       }
-      if (rest.githubUrl !== undefined && rest.githubUrl !== oldTask.githubUrl) logs.push(`GitHub Link updated`)
-      if (rest.repoName !== undefined && rest.repoName !== oldTask.repoName) logs.push(`Repository: ${oldTask.repoName || "None"} → ${rest.repoName || "None"}`)
-      if (rest.branchName !== undefined && rest.branchName !== oldTask.branchName) logs.push(`Branch: ${oldTask.branchName || "None"} → ${rest.branchName || "None"}`)
+      if (rest.githubUrl !== undefined && rest.githubUrl !== oldTask.githubUrl) {
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_TASK",
+            details: `GitHub Link updated`,
+            comment: comments.githubUrl || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
+      }
+      if (rest.repoName !== undefined && rest.repoName !== oldTask.repoName) {
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_TASK",
+            details: `Repository: ${oldTask.repoName || "None"} → ${rest.repoName || "None"}`,
+            comment: comments.repoName || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
+      }
+      if (rest.branchName !== undefined && rest.branchName !== oldTask.branchName) {
+        await tx.auditLog.create({
+          data: {
+            action: "UPDATE_TASK",
+            details: `Branch: ${oldTask.branchName || "None"} → ${rest.branchName || "None"}`,
+            comment: comments.branchName || null,
+            userId: currentUserId,
+            taskId
+          }
+        })
+      }
 
       if (assignments !== undefined) {
         const newAssignments = await tx.taskAssignment.findMany({
@@ -91,20 +177,22 @@ export async function PATCH(
         })
         const removed = oldTask.assignments.filter(oa => !newAssignments.some(na => na.userId === oa.userId))
         const added = newAssignments.filter(na => !oldTask.assignments.some(oa => oa.userId === na.userId))
-        removed.forEach(r => logs.push(`Removed attendee: ${r.user.name || "Unknown"}`))
-        added.forEach(a => logs.push(`Added attendee: ${a.user.name || "Unknown"} (${a.role})`))
-      }
-
-      if (logs.length > 0) {
-        console.log(`[AuditLog] Logging ${logs.length} changes for task ${taskId}`)
-        await tx.auditLog.create({
-          data: {
-            action: "UPDATE_TASK",
-            details: logs.join("\n"),
-            userId: currentUserId,
-            taskId
-          }
-        })
+        
+        if (removed.length > 0 || added.length > 0) {
+          const attendeeDetails: string[] = []
+          removed.forEach(r => attendeeDetails.push(`Removed attendee: ${r.user.name || "Unknown"}`))
+          added.forEach(a => attendeeDetails.push(`Added attendee: ${a.user.name || "Unknown"} (${a.role})`))
+          
+          await tx.auditLog.create({
+            data: {
+              action: "UPDATE_ASSIGNMENTS",
+              details: attendeeDetails.join("\n"),
+              comment: comments.assignments || null,
+              userId: currentUserId,
+              taskId
+            }
+          })
+        }
       }
 
       return tx.task.findUnique({
@@ -117,6 +205,7 @@ export async function PATCH(
         }
       })
     })
+
 
     revalidatePath("/", "layout")
     return NextResponse.json({ success: true, task })

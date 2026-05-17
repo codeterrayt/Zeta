@@ -136,7 +136,7 @@ export default function DocumentationPage() {
           {/* Access Filter */}
           <CustomDropdown
             value={filterType}
-            onChange={setFilterType}
+            onChange={(val) => setFilterType(val as "ALL" | "SELF" | "MENTIONED")}
             icon={Filter}
             label="Access Filter"
             options={[

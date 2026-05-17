@@ -70,6 +70,31 @@ export function TaskModal({
   })
   const [comment, setComment] = React.useState("")
   const [saving, setSaving] = React.useState(false)
+  const [askTimelineCommentSetting, setAskTimelineCommentSetting] = React.useState(true)
+  const [pendingChanges, setPendingChanges] = React.useState<Array<{
+    field: string
+    label: string
+    oldVal: string
+    newVal: string
+    comment: string
+  }>>([])
+  const [showCommentDialog, setShowCommentDialog] = React.useState(false)
+
+  React.useEffect(() => {
+    async function loadSettings() {
+      try {
+        const { getUserSettings } = await import("@/actions/settings")
+        const res = await getUserSettings()
+        if (res.success && res.settings) {
+          setAskTimelineCommentSetting(res.settings.askTimelineComment)
+        }
+      } catch (err) {
+        console.error("Failed to load timeline preferences:", err)
+      }
+    }
+    loadSettings()
+  }, [])
+
   const [title, setTitle] = React.useState(task?.title ?? "")
   const [description, setDescription] = React.useState(task?.description ?? "")
   const [dueDate, setDueDate] = React.useState<string>(task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "")
@@ -144,8 +169,7 @@ export function TaskModal({
     }
   }
 
-  const handleSave = async () => {
-    if (!canEdit) return
+  const executeSave = async (timelineComments: Record<string, string> = {}) => {
     setSaving(true)
     try {
       const payload: any = {
@@ -159,7 +183,8 @@ export function TaskModal({
         commitIds: devMeta.commit || null,
         dueDate: dueDate || null,
         sprintId: sprintId || null,
-        assignments
+        assignments,
+        timelineComments
       }
 
       if (reporterId) payload.creatorId = reporterId
@@ -181,6 +206,112 @@ export function TaskModal({
       alert("An error occurred while saving the task.")
     } finally {
       setSaving(false)
+      setShowCommentDialog(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!canEdit) return
+
+    // Calculate changes
+    const changes: Array<{
+      field: string
+      label: string
+      oldVal: string
+      newVal: string
+      comment: string
+    }> = []
+
+    if (title !== (task.title ?? "")) {
+      changes.push({
+        field: "title",
+        label: "Title",
+        oldVal: task.title || "None",
+        newVal: title || "None",
+        comment: ""
+      })
+    }
+    if (status !== (task.status ?? "BACKLOG")) {
+      changes.push({
+        field: "status",
+        label: "Status",
+        oldVal: task.status || "BACKLOG",
+        newVal: status || "BACKLOG",
+        comment: ""
+      })
+    }
+    const oldPoints = task.points ?? null
+    const newPoints = points === "" ? null : Number(points)
+    if (newPoints !== oldPoints) {
+      changes.push({
+        field: "points",
+        label: "Complexity (Points)",
+        oldVal: oldPoints !== null ? String(oldPoints) : "None",
+        newVal: newPoints !== null ? String(newPoints) : "None",
+        comment: ""
+      })
+    }
+    const oldSprint = task.sprintId || null
+    const newSprint = sprintId || null
+    if (newSprint !== oldSprint) {
+      const oldSprintName = task.sprint?.name || "Backlog"
+      const newSprintName = sprints.find(s => s.id === sprintId)?.name || "Backlog"
+      changes.push({
+        field: "sprintId",
+        label: "Sprint",
+        oldVal: oldSprintName,
+        newVal: newSprintName,
+        comment: ""
+      })
+    }
+    const oldDueDate = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : null
+    const newDueDate = dueDate || null
+    if (newDueDate !== oldDueDate) {
+      changes.push({
+        field: "dueDate",
+        label: "Due Date",
+        oldVal: oldDueDate || "None",
+        newVal: newDueDate || "None",
+        comment: ""
+      })
+    }
+    const oldReporterId = task.creatorId || task.reporter?.id || null
+    const newReporterId = reporterId || null
+    if (newReporterId !== oldReporterId) {
+      const oldReporterName = task.reporter?.name || "Unknown"
+      const newReporterName = projectMembers.find(m => m.id === reporterId)?.name || "Unknown"
+      changes.push({
+        field: "creatorId",
+        label: "Reporter",
+        oldVal: oldReporterName,
+        newVal: newReporterName,
+        comment: ""
+      })
+    }
+
+    const oldAssignments = task.assignments || []
+    const removed = oldAssignments.filter((oa: any) => !assignments.some(na => na.userId === oa.userId))
+    const added = assignments.filter(na => !oldAssignments.some((oa: any) => oa.userId === na.userId))
+    if (removed.length > 0 || added.length > 0) {
+      const oldNames = oldAssignments.map((a: any) => a.user.name || "Unknown").join(", ") || "None"
+      const newNames = assignments.map(a => {
+        const u = projectMembers.find(m => m.id === a.userId)
+        return u ? (u.name || u.email || "Unknown") : "Unknown"
+      }).join(", ") || "None"
+      changes.push({
+        field: "assignments",
+        label: "Attendees",
+        oldVal: oldNames,
+        newVal: newNames,
+        comment: ""
+      })
+    }
+
+    if (askTimelineCommentSetting && changes.length > 0) {
+      setPendingChanges(changes)
+      setShowCommentDialog(true)
+    } else {
+      await executeSave()
     }
   }
 
@@ -299,7 +430,7 @@ export function TaskModal({
               </div>
               <CommentSection
                 taskId={task.id}
-                projectId={task.projectId}
+                sprintId={task.sprintId || undefined}
                 initialComments={fullTask?.comments || []}
                 projectMembers={projectMembers as any}
               />
@@ -664,25 +795,100 @@ export function TaskModal({
     </div>
   )
 
-  if (standalone) return modalContent
-
-  return (
-    <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+  const commentDialogHtml = (
+    <DialogPrimitive.Root open={showCommentDialog} onOpenChange={setShowCommentDialog}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm" />
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 lg:p-4 pointer-events-none">
-          <DialogPrimitive.Content
-            className="w-[94vw] max-w-8xl h-[94vh] outline-none resize both overflow-auto pointer-events-auto shadow-2xl"
-            style={{ minWidth: "20rem", minHeight: "20rem" }}
-          >
-            <DialogPrimitive.Title className="sr-only">
-              {task.title || "Task Details"}
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[110] bg-background/80 backdrop-blur-md animate-in fade-in duration-300" />
+        <div className="fixed inset-0 z-[111] flex items-center justify-center p-4">
+          <DialogPrimitive.Content className="w-full max-w-lg bg-card border border-border/60 p-8 shadow-2xl rounded-[2.5rem] focus:outline-none animate-in zoom-in-95 duration-200">
+            <DialogPrimitive.Title className="text-2xl font-black tracking-tight mb-2">
+              Timeline Comments
             </DialogPrimitive.Title>
-            {modalContent}
+            <DialogPrimitive.Description className="text-sm text-muted-foreground font-medium mb-6">
+              Provide optional context comments for your changes to help the team keep track.
+            </DialogPrimitive.Description>
+
+            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {pendingChanges.map((change, index) => (
+                <div key={change.field} className="space-y-2 border-b border-border/40 pb-4 last:border-b-0 last:pb-0">
+                  <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                    <span>{change.label}</span>
+                    <span className="text-[10px] font-medium normal-case bg-secondary/80 px-2 py-0.5 rounded-lg border border-border/30 truncate max-w-[200px]">
+                      {change.oldVal} → {change.newVal}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Add an optional comment..."
+                    value={change.comment}
+                    onChange={(e) => {
+                      const updated = [...pendingChanges]
+                      updated[index].comment = e.target.value
+                      setPendingChanges(updated)
+                    }}
+                    className="w-full bg-secondary/40 border border-border/50 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/45"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between gap-4 mt-8 pt-4 border-t border-border/40">
+              <button
+                type="button"
+                onClick={() => executeSave({})}
+                className="px-5 py-3 text-sm font-bold text-muted-foreground hover:bg-secondary rounded-xl transition-all"
+              >
+                Skip Comments
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const commentsMap: Record<string, string> = {}
+                  pendingChanges.forEach(c => {
+                    if (c.comment.trim()) {
+                      commentsMap[c.field] = c.comment.trim()
+                    }
+                  })
+                  executeSave(commentsMap)
+                }}
+                className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+              >
+                Save Changes
+              </button>
+            </div>
           </DialogPrimitive.Content>
         </div>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
+  )
+
+  if (standalone) return (
+    <>
+      {modalContent}
+      {showCommentDialog && commentDialogHtml}
+    </>
+  )
+
+  return (
+    <>
+      <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 lg:p-4 pointer-events-none">
+            <DialogPrimitive.Content
+              className="w-[94vw] max-w-8xl h-[94vh] outline-none resize both overflow-auto pointer-events-auto shadow-2xl"
+              style={{ minWidth: "20rem", minHeight: "20rem" }}
+            >
+              <DialogPrimitive.Title className="sr-only">
+                {task.title || "Task Details"}
+              </DialogPrimitive.Title>
+              {modalContent}
+            </DialogPrimitive.Content>
+          </div>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+      {showCommentDialog && commentDialogHtml}
+    </>
   )
 }
 

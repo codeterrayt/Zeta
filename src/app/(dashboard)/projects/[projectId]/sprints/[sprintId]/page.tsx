@@ -138,7 +138,7 @@ export default async function SprintDetailsPage({
       <div className="flex-1 min-h-0">
         {activeTab === "kanban" && (
           <KanbanBoard
-            initialData={columns}
+            initialData={columns as any}
             projectMembers={projectMembers}
             projectId={projectId}
             boardSections={boardSections}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bot, Save, Palette, TrendingUp, ShieldCheck, Loader2 } from "lucide-react"
+import { Bot, Save, Palette, TrendingUp, ShieldCheck, Loader2, History } from "lucide-react"
 import { useTheme } from "next-themes"
 import { getUserSettings, updateSettings } from "@/actions/settings"
 import { toast } from "sonner"
@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [model, setModel] = useState("gemini-1.5-pro")
   const [highThreshold, setHighThreshold] = useState(3)
   const [mediumThreshold, setMediumThreshold] = useState(6)
+  const [askTimelineComment, setAskTimelineComment] = useState(true)
   
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -27,6 +28,7 @@ export default function SettingsPage() {
         setModel(res.settings.aiModel)
         setHighThreshold(res.settings.highFocusMax)
         setMediumThreshold(res.settings.mediumFocusMax)
+        setAskTimelineComment(res.settings.askTimelineComment)
       }
       setLoading(false)
     }
@@ -39,7 +41,8 @@ export default function SettingsPage() {
       highFocusMax: highThreshold,
       mediumFocusMax: mediumThreshold,
       aiEnabled,
-      aiModel: model
+      aiModel: model,
+      askTimelineComment
     })
     if (res.success) {
       toast.success("Settings updated successfully")
@@ -204,6 +207,31 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Timeline Settings */}
+        <section className="bg-card border border-border/60 rounded-[2.5rem] shadow-sm overflow-hidden transition-all hover:shadow-xl">
+          <div className="p-8 bg-secondary/10 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <History className="w-6 h-6 text-primary" />
+                Timeline Preferences
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1 font-medium">Configure prompts for your task activity history.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={askTimelineComment}
+                onChange={(e) => setAskTimelineComment(e.target.checked)}
+              />
+              <div className="w-14 h-7 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+            </label>
+          </div>
+          <div className="p-8 border-t border-border/40">
+            <p className="text-xs text-muted-foreground font-medium">When enabled, OpenJira will ask you to add optional comments for changes when saving a task, helping your team understand the context behind each timeline event.</p>
           </div>
         </section>
 
