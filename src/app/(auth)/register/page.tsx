@@ -18,7 +18,7 @@ export default function RegisterPage() {
 
     const formData = new FormData(e.currentTarget)
     const res = await registerUser(formData)
-    
+
     setLoading(false)
     if (res?.error) {
       setError(res.error)
@@ -64,10 +64,10 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Password</label>
-              <input 
-                name="password" 
-                type="password" 
-                required 
+              <input
+                name="password"
+                type="password"
+                required
                 minLength={6}
                 className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />

@@ -26,11 +26,11 @@ export default async function RootLayout({
       <body className={`${inter.className} antialiased bg-background text-foreground min-h-screen flex flex-col`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
-          defaultTheme="theme-jira"
+          defaultTheme="theme-zeta"
           enableSystem={false}
           disableTransitionOnChange
           value={{
-            'theme-jira': 'theme-jira',
+            'theme-zeta': 'theme-zeta',
             'theme-monaco': 'theme-monaco'
           }}
         >

@@ -85,15 +85,15 @@ export default function SettingsPage() {
               <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Active Theme</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { id: "theme-jira", name: "Jira Blue", desc: "Clean, professional corporate look." },
+                  { id: "theme-zeta", name: "Zeta Blue", desc: "Clean, professional corporate look." },
                   { id: "theme-monaco", name: "Monaco Dark", desc: "High contrast, developer focused." }
                 ].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setTheme(t.id)}
                     className={`p-6 rounded-2xl border-2 text-left transition-all ${theme === t.id
-                        ? "border-primary bg-primary/5 ring-4 ring-primary/10"
-                        : "border-border/50 hover:border-border bg-background"
+                      ? "border-primary bg-primary/5 ring-4 ring-primary/10"
+                      : "border-border/50 hover:border-border bg-background"
                       }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -195,8 +195,8 @@ export default function SettingsPage() {
                     key={m.id}
                     onClick={() => setModel(m.id)}
                     className={`p-6 rounded-2xl border-2 text-left transition-all ${model === m.id
-                        ? "border-primary bg-primary/5 ring-4 ring-primary/10"
-                        : "border-border/50 hover:border-border bg-background"
+                      ? "border-primary bg-primary/5 ring-4 ring-primary/10"
+                      : "border-border/50 hover:border-border bg-background"
                       }`}
                   >
                     <div className="font-bold mb-1">{m.name}</div>

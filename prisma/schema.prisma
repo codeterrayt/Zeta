@@ -8,18 +8,18 @@ generator client {
 
 // NextAuth.js Models
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -43,19 +43,19 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  
-  // Custom Jira fields
-  role          Role      @default(USER)
-  projects      ProjectMember[]
-  assignments   TaskAssignment[]
-  reportedTasks Task[]    @relation("ReportedTasks")
-  comments      Comment[]
-  attachments   Attachment[]
-  auditLogs     AuditLog[]
-  settings      Settings?
-  authoredDocuments Document[] @relation("AuthoredDocuments")
-  auditLogComments AuditLogComment[]
-  notifications Notification[]
+
+  // Custom Zeta fields
+  role              Role              @default(USER)
+  projects          ProjectMember[]
+  assignments       TaskAssignment[]
+  reportedTasks     Task[]            @relation("ReportedTasks")
+  comments          Comment[]
+  attachments       Attachment[]
+  auditLogs         AuditLog[]
+  settings          Settings?
+  authoredDocuments Document[]        @relation("AuthoredDocuments")
+  auditLogComments  AuditLogComment[]
+  notifications     Notification[]
 }
 
 model VerificationToken {
@@ -72,19 +72,19 @@ enum Role {
 }
 
 model Settings {
-  id              String  @id @default(cuid())
-  userId          String  @unique
-  aiEnabled       Boolean @default(true)
-  aiModel         String  @default("gemini-1.5-pro")
-  
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  aiEnabled Boolean @default(true)
+  aiModel   String  @default("gemini-1.5-pro")
+
   // Dashboard Thresholds
-  highFocusMax    Int     @default(3)
-  mediumFocusMax  Int     @default(6)
-  
+  highFocusMax   Int @default(3)
+  mediumFocusMax Int @default(6)
+
   // Timeline comment options
   askTimelineComment Boolean @default(true)
-  
-  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Project & Org Models
@@ -94,21 +94,21 @@ model Project {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  members     ProjectMember[]
-  sprints     Sprint[]
-  tasks       Task[]
-  folders     Folder[]
+
+  members       ProjectMember[]
+  sprints       Sprint[]
+  tasks         Task[]
+  folders       Folder[]
   boardSections BoardSection[]
-  documents   Document[]
+  documents     Document[]
 }
 
 model BoardSection {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   name      String
-  order     Int      @default(0)
+  order     Int    @default(0)
   projectId String
-  
+
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
@@ -116,14 +116,14 @@ model BoardSection {
 }
 
 model ProjectMember {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   projectId String
   userId    String
   role      ProjectRole @default(VIEWER)
-  createdAt DateTime @default(now())
-  
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
 }
@@ -136,23 +136,23 @@ enum ProjectRole {
 
 // Folder / Epic
 model Folder {
-  id          String   @id @default(cuid())
-  name        String
-  projectId   String
-  
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks       Task[]
+  id        String @id @default(cuid())
+  name      String
+  projectId String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
 }
 
 // Sprint
 model Sprint {
-  id          String   @id @default(cuid())
-  name        String
-  startDate   DateTime?
-  endDate     DateTime?
-  projectId   String
-  
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  name      String
+  startDate DateTime?
+  endDate   DateTime?
+  projectId String
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       Task[]
   comments    Comment[]
   attachments Attachment[]
@@ -160,41 +160,41 @@ model Sprint {
 
 // Tasks & Closure Table for Infinite Hierarchy
 model Task {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
-  description String?  @db.Text
-  status      String   @default("BACKLOG")
+  description String?   @db.Text
+  status      String    @default("BACKLOG")
   points      Int?
   startDate   DateTime?
   endDate     DateTime?
   dueDate     DateTime?
-  
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  sprintId    String?
-  sprint      Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
-  
-  folderId    String?
-  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  
-  creatorId   String?
-  reporter    User?    @relation("ReportedTasks", fields: [creatorId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  sprintId String?
+  sprint   Sprint? @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  folderId String?
+  folder   Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  creatorId String?
+  reporter  User?   @relation("ReportedTasks", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Dev Metadata
-  commitIds   String?
-  branchName  String?
-  repoName    String?
-  githubUrl   String?
+  commitIds  String?
+  branchName String?
+  repoName   String?
+  githubUrl  String?
 
   assignments TaskAssignment[]
   comments    Comment[]
   documents   DocLink[]
   attachments Attachment[]
-  
+
   // Closure Table Relationships
   ancestors   TaskClosure[] @relation("AncestorRelation")
   descendants TaskClosure[] @relation("DescendantRelation")
@@ -214,9 +214,9 @@ model TaskAssignment {
   userId    String
   role      TaskAssignmentRole @default(ASSIGNEE)
   createdAt DateTime           @default(now())
-  
-  task      Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([taskId, userId])
 }
@@ -225,35 +225,35 @@ model TaskClosure {
   ancestorId   String
   descendantId String
   depth        Int
-  
-  ancestor     Task @relation("AncestorRelation", fields: [ancestorId], references: [id], onDelete: Cascade)
-  descendant   Task @relation("DescendantRelation", fields: [descendantId], references: [id], onDelete: Cascade)
+
+  ancestor   Task @relation("AncestorRelation", fields: [ancestorId], references: [id], onDelete: Cascade)
+  descendant Task @relation("DescendantRelation", fields: [descendantId], references: [id], onDelete: Cascade)
 
   @@id([ancestorId, descendantId])
 }
 
 // Comments & Reallocation Logs
 model Comment {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  taskId    String?
-  sprintId  String?
-  userId    String
+  id                String  @id @default(cuid())
+  content           String  @db.Text
+  taskId            String?
+  sprintId          String?
+  userId            String
   isReallocationLog Boolean @default(false)
-  
+
   task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
   sprint    Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  parentId  String?
-  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
+  parentId    String?
+  parent      Comment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]    @relation("CommentReplies")
   attachments Attachment[]
 }
 
 model Attachment {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   name      String
   url       String
   size      Int
@@ -263,15 +263,15 @@ model Attachment {
   sprintId  String?
   commentId String?
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  sprint    Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
-  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sprint  Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
 
-// Confluence-style Documentation
+// Zeta-style Documentation
 model Document {
   id        String   @id @default(cuid())
   title     String
@@ -280,19 +280,19 @@ model Document {
   authorId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  author    User     @relation("AuthoredDocuments", fields: [authorId], references: [id], onDelete: Cascade)
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  author    User      @relation("AuthoredDocuments", fields: [authorId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   taskLinks DocLink[]
 }
 
 model DocLink {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   documentId String
   taskId     String
-  
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, taskId])
 }
@@ -305,10 +305,10 @@ model AuditLog {
   userId    String
   taskId    String?
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  comments  AuditLogComment[]
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task     Task?             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  comments AuditLogComment[]
 }
 
 model AuditLogComment {
@@ -318,30 +318,30 @@ model AuditLogComment {
   userId     String
   createdAt  DateTime @default(now())
 
-  auditLog   AuditLog @relation(fields: [auditLogId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auditLog AuditLog @relation(fields: [auditLogId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model EmailQueue {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   to          String
   subject     String
-  body        String   @db.Text
-  status      String   @default("PENDING") // PENDING, SENT, FAILED
-  attempts    Int      @default(0)
-  createdAt   DateTime @default(now())
+  body        String    @db.Text
+  status      String    @default("PENDING") // PENDING, SENT, FAILED
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now())
   processedAt DateTime?
 }
 
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // 'MENTION', 'PROJECT_ADDED', 'ASSIGNED', 'TASK_CHANGED', 'DUE_SOON'
+  type      String // 'MENTION', 'PROJECT_ADDED', 'ASSIGNED', 'TASK_CHANGED', 'DUE_SOON'
   title     String
   content   String   @db.Text
   isViewed  Boolean  @default(false)
-  link      String?  // The redirection URL path
+  link      String? // The redirection URL path
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -5,7 +5,7 @@ import Link from "next/link"
  * CONFIGURATION
  * Change the GitHub repository URL here.
  */
-const GITHUB_REPO_URL = "https://github.com/rohanprajapati/Zeta"
+const GITHUB_REPO_URL = "https://github.com/codeterrayt/Zeta"
 
 export function Footer() {
   return (
@@ -19,7 +19,8 @@ export function Footer() {
           <div className="flex flex-col">
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Crafted with Passion</p>
             <p className="text-xs font-extrabold text-muted-foreground">
-              Designed & Developed by <span className="text-primary hover:underline cursor-default">Rohan Prajapati</span>
+              {/* add utm too */}
+              Designed & Developed by <a href="https://rohanprajapati.dev?utm_source=Zeta&utm_medium=footer&utm_campaign=Zeta" target="_blank" className="cursor-pointer text-primary hover:underline cursor-default">Rohan Prajapati</a>
             </p>
           </div>
         </div>

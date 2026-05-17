@@ -1,17 +1,51 @@
-version: '3.8'
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: Zeta-postgres
-    restart: always
+  Zeta:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zeta
+    image: zeta:1.0.0
+    ports:
+      - "3000:3000"
     environment:
-      POSTGRES_USER: Zeta
-      POSTGRES_PASSWORD: Zeta_password
-      POSTGRES_DB: Zeta
+      - AUTH_TRUST_HOST=true
+      - NEXTAUTH_URL=http://localhost:3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-Zeta}?schema=${POSTGRES_SCHEMA:-zeta}
+      - AUTH_SECRET=${AUTH_SECRET:-${NEXTAUTH_SECRET}}
+    env_file:
+      - .docker.env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/public/uploads
+    restart: always
+
+  db:
+    image: postgres:18.4
+    container_name: Zeta-db
     ports:
       - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=Zeta
     volumes:
-      - Zeta_pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: Zeta-logs
+    ports:
+      - "8888:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
 
 volumes:
-  Zeta_pgdata:
+  postgres_data:
