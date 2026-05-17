@@ -51,7 +51,7 @@ export const FileMentionList = forwardRef((props: any, ref) => {
   }))
 
   return (
-    <div className="bg-popover text-popover-foreground border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[260px] max-w-[320px] flex flex-col p-1 z-[100] pointer-events-auto">
+    <div className="bg-popover text-popover-foreground border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[260px] max-w-[320px] flex flex-col p-1 z-[999999] pointer-events-auto">
       <div className="px-3 py-1.5 border-b border-border/50 mb-1">
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
           <span>📎</span> Attach File

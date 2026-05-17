@@ -440,6 +440,7 @@ export function TaskModal({
                   placeholder="Add a more detailed description..."
                   minHeight="150px"
                   projectId={projectId}
+                  onAttachmentUpload={att => setProjectAttachments(prev => [att, ...prev])}
                 />
               ) : task.description ? (
                 <ContentRenderer
@@ -859,6 +860,7 @@ export function TaskModal({
                       placeholder="Add an optional comment... (type @ or @file:)"
                       minHeight="70px"
                       projectId={task.projectId}
+                      onAttachmentUpload={att => setProjectAttachments(prev => [att, ...prev])}
                     />
                   </div>
                 </div>

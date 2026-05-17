@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@import "tippy.js/dist/tippy.css";
 
 /* Robust Prose Styles for Tiptap */
 .prose {
@@ -196,6 +197,7 @@
   background-color: transparent !important;
   box-shadow: none !important;
   color: hsl(var(--popover)) !important;
+  z-index: 999999 !important;
   /* Colors the tippy arrow */
 }
 

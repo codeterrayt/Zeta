@@ -38,7 +38,7 @@ export function CommandPalette() {
           <Search className="w-5 h-5 text-muted-foreground mr-3" />
           <Command.Input
             autoFocus
-            placeholder="Search tasks, projects, or commands..."
+            placeholder="Search tasks, projects, or commands... (in Dev)"
             className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-lg"
           />
         </div>
@@ -48,7 +48,7 @@ export function CommandPalette() {
             No results found.
           </Command.Empty>
 
-          <Command.Group heading="Suggestions" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
+          {/* <Command.Group heading="Suggestions" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
             <Command.Item
               onSelect={() => runCommand(() => router.push("/projects/1"))}
               className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-secondary cursor-pointer text-foreground data-[selected=true]:bg-secondary data-[selected=true]:text-primary"
@@ -63,7 +63,7 @@ export function CommandPalette() {
               <PlusCircle className="w-4 h-4 text-emerald-500" />
               Create New Task
             </Command.Item>
-          </Command.Group>
+          </Command.Group> */}
 
           <Command.Separator className="h-px bg-border my-2" />
 

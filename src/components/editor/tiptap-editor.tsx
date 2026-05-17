@@ -42,14 +42,27 @@ interface TiptapEditorProps {
   projectId?: string
   taskId?: string
   sprintId?: string
+  onAttachmentUpload?: (att: any) => void
 }
 
 let fileMentionCount = 0
 
 const FileMentionNodeView = ({ node, editor }: any) => {
   const { id, label } = node.attrs
-  // Get attachments from editor storage
-  const attachments = (editor as any).options.attachments || []
+  const [attachments, setAttachments] = React.useState<any[]>(() => {
+    return (editor.storage as any)?.fileMention?.attachments || editor.options?.attachments || []
+  })
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setAttachments((editor.storage as any)?.fileMention?.attachments || editor.options?.attachments || [])
+    }
+    editor.on("transaction", handleUpdate)
+    return () => {
+      editor.off("transaction", handleUpdate)
+    }
+  }, [editor])
+
   const meta = attachments.find((a: any) => a.id === id || a.name === label)
 
   return (
@@ -73,6 +86,7 @@ export function TiptapEditor({
   projectId: manualProjectId,
   taskId: manualTaskId,
   sprintId: manualSprintId,
+  onAttachmentUpload,
 }: TiptapEditorProps) {
   const params = useParams()
   const { data: session } = useSession()
@@ -124,6 +138,12 @@ export function TiptapEditor({
   const FileMention = React.useMemo(() => {
     return Mention.extend({
       name: "fileMention",
+
+      addStorage() {
+        return {
+          attachments: [],
+        }
+      },
 
       addAttributes() {
         return {
@@ -238,10 +258,14 @@ export function TiptapEditor({
     []
   )
 
-  // Sync attachments with editor options for NodeView access
+  // Sync attachments with editor options & storage for NodeView access
   React.useEffect(() => {
     if (editor) {
       editor.setOptions({ attachments } as any)
+      if ((editor.storage as any)?.fileMention) {
+        (editor.storage as any).fileMention.attachments = attachments
+        editor.view.dispatch(editor.state.tr)
+      }
     }
   }, [editor, attachments])
 
@@ -287,6 +311,7 @@ export function TiptapEditor({
       if (data.success) {
         const att = data.attachment
         setAttachments(prev => [att, ...prev])
+        onAttachmentUpload?.(att)
         toast.success(`"${att.name}" uploaded`)
         // Auto-insert the fileMention node into the editor
         editor.chain().focus().insertContent([

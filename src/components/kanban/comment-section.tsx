@@ -151,6 +151,7 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
               projectId={projectId}
               taskId={taskId}
               sprintId={sprintId}
+              onAttachmentUpload={att => setAttachments((prev: any[]) => [att, ...prev])}
             />
           </div>
         </div>
@@ -184,6 +185,7 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
               taskId={taskId}
               sprintId={sprintId}
               attachments={attachments}
+              setAttachments={setAttachments}
             />
           ))
         ) : (
@@ -214,7 +216,8 @@ function CommentItem({
   projectId,
   taskId,
   sprintId,
-  attachments = []
+  attachments = [],
+  setAttachments
 }: any) {
   return (
     <div 
@@ -284,6 +287,7 @@ function CommentItem({
                 projectId={projectId}
                 taskId={taskId}
                 sprintId={sprintId}
+                onAttachmentUpload={att => setAttachments((prev: any[]) => [att, ...prev])}
               />
               <div className="flex justify-end gap-2">
                 <button 
@@ -324,6 +328,7 @@ function CommentItem({
                 taskId={taskId}
                 sprintId={sprintId}
                 attachments={attachments}
+                setAttachments={setAttachments}
               />
             ))}
           </div>
