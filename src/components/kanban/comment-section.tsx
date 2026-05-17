@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { ContentRenderer } from "@/components/editor/content-renderer"
 import { getAttachmentsForContext } from "@/actions/get-attachments"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 
 interface User {
   id: string
@@ -46,6 +46,26 @@ export function CommentSection({ taskId, sprintId, initialComments, projectMembe
   const [attachments, setAttachments] = React.useState<any[]>([])
   const params = useParams()
   const projectId = params.projectId as string
+  const searchParams = useSearchParams()
+
+  React.useEffect(() => {
+    const highlight = searchParams?.get("highlight")
+    if (highlight && (highlight.startsWith("comment-") || highlight.startsWith("log-comment-"))) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(highlight)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" })
+          element.classList.add("highlight-flash")
+          
+          const cleanupTimer = setTimeout(() => {
+            element?.classList.remove("highlight-flash")
+          }, 3500)
+          return () => clearTimeout(cleanupTimer)
+        }
+      }, 600)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, comments])
 
   React.useEffect(() => {
     setComments(initialComments)
@@ -197,10 +217,13 @@ function CommentItem({
   attachments = []
 }: any) {
   return (
-    <div className={cn(
-      "group flex gap-4 transition-all duration-300",
-      depth > 0 ? "ml-12 mt-4" : "mt-8 border-b border-border/40 pb-8 last:border-0"
-    )}>
+    <div 
+      id={`comment-${comment.id}`}
+      className={cn(
+        "group flex gap-4 transition-all duration-300",
+        depth > 0 ? "ml-12 mt-4" : "mt-8 border-b border-border/40 pb-8 last:border-0"
+      )}
+    >
       <div className="shrink-0">
         <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shadow-sm">
           {comment.user.image ? (

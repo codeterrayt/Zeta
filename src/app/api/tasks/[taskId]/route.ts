@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
+import { notifyMentions, notifyTaskAssignment, notifyTaskChanges } from "@/actions/notifications"
 
 export async function PATCH(
   req: NextRequest,
@@ -28,6 +29,8 @@ export async function PATCH(
     })
 
     if (!oldTask) return NextResponse.json({ error: "Task not found" }, { status: 404 })
+
+    const changesTracked: string[] = []
 
     const task = await prisma.$transaction(async (tx) => {
       const updatedTask = await tx.task.update({
@@ -67,6 +70,7 @@ export async function PATCH(
       const comments = timelineComments || {}
 
       const createLogWithComment = async (tx: any, data: { action: string, details: string, commentKey: string }) => {
+        changesTracked.push(data.details)
         await tx.auditLog.create({
           data: {
             action: data.action,
@@ -178,6 +182,56 @@ export async function PATCH(
       })
     })
 
+    // Trigger task update notifications outside the transaction block
+    if (task) {
+      // 1. Task Assignments (Assigned notification)
+      if (assignments !== undefined) {
+        const newlyAssigned = assignments
+          .filter((na: any) => !oldTask.assignments.some((oa: any) => oa.userId === na.userId))
+          .map((na: any) => na.userId)
+        if (newlyAssigned.length > 0) {
+          await notifyTaskAssignment({
+            taskId,
+            addedUserIds: newlyAssigned,
+            actorId: currentUserId,
+            taskTitle: task.title
+          })
+        }
+      }
+
+      // 2. Mentions in Task Description
+      if (rest.description !== undefined && rest.description !== oldTask.description) {
+        await notifyMentions({
+          html: rest.description,
+          actorId: currentUserId,
+          taskId,
+          contextType: "TASK_DESCRIPTION"
+        })
+      }
+
+      // 3. Mentions in Timeline Comments
+      if (timelineComments) {
+        for (const key of Object.keys(timelineComments)) {
+          if (timelineComments[key]) {
+            await notifyMentions({
+              html: timelineComments[key],
+              actorId: currentUserId,
+              taskId,
+              contextType: "TIMELINE_COMMENT"
+            })
+          }
+        }
+      }
+
+      // 4. General Task Changes notification to present users
+      if (changesTracked.length > 0) {
+        await notifyTaskChanges({
+          taskId,
+          actorId: currentUserId,
+          changeDetails: changesTracked.join(", ")
+        })
+      }
+    }
 
     revalidatePath("/", "layout")
     return NextResponse.json({ success: true, task })

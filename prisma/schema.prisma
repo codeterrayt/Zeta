@@ -55,6 +55,7 @@ model User {
   settings      Settings?
   authoredDocuments Document[] @relation("AuthoredDocuments")
   auditLogComments AuditLogComment[]
+  notifications Notification[]
 }
 
 model VerificationToken {
@@ -330,4 +331,17 @@ model EmailQueue {
   attempts    Int      @default(0)
   createdAt   DateTime @default(now())
   processedAt DateTime?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // 'MENTION', 'PROJECT_ADDED', 'ASSIGNED', 'TASK_CHANGED', 'DUE_SOON'
+  title     String
+  content   String   @db.Text
+  isViewed  Boolean  @default(false)
+  link      String?  // The redirection URL path
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

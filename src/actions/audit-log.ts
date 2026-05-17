@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { notifyMentions } from "./notifications"
 
 export async function createAuditLog(data: {
   action: string
@@ -108,6 +109,21 @@ export async function addAuditLogComment(auditLogId: string, content: string) {
         }
       }
     })
+
+    const log = await prisma.auditLog.findUnique({
+      where: { id: auditLogId },
+      select: { taskId: true }
+    })
+
+    if (log && log.taskId) {
+      await notifyMentions({
+        html: content,
+        actorId: session.user.id,
+        taskId: log.taskId,
+        contextType: "TIMELINE_COMMENT",
+        commentId: newComment.id
+      })
+    }
 
     return { success: true, comment: newComment }
   } catch (error) {

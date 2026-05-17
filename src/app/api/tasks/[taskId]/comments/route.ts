@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { notifyMentions } from "@/actions/notifications"
 
 export async function POST(
   req: NextRequest,
@@ -25,6 +26,14 @@ export async function POST(
       include: {
         user: { select: { id: true, name: true, image: true } }
       }
+    })
+
+    await notifyMentions({
+      html: content,
+      actorId: userId,
+      taskId,
+      contextType: "TASK_COMMENT",
+      commentId: comment.id
     })
 
     revalidatePath("/", "layout")

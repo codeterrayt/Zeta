@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { TaskAssignmentRole } from "@prisma/client"
 import { auth } from "@/auth"
+import { notifyMentions, notifyTaskAssignment } from "./notifications"
 import { unstable_noStore as noStore } from "next/cache"
 
 export async function createTask(data: {
@@ -87,6 +88,32 @@ export async function createTask(data: {
 
       return task
     })
+
+    // Trigger task creation notifications
+    if (result) {
+      const actorId = currentUserId || "system"
+      
+      // 1. Task Assignments
+      if (data.assignments && data.assignments.length > 0) {
+        const addedUserIds = data.assignments.map(a => a.userId)
+        await notifyTaskAssignment({
+          taskId: result.id,
+          addedUserIds,
+          actorId,
+          taskTitle: result.title
+        })
+      }
+
+      // 2. Description Mentions
+      if (data.description) {
+        await notifyMentions({
+          html: data.description,
+          actorId,
+          taskId: result.id,
+          contextType: "TASK_DESCRIPTION"
+        })
+      }
+    }
 
     revalidatePath(`/projects/${data.projectId}`)
     revalidatePath("/", "layout")

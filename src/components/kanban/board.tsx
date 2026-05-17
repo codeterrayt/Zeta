@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { updateTaskStatus } from "@/actions/task"
 import { Search, Filter, X, Calendar } from "lucide-react"
 import { format, isPast, isToday, differenceInDays } from "date-fns"
+import { useSearchParams } from "next/navigation"
 
 export type Task = {
   id: string
@@ -51,6 +52,17 @@ export function KanbanBoard({
   const currentUserId = session?.user?.id
   const [columns, setColumns] = useState(initialData)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const searchParams = useSearchParams()
+
+  React.useEffect(() => {
+    const taskIdParam = searchParams?.get("taskId")
+    if (taskIdParam) {
+      const task = columns.flatMap(c => c.tasks).find(t => t.id === taskIdParam)
+      if (task) {
+        setSelectedTask(task)
+      }
+    }
+  }, [searchParams, columns])
 
   // Filters State
   const [search, setSearch] = useState("")

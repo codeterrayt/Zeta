@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users, BookOpen, FileText, Eye, Edit3, Paperclip, Download } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
@@ -55,6 +55,7 @@ export function TaskModal({
 }) {
   const { data: session } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [status, setStatus] = React.useState(task?.status ?? "BACKLOG")
   const [assignments, setAssignments] = React.useState<Array<{ userId: string; role: TaskAssignmentRole }>>(
     task?.assignments?.map((a: any) => ({ userId: a.userId, role: a.role })) ?? []
@@ -95,17 +96,19 @@ export function TaskModal({
     loadSettings()
   }, [])
 
+
+
   const [title, setTitle] = React.useState(task?.title ?? "")
   const [description, setDescription] = React.useState(task?.description ?? "")
   const [dueDate, setDueDate] = React.useState<string>(task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "")
 
   const projectId = task?.projectId
 
-  // Permissions check
   const currentUserId = (session?.user as any)?.id
   const isReporter = currentUserId === (task?.creatorId || task?.reporter?.id)
   const isAssigned = assignments.some(a => a.userId === currentUserId)
-  const canEdit = isReporter || isAssigned
+  const isProjectMember = projectMembers?.some(m => m.id === currentUserId) ?? false
+  const canEdit = isReporter || isAssigned || isProjectMember
 
   const [fullTask, setFullTask] = React.useState(task)
   const [loading, setLoading] = React.useState(false)
@@ -150,6 +153,34 @@ export function TaskModal({
       }
     }
   }, [task?.id])
+
+  React.useEffect(() => {
+    if (isOpen && !loading && task?.id) {
+      const highlight = searchParams?.get("highlight")
+      if (highlight) {
+        const timer = setTimeout(() => {
+          let element: HTMLElement | null = null
+          if (highlight === "description") {
+            element = document.getElementById("task-description")
+          } else if (highlight.startsWith("comment-") || highlight.startsWith("log-comment-")) {
+            element = document.getElementById(highlight)
+          }
+
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" })
+            element.classList.add("highlight-flash")
+            
+            const cleanupTimer = setTimeout(() => {
+              element?.classList.remove("highlight-flash")
+            }, 3500)
+            return () => clearTimeout(cleanupTimer)
+          }
+        }, 500)
+
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [isOpen, loading, task?.id, searchParams])
 
   if (!task) return null
 
@@ -396,7 +427,7 @@ export function TaskModal({
               )}
             </section>
 
-            <section>
+            <section id="task-description">
               <div className="flex items-center gap-2 mb-4 text-muted-foreground">
                 <AlignLeft className="w-4 h-4" />
                 <h3 className="text-sm font-bold uppercase tracking-widest">Description</h3>

@@ -43,6 +43,21 @@ export async function addProjectMemberById(projectId: string, userId: string) {
       data: { projectId, userId, role: "CONTRIBUTOR" }
     })
 
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { name: true }
+    })
+
+    await prisma.notification.create({
+      data: {
+        userId,
+        type: "PROJECT_ADDED",
+        title: "Added to Project",
+        content: `You have been added as a member to the project "${project?.name || 'Unknown'}"`,
+        link: `/projects/${projectId}`
+      }
+    })
+
     revalidatePath(`/projects/${projectId}`)
     revalidatePath("/", "layout")
     return { success: true }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { getCurrentUserId } from "./project"
+import { notifyMentions } from "./notifications"
 
 export async function addComment(data: {
   content: string,
@@ -34,6 +35,16 @@ export async function addComment(data: {
           }
         }
       }
+    })
+
+    await notifyMentions({
+      html: data.content,
+      actorId: userId,
+      taskId: data.taskId,
+      sprintId: data.sprintId,
+      projectId: data.projectId,
+      contextType: data.taskId ? "TASK_COMMENT" : "SPRINT_ACTIVITY",
+      commentId: comment.id
     })
 
     if (data.taskId) revalidatePath(`/tasks/${data.taskId}`)

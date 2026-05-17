@@ -1,5 +1,6 @@
-import { Bell, Search } from "lucide-react"
+import { Search } from "lucide-react"
 import { MobileSidebar } from "./mobile-sidebar"
+import { NotificationBell } from "./notification-bell"
 
 export function Header() {
   return (
@@ -17,10 +18,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground transition-colors relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full ring-2 ring-card" />
-        </button>
+        <NotificationBell />
       </div>
     </header>
   )

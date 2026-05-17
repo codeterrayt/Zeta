@@ -43,6 +43,27 @@ export default function DocumentDetailsPage() {
     load()
   }, [docId])
 
+  React.useEffect(() => {
+    if (doc) {
+      const highlight = searchParams.get("highlight")
+      if (highlight === "document") {
+        const timer = setTimeout(() => {
+          const element = document.getElementById("document-content")
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" })
+            element.classList.add("highlight-flash")
+            
+            const cleanupTimer = setTimeout(() => {
+              element?.classList.remove("highlight-flash")
+            }, 3500)
+            return () => clearTimeout(cleanupTimer)
+          }
+        }, 400)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [doc, searchParams])
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -167,7 +188,7 @@ export default function DocumentDetailsPage() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-6 lg:p-12 custom-scrollbar bg-card/30">
-        <div className="max-w-4xl mx-auto space-y-8 pb-20 bg-card p-10 lg:p-16 rounded-[2.5rem] shadow-2xl border border-border/50">
+        <div id="document-content" className="max-w-4xl mx-auto space-y-8 pb-20 bg-card p-10 lg:p-16 rounded-[2.5rem] shadow-2xl border border-border/50">
           <div className="space-y-4">
             {canEdit ? (
               <input

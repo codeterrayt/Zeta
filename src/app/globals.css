@@ -172,3 +172,25 @@
 .tippy-content {
   padding: 0 !important;
 }
+
+@keyframes highlight-flash-animation {
+  0% {
+    background-color: transparent;
+  }
+  15% {
+    background-color: hsl(var(--primary) / 0.15);
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.1);
+  }
+  85% {
+    background-color: hsl(var(--primary) / 0.15);
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.highlight-flash {
+  animation: highlight-flash-animation 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  border-radius: 1rem;
+}

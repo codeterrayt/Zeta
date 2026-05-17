@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
+import { notifyMentions } from "./notifications"
 
 export async function createDocument(data: {
   title: string
@@ -40,6 +41,14 @@ export async function createDocument(data: {
         }
       })
     }
+
+    await notifyMentions({
+      html: data.content,
+      actorId: session.user.id,
+      documentId: document.id,
+      projectId: data.projectId,
+      contextType: "DOCUMENTATION"
+    })
 
     revalidatePath(`/projects/${data.projectId}`)
     if (data.taskId) revalidatePath(`/tasks/${data.taskId}`)
@@ -158,6 +167,14 @@ export async function updateDocument(id: string, data: { title: string; content:
         }
       })
     }
+
+    await notifyMentions({
+      html: data.content,
+      actorId: session.user.id,
+      documentId: document.id,
+      projectId: document.projectId,
+      contextType: "DOCUMENTATION"
+    })
 
     revalidatePath(`/documentation/${id}`)
     return { success: true, document }
