@@ -1,73 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zeta 🚀
 
-## Getting Started
+### *The Next-Gen Agile Workspace*
 
-First, run the development server:
+Zeta is a modern, high-performance, and visually stunning project management platform designed as a state-of-the-art alternative to Jira. Built with a sleek glassmorphic design system and powerful productivity shortcuts, Zeta equips agile teams to plan, collaborate, track, and ship code faster—all within a single integrated workspace.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Product Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Zeta redefines agile management with several next-generation capabilities:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **🏗️ Dynamic Kanban Board**: Smooth drag-and-drop workspace using visual status boards, instantly persisting card status updates.
+- **📅 Date-Driven Sprints**: Effortless sprint grooming, with date-driven categorizations that automatically transition sprints through *Planned*, *Active*, and *Completed* states.
+- **📝 Tiptap Rich-Text Editor**: Clean rich-text editor for descriptions and comments, featuring headers, highlighting, blockquotes, and lists.
+- **📎 Smart Attachments & Previews**: Drag-and-drop file uploader with secure dynamically authorized file serving, original name preservation, and instant hover preview tooltips for images and PDF documents.
+- **📚 Integrated Wiki (Zeta Docs)**: Share team requirements, system architecture briefs, and documentation directly alongside tasks for seamless cross-referencing.
+- **🔍 Global Command Palette (`Cmd / Ctrl + K`)**: Instantly query across tasks, projects, wiki documents, and navigation commands.
+- **🧵 Threaded Commenting Engine**: Rich nested conversation threads to keep communication structured.
+- **🔔 Real-Time Notification Center**: Interactive header bell widget and a resizeable, filterable manager dashboard showing unread triggers and task mentions.
+- **🎨 Visual Themes**: Toggle between high-contrast light and Monaco-inspired developer dark modes.
+- **🪵 Automated Audit Logs**: Transparent track record of title adjustments, date updates, point estimates, and status movements.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🏗️ Architecture & Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Zeta is built on a clean, modern, and highly scalable stack:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend & App Engine**: Next.js 15 (App Router)
+- **Styling & Presentation**: Tailwind CSS
+- **Database ORM**: Prisma Client
+- **Storage Database**: PostgreSQL
+- **Security & Session**: Auth.js (v5)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🐳 Quick Start (Docker Compose)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/building-your-application/deploying) for more details.
-
-## Docker Deployment
-
-OpenJirZetawith a full Docker setup including the Next.js app, PostgreSQL 18.4, and Dozzle for logging.
+The easiest way to boot Zeta, along with its database and a real-time logs dashboard, is via Docker:
 
 ### Prerequisites
+Ensure you have **Docker** and **Docker Compose** installed on your system.
 
-- Docker and Docker Compose installed.
-- A `.env` file based on `.env.example`.
+### Steps
 
-### Services
+1. **Configure Secrets**:
+   Create a `.env` file in the root directory and configure your keys:
+   ```env
+   DATABASE_URL="postgresql://postgres:postgres@db:5432/zeta?schema=public"
+   NEXTAUTH_SECRET="your-32-character-secret-key-goes-here"
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
 
-- **Application:** http://localhost:3000
-- **Database:** localhost:5432 (PostgreSQL 18.4)
-- **Logs (Dozzle):** http://localhost:8888
+2. **Boot Container Services**:
+   Start the application, database, and logs console:
+   ```bash
+   docker compose up -d --build
+   ```
 
-### Quick Start
+3. **Deploy Schema**:
+   Push the database schema directly to your PostgreSQL container:
+   ```bash
+   npx prisma db push
+   ```
 
-1.  **Configure Environment:**
-    ```bash
-    cp .env.example .env
-    # Edit .env with your secrets
-    ```
+Once deployed, the following services will be available:
+- **Zeta Application**: [http://localhost:3000](http://localhost:3000)
+- **Dozzle (Log Viewer Console)**: [http://localhost:8888](http://localhost:8888)
 
-2.  **Build and Start:**
-    ```bash
-    docker-compose up -d --build
-    ```
+---
 
-3.  **Database Setup:**
-    Once the containers are running, push the schema to the Docker database:
-    ```bash
-    npx prisma db push
-    ```
+## 🤝 Contributing
 
-The `uploads` folder and database data are persisted using Docker volumes.
+We welcome open-source contributions! Whether you are fixing bugs, optimizing UI performance, adding advanced sprint tools, or improving our developer docs:
 
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/your-awesome-feature`.
+3. Commit your changes: `git commit -m 'Add some awesome feature'`.
+4. Push to your branch: `git push origin feature/your-awesome-feature`.
+5. Open a **Pull Request** and let's collaborate!

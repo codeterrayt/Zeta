@@ -11,6 +11,8 @@ Welcome to the Zeta Project Knowledge Base. This wiki is designed to provide hig
   - [Task System](./features/tasks.md) - Kanban, Closure Table (subtasks), and Metadata.
   - [Collaboration](./features/collaboration.md) - Comments, Mentions, and Threading.
   - [File Attachments & Mentions](./features/attachments.md) - Secure uploads, dynamic auth serving, and Tippy.js previews.
+  - [Confluence-Style Docs](./features/docs.md) - Shared product design guides and cross-ticket task linking.
+  - [Global Navigation & Command Menu](./features/navigation.md) - Keyboard-driven cmdk palettes and sticky responsive menus.
 - [**Integrations**](./integrations/github.md) - GitHub Commit/PR parsing logic.
 
 ---
