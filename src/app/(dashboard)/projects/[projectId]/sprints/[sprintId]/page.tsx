@@ -74,9 +74,9 @@ export default async function SprintDetailsPage({
   ]
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="p-6 lg:p-10 flex flex-col space-y-8">
       {/* Sprint Header */}
-      <div className="flex flex-col gap-4 mb-6 shrink-0">
+      <div className="flex flex-col gap-4 shrink-0">
         <Link
           href={`/projects/${projectId}`}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary w-fit transition-colors"
@@ -135,7 +135,7 @@ export default async function SprintDetailsPage({
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 min-h-0">
+      <div>
         {activeTab === "kanban" && (
           <KanbanBoard
             initialData={columns as any}
@@ -146,17 +146,17 @@ export default async function SprintDetailsPage({
           />
         )}
         {activeTab === "workload" && (
-          <div className="h-full overflow-y-auto">
+          <div>
             <WorkloadView tasks={sprint.tasks} />
           </div>
         )}
         {activeTab === "users" && (
-          <div className="h-full overflow-y-auto">
+          <div>
             <ActiveUsersView tasks={sprint.tasks} />
           </div>
         )}
         {activeTab === "activity" && (
-          <div className="h-full overflow-y-auto px-8">
+          <div className="px-4 lg:px-8">
             <CommentSection 
               sprintId={sprintId}
               initialComments={sprint.comments || []}

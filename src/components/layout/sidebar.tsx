@@ -20,24 +20,24 @@ export function Sidebar() {
       <div className="h-16 flex items-center px-6 border-b border-border">
         <h1 className="text-xl font-black text-primary flex items-center gap-2 tracking-tight">
           <Activity className="w-6 h-6" />
-          OpenJira
+          Zeta
         </h1>
       </div>
-      
+
       <nav className="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
         <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 px-2">Menu</div>
-        
+
         {NAV_LINKS.map((link) => {
           const Icon = link.icon
           const isActive = pathname === link.href
           return (
-            <Link 
+            <Link
               key={link.href}
-              href={link.href} 
+              href={link.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
-                isActive 
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
                   : "hover:bg-secondary text-muted-foreground border-transparent"
               )}
             >
@@ -49,24 +49,24 @@ export function Sidebar() {
       </nav>
 
       <div className="p-6 border-t border-border/50 space-y-2">
-        <Link 
-          href="/profile" 
+        <Link
+          href="/profile"
           className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
-            pathname === "/profile" 
-              ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+            pathname === "/profile"
+              ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
               : "hover:bg-secondary text-muted-foreground border-transparent"
           )}
         >
           <User className="w-5 h-5" />
           Profile
         </Link>
-        <Link 
-          href="/settings" 
+        <Link
+          href="/settings"
           className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
-            pathname === "/settings" 
-              ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+            pathname === "/settings"
+              ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
               : "hover:bg-secondary text-muted-foreground border-transparent"
           )}
         >

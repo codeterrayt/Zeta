@@ -25,14 +25,14 @@ export function MobileSidebar() {
           <Menu className="w-6 h-6" />
         </button>
       </DialogPrimitive.Trigger>
-      
+
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200" />
         <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 w-full max-w-[280px] bg-card border-r border-border p-6 shadow-2xl animate-in slide-in-from-left duration-300 flex flex-col">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-xl font-black text-primary flex items-center gap-2">
               <Activity className="w-6 h-6" />
-              OpenJira
+              Zeta
             </h1>
             <DialogPrimitive.Close asChild>
               <button className="p-2 rounded-xl hover:bg-secondary transition-colors text-muted-foreground">
@@ -53,8 +53,8 @@ export function MobileSidebar() {
                   onClick={() => setOpen(false)}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
-                    isActive 
-                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
                       : "hover:bg-secondary text-muted-foreground border-transparent"
                   )}
                 >
@@ -71,8 +71,8 @@ export function MobileSidebar() {
               onClick={() => setOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
-                pathname === "/profile" 
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                pathname === "/profile"
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
                   : "hover:bg-secondary text-muted-foreground border-transparent"
               )}
             >
@@ -84,8 +84,8 @@ export function MobileSidebar() {
               onClick={() => setOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border",
-                pathname === "/settings" 
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                pathname === "/settings"
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
                   : "hover:bg-secondary text-muted-foreground border-transparent"
               )}
             >

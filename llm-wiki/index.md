@@ -1,6 +1,6 @@
-# OpenJira LLM Wiki
+# Zeta LLM Wiki
 
-Welcome to the OpenJira Project Knowledge Base. This wiki is designed to provide high-level context and deep-dive technical details for LLM agents working on this codebase.
+Welcome to the Zeta Project Knowledge Base. This wiki is designed to provide high-level context and deep-dive technical details for LLM agents working on this codebase.
 
 ## 🗺️ Project Navigation
 

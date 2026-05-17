@@ -1,6 +1,6 @@
 # Database & Schema
 
-OpenJira uses **Prisma** with **PostgreSQL**. The schema is designed for deep relationships and efficient hierarchy querying.
+Zeta uses **Prisma** with **PostgreSQL**. The schema is designed for deep relationships and efficient hierarchy querying.
 
 ## 📊 Core Models
 

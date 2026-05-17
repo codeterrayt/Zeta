@@ -166,7 +166,7 @@ export function KanbanBoard({
   }))
 
   return (
-    <div className="flex flex-col h-full space-y-6">
+    <div className="flex flex-col h-[700px] space-y-6">
       {/* Kanban Filter Bar */}
       <div className="flex flex-wrap items-center gap-3 bg-card border border-border p-3 rounded-xl shadow-sm shrink-0">
         <div className="relative flex-1 min-w-[200px]">
@@ -232,9 +232,9 @@ export function KanbanBoard({
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden h-full pb-4 custom-scrollbar">
+        <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden min-h-0 pb-4 custom-scrollbar">
           {filteredColumns.map(column => (
-            <div key={column.id} className="flex flex-col w-80 shrink-0 h-full">
+            <div key={column.id} className="flex flex-col w-80 shrink-0 min-h-0">
               <div className="flex items-center justify-between mb-4 px-1 shrink-0">
                 <h3 className="font-bold text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-primary/40" />

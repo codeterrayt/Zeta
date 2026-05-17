@@ -10,11 +10,11 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  
+
   // Use a simple check instead of useSearchParams to avoid Suspense boundary issues
   // or wrap in Suspense if necessary. For simplicity, we just check window.location.
   const [registered, setRegistered] = useState(false)
-  
+
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("registered=true")) {
       setRegistered(true)
@@ -53,7 +53,7 @@ export default function LoginPage() {
           <Activity className="w-12 h-12" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-foreground">
-          Sign in to OpenJira
+          Sign in to Zeta
         </h2>
         <p className="mt-2 text-center text-sm text-muted-foreground">
           The high-performance, professional Jira alternative.
@@ -73,23 +73,23 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Email address</label>
-              <input 
-                name="email" 
-                type="email" 
-                required 
+              <input
+                name="email"
+                type="email"
+                required
                 className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Password</label>
-              <input 
-                name="password" 
-                type="password" 
-                required 
+              <input
+                name="password"
+                type="password"
+                required
                 className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>

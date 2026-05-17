@@ -1,6 +1,6 @@
 # Task System
 
-Tasks are the atomic work items in OpenJira.
+Tasks are the atomic work items in Zeta.
 
 ## 🏗️ Kanban Board
 - **Drag & Drop**: Uses `@hello-pangea/dnd`.

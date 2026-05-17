@@ -45,7 +45,7 @@ export default async function ProjectBoardPage({
   const boardSections = project?.boardSections || []
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col p-6 lg:p-10">
       {/* Top Header with Project Settings access */}
       <div className="flex items-center justify-between mb-6 shrink-0 border-b border-border pb-4">
         <div>
@@ -87,7 +87,7 @@ export default async function ProjectBoardPage({
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="min-h-0">
         {activeTab === "sprints" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">

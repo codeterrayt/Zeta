@@ -98,7 +98,7 @@ export default function DocumentationPage() {
   }, [documents, selectedProjectId])
 
   return (
-    <div className="flex flex-col h-full overflow-hidden p-6 lg:p-10 space-y-8">
+    <div className="flex flex-col p-6 lg:p-10 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -176,7 +176,7 @@ export default function DocumentationPage() {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-y-auto pr-2 pt-2 custom-scrollbar">
+      <div className="pt-2">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3, 4, 5, 6].map(i => (
@@ -194,7 +194,7 @@ export default function DocumentationPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-10 pb-20">
+          <div className="space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredDocs.map((doc) => {
                 const hasEditAccess = doc.authorId === userId ||

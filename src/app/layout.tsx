@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] })
 import { auth } from "@/auth"
 
 export const metadata: Metadata = {
-  title: "OpenJira",
+  title: "Zeta",
   description: "A professional, high-performance Jira alternative.",
 }
 
@@ -24,8 +24,8 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased bg-background text-foreground min-h-screen flex flex-col`} suppressHydrationWarning>
-        <ThemeProvider 
-          attribute="class" 
+        <ThemeProvider
+          attribute="class"
           defaultTheme="theme-jira"
           enableSystem={false}
           disableTransitionOnChange

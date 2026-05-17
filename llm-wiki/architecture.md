@@ -1,6 +1,6 @@
 # Architecture Overview
 
-OpenJira is built as a modern, high-performance project management tool using the Next.js App Router and a robust relational data model.
+Zeta is built as a modern, high-performance project management tool using the Next.js App Router and a robust relational data model.
 
 ## 📁 Project Structure
 

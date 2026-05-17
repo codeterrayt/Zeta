@@ -1,6 +1,6 @@
 # Collaboration Features
 
-OpenJira supports threaded discussions and user mentions to facilitate team communication.
+Zeta supports threaded discussions and user mentions to facilitate team communication.
 
 ## 🧵 Threaded Comments
 - **Structure**: Comments can have a `parentId`, allowing for one level of indentation (replies).

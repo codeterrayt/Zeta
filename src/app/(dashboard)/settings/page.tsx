@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const [highThreshold, setHighThreshold] = useState(3)
   const [mediumThreshold, setMediumThreshold] = useState(6)
   const [askTimelineComment, setAskTimelineComment] = useState(true)
-  
+
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
@@ -61,7 +61,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 lg:p-10 space-y-12 h-full overflow-y-auto custom-scrollbar">
+    <div className="p-6 lg:p-10 space-y-12">
       <header>
         <h1 className="text-4xl font-black tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-2 font-medium text-lg">Manage your workspace preferences, performance thresholds, and AI integrations.</p>
@@ -79,7 +79,7 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground mt-1 font-medium">Customize the interface visual style.</p>
             </div>
           </div>
-          
+
           <div className="p-8 space-y-8">
             <div className="space-y-4">
               <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Active Theme</h3>
@@ -91,11 +91,10 @@ export default function SettingsPage() {
                   <button
                     key={t.id}
                     onClick={() => setTheme(t.id)}
-                    className={`p-6 rounded-2xl border-2 text-left transition-all ${
-                      theme === t.id 
-                        ? "border-primary bg-primary/5 ring-4 ring-primary/10" 
+                    className={`p-6 rounded-2xl border-2 text-left transition-all ${theme === t.id
+                        ? "border-primary bg-primary/5 ring-4 ring-primary/10"
                         : "border-border/50 hover:border-border bg-background"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-bold">{t.name}</span>
@@ -120,7 +119,7 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground mt-1 font-medium">Define how the dashboard calculates your Focus Level.</p>
             </div>
           </div>
-          
+
           <div className="p-8 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-4">
@@ -128,7 +127,7 @@ export default function SettingsPage() {
                   <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">High Focus Max</h3>
                   <span className="text-xs font-black text-primary bg-primary/10 px-2 py-1 rounded-lg">{highThreshold} Tasks</span>
                 </div>
-                <input 
+                <input
                   type="range"
                   min="1"
                   max="10"
@@ -149,7 +148,7 @@ export default function SettingsPage() {
                   <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Medium Focus Max</h3>
                   <span className="text-xs font-black text-blue-500 bg-blue-500/10 px-2 py-1 rounded-lg">{mediumThreshold} Tasks</span>
                 </div>
-                <input 
+                <input
                   type="range"
                   min={highThreshold + 1}
                   max="20"
@@ -174,16 +173,16 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground mt-1 font-medium">Configure the Gemini summarization and analysis engine.</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
+              <input
+                type="checkbox"
+                className="sr-only peer"
                 checked={aiEnabled}
                 onChange={(e) => setAiEnabled(e.target.checked)}
               />
               <div className="w-14 h-7 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-inner"></div>
             </label>
           </div>
-          
+
           <div className={cn("p-8 transition-opacity duration-300", !aiEnabled && "opacity-40 pointer-events-none")}>
             <div className="space-y-4">
               <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Selected AI Engine</h3>
@@ -195,11 +194,10 @@ export default function SettingsPage() {
                   <button
                     key={m.id}
                     onClick={() => setModel(m.id)}
-                    className={`p-6 rounded-2xl border-2 text-left transition-all ${
-                      model === m.id 
-                        ? "border-primary bg-primary/5 ring-4 ring-primary/10" 
+                    className={`p-6 rounded-2xl border-2 text-left transition-all ${model === m.id
+                        ? "border-primary bg-primary/5 ring-4 ring-primary/10"
                         : "border-border/50 hover:border-border bg-background"
-                    }`}
+                      }`}
                   >
                     <div className="font-bold mb-1">{m.name}</div>
                     <p className="text-xs text-muted-foreground font-medium">{m.desc}</p>
@@ -221,9 +219,9 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground mt-1 font-medium">Configure prompts for your task activity history.</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
+              <input
+                type="checkbox"
+                className="sr-only peer"
                 checked={askTimelineComment}
                 onChange={(e) => setAskTimelineComment(e.target.checked)}
               />
@@ -231,12 +229,12 @@ export default function SettingsPage() {
             </label>
           </div>
           <div className="p-8 border-t border-border/40">
-            <p className="text-xs text-muted-foreground font-medium">When enabled, OpenJira will ask you to add optional comments for changes when saving a task, helping your team understand the context behind each timeline event.</p>
+            <p className="text-xs text-muted-foreground font-medium">When enabled, Zeta will ask you to add optional comments for changes when saving a task, helping your team understand the context behind each timeline event.</p>
           </div>
         </section>
 
         <div className="flex justify-end pt-4">
-          <button 
+          <button
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-3 bg-primary text-primary-foreground px-10 py-5 rounded-3xl font-black text-sm hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"

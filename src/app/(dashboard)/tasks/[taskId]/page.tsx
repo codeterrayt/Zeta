@@ -18,8 +18,8 @@ export default async function DedicatedTaskPage({
   const boardSections = task.project.boardSections
 
   return (
-    <div className="flex-1 bg-background overflow-y-auto">
-      <div className="w-full min-h-screen">
+    <div className="p-6 lg:p-10">
+      <div className="w-full">
         {/* We use the TaskModal logic but as a static view */}
         {/* For now, I'll just use a special version of the modal that is always open and has no overlay */}
         <TaskModal

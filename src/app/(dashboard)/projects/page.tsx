@@ -8,7 +8,7 @@ export default async function ProjectsPage() {
   const { projects } = await getProjects()
 
   return (
-    <div className="p-6 lg:p-10 space-y-12 h-full overflow-y-auto custom-scrollbar">
+    <div className="p-6 lg:p-10 space-y-12">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black tracking-tight">Projects</h1>

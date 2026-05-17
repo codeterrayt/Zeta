@@ -1,6 +1,6 @@
 # GitHub Integration
 
-OpenJira integrates with GitHub by parsing and storing commit and Pull Request URLs directly on tasks.
+Zeta integrates with GitHub by parsing and storing commit and Pull Request URLs directly on tasks.
 
 ## 🔗 URL Parsing Logic
 

@@ -2,16 +2,16 @@ version: '3.8'
 services:
   db:
     image: postgres:16-alpine
-    container_name: openjira-postgres
+    container_name: Zeta-postgres
     restart: always
     environment:
-      POSTGRES_USER: openjira
-      POSTGRES_PASSWORD: openjira_password
-      POSTGRES_DB: openjira
+      POSTGRES_USER: Zeta
+      POSTGRES_PASSWORD: Zeta_password
+      POSTGRES_DB: Zeta
     ports:
       - "5432:5432"
     volumes:
-      - openjira_pgdata:/var/lib/postgresql/data
+      - Zeta_pgdata:/var/lib/postgresql/data
 
 volumes:
-  openjira_pgdata:
+  Zeta_pgdata:

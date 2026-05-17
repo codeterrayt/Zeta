@@ -82,7 +82,7 @@ export function ProjectSettingsView({
             Add Project Member
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Search for any registered OpenJira user by name or email.
+            Search for any registered Zeta user by name or email.
           </p>
         </div>
         <div className="p-6">

@@ -74,7 +74,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-6 lg:p-10 space-y-12 h-full overflow-y-auto custom-scrollbar">
+    <div className="p-6 lg:p-10 space-y-12">
       <header>
         <h1 className="text-4xl font-black tracking-tight">Profile</h1>
         <p className="text-muted-foreground mt-2 font-medium text-lg">Manage your personal information and security settings.</p>

@@ -1,6 +1,6 @@
 # Features Directory
 
-This section provides functional specifications for the core features of OpenJira.
+This section provides functional specifications for the core features of Zeta.
 
 ## 📋 Features List
 

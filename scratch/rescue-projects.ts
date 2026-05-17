@@ -17,11 +17,11 @@ async function main() {
       members: { none: {} }
     }
   })
-  
+
   const users = await prisma.user.findMany({
-    where: { email: { not: "system@openjira.local" } }
+    where: { email: { not: "system@Zeta.local" } }
   })
-  
+
   if (users.length === 0) {
     console.log("No non-system users found to assign.")
     return

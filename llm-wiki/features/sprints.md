@@ -1,6 +1,6 @@
 # Sprint Lifecycle
 
-Sprints in OpenJira are the primary container for work during an iteration.
+Sprints in Zeta are the primary container for work during an iteration.
 
 ## 🔄 Automatic Status Logic
 

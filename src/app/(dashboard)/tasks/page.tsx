@@ -114,7 +114,7 @@ export default function MyTasksPage() {
   }, [selectedProjectId, statusOptions])
 
   return (
-    <div className="flex flex-col h-full overflow-hidden p-6 lg:p-10 space-y-8">
+    <div className="flex flex-col p-6 lg:p-10 space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
@@ -170,7 +170,7 @@ export default function MyTasksPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+      <div className="pr-2">
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3, 4, 5].map(i => (
@@ -188,7 +188,7 @@ export default function MyTasksPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4 pb-20">
+          <div className="space-y-4">
             {filteredTasks.map((task) => {
               const StatusIcon = STATUS_ICONS[task.status] || Clock
               return (

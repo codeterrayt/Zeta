@@ -22,13 +22,13 @@ export async function createTask(data: {
   try {
     const session = await auth()
     const currentUserId = session?.user?.id
-    
+
     let creatorId = data.creatorId
     if (!creatorId || creatorId === "system") {
-      let systemUser = await prisma.user.findFirst({ where: { email: "system@openjira.local" } })
+      let systemUser = await prisma.user.findFirst({ where: { email: "system@Zeta.local" } })
       if (!systemUser) {
         systemUser = await prisma.user.create({
-          data: { name: "System", email: "system@openjira.local" }
+          data: { name: "System", email: "system@Zeta.local" }
         })
       }
       creatorId = systemUser.id
@@ -92,7 +92,7 @@ export async function createTask(data: {
     // Trigger task creation notifications
     if (result) {
       const actorId = currentUserId || "system"
-      
+
       // 1. Task Assignments
       if (data.assignments && data.assignments.length > 0) {
         const addedUserIds = data.assignments.map(a => a.userId)
@@ -141,7 +141,7 @@ export async function updateTask(taskId: string, data: {
     // Fetch old task for logging
     const oldTask = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { 
+      include: {
         sprint: true,
         reporter: { select: { name: true } }
       }
@@ -160,7 +160,7 @@ export async function updateTask(taskId: string, data: {
         dueDate: data.dueDate,
         creatorId: data.creatorId
       },
-      include: { 
+      include: {
         sprint: true,
         reporter: { select: { name: true } }
       }
@@ -169,15 +169,15 @@ export async function updateTask(taskId: string, data: {
     // Log changes
     if (userId) {
       const changes: string[] = []
-      if (data.title && data.title !== oldTask.title) 
+      if (data.title && data.title !== oldTask.title)
         changes.push(`Title changed from "${oldTask.title}" to "${data.title}"`)
-      if (data.status && data.status !== oldTask.status) 
+      if (data.status && data.status !== oldTask.status)
         changes.push(`Status changed from ${oldTask.status} to ${data.status}`)
-      if (data.points !== undefined && data.points !== oldTask.points) 
+      if (data.points !== undefined && data.points !== oldTask.points)
         changes.push(`Complexity changed from ${oldTask.points ?? "None"} to ${data.points ?? "None"}`)
-      if (data.sprintId !== undefined && data.sprintId !== oldTask.sprintId) 
+      if (data.sprintId !== undefined && data.sprintId !== oldTask.sprintId)
         changes.push(`Sprint changed from ${oldTask.sprint?.name ?? "Backlog"} to ${updatedTask.sprint?.name ?? "Backlog"}`)
-      if (data.dueDate !== undefined && data.dueDate?.toString() !== oldTask.dueDate?.toString()) 
+      if (data.dueDate !== undefined && data.dueDate?.toString() !== oldTask.dueDate?.toString())
         changes.push(`Due date changed from ${oldTask.dueDate ? new Date(oldTask.dueDate).toLocaleDateString() : "None"} to ${data.dueDate ? new Date(data.dueDate).toLocaleDateString() : "None"}`)
       if (data.creatorId && data.creatorId !== oldTask.creatorId) {
         changes.push(`Reporter changed from ${oldTask.reporter?.name || "Unknown"} to ${updatedTask.reporter?.name || "Unknown"}`)
@@ -333,7 +333,7 @@ export async function updateTaskStatus(taskId: string, status: string, projectId
 export async function getProjectBacklog(projectId: string) {
   try {
     const tasks = await prisma.task.findMany({
-      where: { 
+      where: {
         projectId,
         OR: [
           { status: "BACKLOG" },
