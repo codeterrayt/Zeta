@@ -64,7 +64,7 @@ Make sure you have **Docker** and **Docker Compose** installed.
 
 We are actively developing Zeta to expand its collaborative power. The following features are planned for upcoming releases:
 
-1. **⚡ Real-time Updates**: Real-time synchronization and alerts for each activity, comment, and card movement.
+1. **⚡ Real-time Updates**: Real-time synchronization and alerts for each activity, comment, and card movement. (more than 70% done)
 2. **📁 Folder Storage Arrangements**: Nesting directory arrangements and custom file/folder management structures inside projects.
 3. **💬 Team Chat Rooms**: In-app group channels equipped with file mentions, user tagging, and channel mute controls.
 4. **🔔 Chrome Push Notifications**: Native browser push alerts for immediate mention notifications.
