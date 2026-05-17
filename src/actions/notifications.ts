@@ -12,7 +12,7 @@ import { revalidatePath } from "next/cache"
 function extractUserMentions(html: string): string[] {
   if (!html) return []
   const ids: string[] = []
-  
+
   const regex = /<span\s+([^>]+)>/g
   let match
   while ((match = regex.exec(html)) !== null) {
@@ -60,7 +60,7 @@ async function checkDueSoonNotifications(userId: string) {
       if (!task.dueDate) continue
 
       const dueDate = new Date(task.dueDate)
-      
+
       // If task is due in 3 days (or overdue)
       if (dueDate <= threeDaysFromNow) {
         const link = `/projects/${task.projectId}/sprints/${task.sprintId || 'backlog'}?taskId=${task.id}`
@@ -78,10 +78,10 @@ async function checkDueSoonNotifications(userId: string) {
           const diffTime = dueDate.getTime() - now.getTime()
           const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
           const isOverdue = daysLeft < 0
-          
+
           let title = "Task Due Soon"
           let content = `Your assigned task "${task.title}" is due in ${daysLeft} days.`
-          
+
           if (isOverdue) {
             title = "Task Overdue!"
             content = `Your assigned task "${task.title}" is overdue by ${Math.abs(daysLeft)} days!`
@@ -111,10 +111,10 @@ async function checkDueSoonNotifications(userId: string) {
  * Fetch paginated notifications for the current authenticated user.
  */
 export async function getNotifications(
-  page = 1, 
-  limit = 10, 
-  unreadOnly = false, 
-  typeFilter?: string, 
+  page = 1,
+  limit = 10,
+  unreadOnly = false,
+  typeFilter?: string,
   searchQuery?: string
 ) {
   try {
@@ -128,7 +128,7 @@ export async function getNotifications(
     await checkDueSoonNotifications(userId)
 
     const skip = (page - 1) * limit
-    
+
     // Construct robust search and filter clause
     const whereClause: any = { userId }
     if (unreadOnly) {
@@ -299,7 +299,7 @@ export async function notifyMentions({
         break
       case "DOCUMENTATION":
         title = "Mentioned in Document"
-        content = `${actorName} mentioned you in the Confluence doc "${contextTitle || 'Document'}"`
+        content = `${actorName} mentioned you in the Doc "${contextTitle || 'Document'}"`
         break
       case "SPRINT_ACTIVITY":
         title = "Mentioned in Sprint"
