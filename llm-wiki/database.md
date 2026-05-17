@@ -1,58 +1,49 @@
 # Database & Schema
 
-Zeta uses **Prisma** with **PostgreSQL**. The schema is designed for deep relationships and efficient hierarchy querying.
+Zeta uses **Prisma** with **PostgreSQL**. The schema is optimized for deep relationships, contextual workspace partitioning, change auditing, and rich real-time collaboration.
 
 ## 📊 Core Models
 
 ### 1. Project
-Root container for all sprints and tasks.
-- `boardSections`: Defines the Kanban columns (e.g., TODO, IN_PROGRESS, DONE).
+Root container representing a distinct team workspace.
+- **Context Boundaries**: Projects completely partition members (`ProjectMember`), board sections (`BoardSection`), folders (`Folder`), wiki documents (`Document`), sprints, and tasks.
 
 ### 2. Sprint
-Time-boxed iteration containing tasks.
-- `startDate` / `endDate`: Used to determine status (Planned/Active/Completed).
-- `tasks`: Relation to Task model.
+A time-boxed work iteration that functions as a collaborative hub.
+- **Sprint Activity**: Unlike basic boards, Zeta sprints support direct `comments` (`Comment[]`) and `attachments` (`Attachment[]`) at the sprint level, enabling team retrospective feeds and sprint-specific file folders.
 
 ### 3. Task
-The primary unit of work.
-- `status`: Matches `boardSections` names.
-- `points`: Fibonacci complexity (1, 2, 3, 5, 8, 13).
-- **Reporter**: The user who created the task or is designated as the primary stakeholder. Represented by `reporterId` and `reporter` relation in the schema.
-- `assigneeId`: The person working on it.
-- `githubUrl`: Persistent link to a GitHub Commit/PR.
-- `repoName` / `branchName`: Parsed metadata from the URL.
+The core work ticket.
+- **Subtask Hierarchy**: Employs the `TaskClosure` table for infinite-depth nested subtasks.
+- **Rich Relations**: Tracks assignments (`TaskAssignment`), comments, attached files, linked documentation (`DocLink`), and its own historical record (`AuditLog[]`).
 
-### 4. TaskClosure
-Implements the **Closure Table** pattern for subtasks.
-- `ancestorId`: Link to parent/ancestor task.
-- `descendantId`: Link to child/descendant task.
-- `depth`: Distance in the tree.
+### 4. Attachment (Project/Context Storage Partitioning)
+Contextual file storage system.
+- **Storage Isolation**: Attachments map to specific `userId` uploaders, and connect to `taskId`, `sprintId`, or `commentId` to partition and secure files cleanly inside their respective workspace contexts.
 
-### 5. Comment
-Threaded discussion system.
-- `parentId`: Recursive link to support nested replies.
-- `content`: Supports text and potential markdown.
-- `userId`: Link to the author.
+### 5. Comment (Collaboration & Reallocations)
+Threaded discussion engine.
+- **Sprint & Task Contexts**: Comments can belong to either a `Task` or a `Sprint`, allowing for both ticket-level and sprint retrospective-level boards.
+- **Reallocation Logger**: Supports `isReallocationLog: Boolean` flag to automatically mark and format system-generated history adjustments.
 
-### 6. Attachment
-System-wide secure file upload and reference model.
-- `name` / `url`: Original filename and secure dynamic route path `/uploads/[...path]`.
-- `size` / `type`: File size in bytes and MIME type.
-- `userId`: The uploader/creator.
-- `taskId` / `sprintId` / `commentId`: Optional context relations.
+### 6. AuditLog & AuditLogComment (Audit Discussion Threads)
+Zeta's historical change logs.
+- **Commentable Audits**: Every metadata change is recorded as an `AuditLog`. Zeta allows team members to comment directly on specific changes via `AuditLogComment[]` to discuss why an estimate, assignee, or date was adjusted.
 
 ## 🔗 Relationships Diagram (Conceptual)
 ```mermaid
 erDiagram
+    Project ||--o{ ProjectMember : has
     Project ||--o{ Sprint : contains
     Project ||--o{ Task : contains
+    Project ||--o{ Document : stores
     Sprint ||--o{ Task : contains
+    Sprint ||--o{ Comment : has_activity
+    Sprint ||--o{ Attachment : holds
     Task ||--o{ Comment : has
-    User ||--o{ Task : creates
-    User ||--o{ Task : assigned
-    Comment ||--o{ Comment : replies
     Task ||--o{ Attachment : has
-    Sprint ||--o{ Attachment : has
-    Comment ||--o{ Attachment : has
-    User ||--o{ Attachment : uploads
+    Task ||--o{ AuditLog : records_history
+    AuditLog ||--o{ AuditLogComment : discussed_via
+    Comment ||--o{ Comment : replies
+    Comment ||--o{ Attachment : references
 ```

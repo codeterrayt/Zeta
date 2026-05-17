@@ -1,81 +1,70 @@
 # Zeta 🚀
 
-### *The Next-Gen Agile Workspace*
+### *The Premium Agile Project Workspace*
 
-Zeta is a modern, high-performance, and visually stunning project management platform designed as a state-of-the-art alternative to Jira. Built with a sleek glassmorphic design system and powerful productivity shortcuts, Zeta equips agile teams to plan, collaborate, track, and ship code faster—all within a single integrated workspace.
-
----
-
-## ✨ Product Features
-
-Zeta redefines agile management with several next-generation capabilities:
-
-- **🏗️ Dynamic Kanban Board**: Smooth drag-and-drop workspace using visual status boards, instantly persisting card status updates.
-- **📅 Date-Driven Sprints**: Effortless sprint grooming, with date-driven categorizations that automatically transition sprints through *Planned*, *Active*, and *Completed* states.
-- **📝 Tiptap Rich-Text Editor**: Clean rich-text editor for descriptions and comments, featuring headers, highlighting, blockquotes, and lists.
-- **📎 Smart Attachments & Previews**: Drag-and-drop file uploader with secure dynamically authorized file serving, original name preservation, and instant hover preview tooltips for images and PDF documents.
-- **📚 Integrated Wiki (Zeta Docs)**: Share team requirements, system architecture briefs, and documentation directly alongside tasks for seamless cross-referencing.
-- **🔍 Global Command Palette (`Cmd / Ctrl + K`)**: Instantly query across tasks, projects, wiki documents, and navigation commands.
-- **🧵 Threaded Commenting Engine**: Rich nested conversation threads to keep communication structured.
-- **🔔 Real-Time Notification Center**: Interactive header bell widget and a resizeable, filterable manager dashboard showing unread triggers and task mentions.
-- **🎨 Visual Themes**: Toggle between high-contrast light and Monaco-inspired developer dark modes.
-- **🪵 Automated Audit Logs**: Transparent track record of title adjustments, date updates, point estimates, and status movements.
+Zeta is a next-generation agile workspace designed as a premium, highly collaborative alternative to Jira. Fortified with keyboard-driven search navigation, rich in-context document sharing, and detailed change-tracking tools, Zeta equips product teams to organize, plan, and ship deliverables with maximum transparency and velocity.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## ✨ Key Features
 
-Zeta is built on a clean, modern, and highly scalable stack:
+Zeta is loaded with distinct collaboration and project management features built for high-performance software teams:
+
+- **📁 Project Workspaces**: Create independent workspaces to partition team members, board sections, documentation, sprints, and tasks with strict context boundaries.
+- **📅 Sprints & Sprint-Level Boards**: Beyond traditional task boards, Zeta supports direct retrospective feeds and shared folder repositories linked to active Sprints, enabling **Sprint-level activity comments and attachments**.
+- **🌳 Tasks & Infinite Subtasks**: Standardize requirements with tasks supporting points, assignees, dates, and nested hierarchies of infinite depth.
+- **📎 Context-Isolated Storage**: Project attachments are securely partitioned and isolated, binding directly to task cards, specific sprints, or individual comment lines.
+- **🏷️ Real-Time Mentions & File Tagging**: Mention teammates or reference attachments directly within descriptions or comments with `@` and `@file:` autocomplete lookups. Hovering badges launches high-end preview tooltips for inline images and interactive PDF embeds.
+- **💬 Audit Discussion Threads**: Every task metadata change (date, title, estimate, assignee) is logged automatically.zeta goes beyond basic history, allowing team members to **comment directly on specific audit log adjustments** to discuss reasons behind resource reallocations.
+
+---
+
+## 🏗️ Stack Architecture
 
 - **Frontend & App Engine**: Next.js 15 (App Router)
-- **Styling & Presentation**: Tailwind CSS
-- **Database ORM**: Prisma Client
-- **Storage Database**: PostgreSQL
+- **Styling**: Tailwind CSS
+- **Database & Model ORM**: Prisma Client with PostgreSQL
 - **Security & Session**: Auth.js (v5)
 
 ---
 
 ## 🐳 Quick Start (Docker Compose)
 
-The easiest way to boot Zeta, along with its database and a real-time logs dashboard, is via Docker:
+Launch the Zeta suite with its database and real-time logs dashboard in minutes:
 
 ### Prerequisites
-Ensure you have **Docker** and **Docker Compose** installed on your system.
+Make sure you have **Docker** and **Docker Compose** installed.
 
 ### Steps
 
-1. **Configure Secrets**:
-   Create a `.env` file in the root directory and configure your keys:
+1. **Configure Environment Secrets**:
+   Create a `.env` file in the root directory:
    ```env
    DATABASE_URL="postgresql://postgres:postgres@db:5432/zeta?schema=public"
    NEXTAUTH_SECRET="your-32-character-secret-key-goes-here"
    NEXTAUTH_URL="http://localhost:3000"
    ```
 
-2. **Boot Container Services**:
-   Start the application, database, and logs console:
+2. **Boot the Orchestration Suite**:
    ```bash
    docker compose up -d --build
    ```
 
-3. **Deploy Schema**:
-   Push the database schema directly to your PostgreSQL container:
+3. **Establish Database Schema**:
    ```bash
    npx prisma db push
    ```
 
-Once deployed, the following services will be available:
-- **Zeta Application**: [http://localhost:3000](http://localhost:3000)
-- **Dozzle (Log Viewer Console)**: [http://localhost:8888](http://localhost:8888)
+* **Zeta Workspace Application**: [http://localhost:3000](http://localhost:3000)
+* **Dozzle Logs Console**: [http://localhost:8888](http://localhost:8888)
 
 ---
 
-## 🤝 Contributing
+## 🤝 Open Source Contributions
 
-We welcome open-source contributions! Whether you are fixing bugs, optimizing UI performance, adding advanced sprint tools, or improving our developer docs:
+We warmly welcome open-source contributions! Whether you want to build custom visual templates, expand agile metrics dashboard charts, or add new automation rules:
 
-1. Fork the repository.
-2. Create a new branch: `git checkout -b feature/your-awesome-feature`.
-3. Commit your changes: `git commit -m 'Add some awesome feature'`.
-4. Push to your branch: `git push origin feature/your-awesome-feature`.
-5. Open a **Pull Request** and let's collaborate!
+1. Fork this repository.
+2. Spin up a new branch: `git checkout -b feature/your-feature-name`.
+3. Commit and push your changes.
+4. Open a **Pull Request** and let's build the future of agile together!
