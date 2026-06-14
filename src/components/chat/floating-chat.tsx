@@ -7,7 +7,8 @@ import { getChatGroups } from "@/actions/chat"
 import { ChatWindow } from "./chat-window"
 import { 
   MessageSquare, X, Minus, Maximize2, Users, Search, 
-  MessageCircle, GripHorizontal, Circle, Sparkles, VolumeX
+  MessageCircle, GripHorizontal, Circle, Sparkles, VolumeX,
+  ChevronLeft
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -97,6 +98,11 @@ export function FloatingChat() {
   // Pointer drag event handlers
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement
+    // Do not drag if clicking interactive elements
+    if (target.closest("button") || target.closest("input") || target.closest("a")) {
+      return
+    }
+
     // Only allow dragging from header/grip elements
     if (target.closest(".drag-handle") || target.closest(".drag-grip")) {
       e.preventDefault()
@@ -157,17 +163,16 @@ export function FloatingChat() {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       style={{
-        transform: `translate(${position.x}px, ${position.y}px)`,
-        touchAction: "none"
+        transform: `translate(${position.x}px, ${position.y}px)`
       }}
       className={cn(
-        "fixed z-[40] bottom-6 right-6 transition-shadow duration-300 select-none",
+        "fixed z-[40] bottom-6 right-6 transition-shadow duration-300",
         isDragging ? "shadow-2xl scale-[1.01]" : "shadow-xl"
       )}
     >
       {isMinimized ? (
         /* Collapsed Chat Bubble */
-        <div className="relative group/bubble">
+        <div className="relative group/bubble select-none">
           <button
             onClick={() => {
               setIsMinimized(false)
@@ -196,10 +201,13 @@ export function FloatingChat() {
         </div>
       ) : (
         /* Expanded Active Chat Card */
-        <div className="w-80 h-[450px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div 
+          style={{ resize: "both" }}
+          className="w-80 h-[450px] min-w-[280px] min-h-[350px] max-w-[600px] max-h-[800px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        >
           
           {/* Header/Drag handle */}
-          <div className="drag-handle h-12 border-b border-border bg-secondary/20 flex items-center justify-between px-3 cursor-grab active:cursor-grabbing shrink-0 flex-row">
+          <div className="drag-handle touch-none select-none h-12 border-b border-border bg-secondary/20 flex items-center justify-between px-3 cursor-grab active:cursor-grabbing shrink-0 flex-row">
             <div className="flex items-center gap-1.5 min-w-0">
               <GripHorizontal className="drag-grip w-4 h-4 text-muted-foreground shrink-0" />
               <span className="font-black text-xs truncate max-w-[120px] text-foreground">
@@ -214,7 +222,7 @@ export function FloatingChat() {
                   className="p-1 hover:bg-secondary rounded text-muted-foreground"
                   title="Back to conversations"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
               )}
               <button 

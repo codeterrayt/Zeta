@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { formatDistanceToNow } from "date-fns"
+import { cn } from "@/lib/utils"
 
 interface ChatWindowProps {
   chatGroupId: string
@@ -321,7 +322,15 @@ export function ChatWindow({ chatGroupId, onClose, isFloating = false }: ChatWin
                       {msg.isDeleted ? (
                         <span>[Deleted by the Sender]</span>
                       ) : (
-                        <ContentRenderer html={msg.content} />
+                        <ContentRenderer 
+                          html={msg.content} 
+                          className={cn(
+                            "prose prose-sm max-w-none text-sm leading-relaxed",
+                            isOwn 
+                              ? "text-primary-foreground [&_.mention]:bg-white/20 [&_.mention]:text-white [&_.mention]:border-white/30" 
+                              : "text-foreground [&_.mention]:bg-primary/10 [&_.mention]:text-primary [&_.mention]:border-primary/20"
+                          )}
+                        />
                       )}
 
                       {/* Display message attachments */}

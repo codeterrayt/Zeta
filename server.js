@@ -2,7 +2,12 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
 const { Server } = require("socket.io");
-const { Client } = require("pg");
+const { Client, types } = require("pg");
+
+// Parse timestamp without timezone (OID 1114) as UTC Date/string to avoid local timezone shift
+types.setTypeParser(1114, function(stringValue) {
+  return stringValue ? new Date(stringValue.replace(" ", "T") + "Z") : null;
+});
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
