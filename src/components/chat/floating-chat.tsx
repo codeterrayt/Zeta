@@ -31,6 +31,7 @@ export function FloatingChat() {
   const [position, setPosition] = React.useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = React.useState(false)
   const dragStartRef = React.useRef({ x: 0, y: 0 })
+  const dragStartPosRef = React.useRef({ x: 0, y: 0 })
   const widgetRef = React.useRef<HTMLDivElement>(null)
   const hasDraggedRef = React.useRef(false)
 
@@ -54,17 +55,21 @@ export function FloatingChat() {
   // Listen to toggle events from Header
   React.useEffect(() => {
     const handleToggle = () => {
-      setIsVisible(prev => {
-        const next = !prev
-        if (next) {
-          setIsMinimized(false) // Open expanded if toggled on
+      setIsVisible(prevVisible => {
+        if (!prevVisible) {
+          setIsMinimized(false)
+          return true
         }
-        return next
+        if (isMinimized) {
+          setIsMinimized(false)
+          return true
+        }
+        return false
       })
     }
     window.addEventListener("floating-chat:toggle", handleToggle)
     return () => window.removeEventListener("floating-chat:toggle", handleToggle)
-  }, [])
+  }, [isMinimized])
 
   // Listen to real-time events to refresh list
   React.useEffect(() => {
@@ -100,6 +105,7 @@ export function FloatingChat() {
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement
     hasDraggedRef.current = false // Reset drag indicator
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY }
     
     // When minimized, allow dragging the entire collapsed button container
     if (isMinimized) {
@@ -142,8 +148,12 @@ export function FloatingChat() {
     const nextX = e.clientX - dragStartRef.current.x
     const nextY = e.clientY - dragStartRef.current.y
     
-    // If pointer moves more than 4 pixels, consider it a drag gesture
-    if (Math.abs(nextX - position.x) > 4 || Math.abs(nextY - position.y) > 4) {
+    // Calculate total distance from starting pointer down location
+    const totalDist = Math.sqrt(
+      Math.pow(e.clientX - dragStartPosRef.current.x, 2) +
+      Math.pow(e.clientY - dragStartPosRef.current.y, 2)
+    )
+    if (totalDist > 8) {
       hasDraggedRef.current = true
     }
     

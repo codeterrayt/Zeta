@@ -57,6 +57,9 @@ export function ChatWindow({
   
   // Track uploaded attachments for the current message being typed
   const [pendingAttachments, setPendingAttachments] = React.useState<any[]>([])
+
+  // Track all attachments ever uploaded in the chat group context (for tag file previews)
+  const [groupAttachments, setGroupAttachments] = React.useState<any[]>([])
   
   // Typing state
   const [typists, setTypists] = React.useState<{ userId: string; userName: string }[]>([])
@@ -84,6 +87,7 @@ export function ChatWindow({
     if (res.success && res.group) {
       const grp = res.group as any
       setGroup(grp)
+      setGroupAttachments(grp.attachments || [])
       // Reverse messages because they are fetched DESC (latest 50)
       const msgs = (grp.messages || []).reverse()
       setMessages(msgs)
@@ -150,12 +154,24 @@ export function ChatWindow({
         if (prev.some(m => m.id === msg.id)) return prev
         return [...prev, msg]
       })
+      if (msg.attachments && msg.attachments.length > 0) {
+        setGroupAttachments(prev => {
+          const newAtts = msg.attachments.filter((a: any) => !prev.some(p => p.id === a.id))
+          return [...prev, ...newAtts]
+        })
+      }
       setTimeout(() => scrollToBottom(), 50)
     }
 
     const handleUpdatedMessage = (msg: any) => {
       if (msg.chatGroupId !== chatGroupId) return
       setMessages((prev: any[]) => prev.map(m => m.id === msg.id ? { ...m, ...msg } : m))
+      if (msg.attachments && msg.attachments.length > 0) {
+        setGroupAttachments(prev => {
+          const newAtts = msg.attachments.filter((a: any) => !prev.some(p => p.id === a.id))
+          return [...prev, ...newAtts]
+        })
+      }
     }
 
     const handleDeletedMessage = (data: any) => {
@@ -441,7 +457,7 @@ export function ChatWindow({
                       ) : (
                         <ContentRenderer 
                           html={msg.content} 
-                          attachments={msg.attachments}
+                          attachments={groupAttachments}
                           className={cn(
                             "prose prose-sm max-w-none text-sm leading-relaxed",
                             isOwn 

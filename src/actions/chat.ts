@@ -16,11 +16,19 @@ function getPlainTextLength(html: string): number {
 function extractUserMentions(html: string): string[] {
   if (!html) return []
   const ids: string[] = []
-  const regex = /<span[^>]*class=["']mention["'][^>]*data-id=["']([^"']+)["'][^>]*>/g
+  const regex = /<span\s+([^>]+)>/g
   let match
   while ((match = regex.exec(html)) !== null) {
-    if (match[1] && !ids.includes(match[1])) {
-      ids.push(match[1])
+    const attrs = match[1]
+    const isMention = /class=["'][^"']*mention[^"']*["']/.test(attrs) || attrs.includes('data-type="mention"') || attrs.includes("data-type='mention'")
+    if (isMention) {
+      const idMatch = attrs.match(/data-id=["']([^"']+)["']/)
+      if (idMatch && idMatch[1]) {
+        const userId = idMatch[1]
+        if (!ids.includes(userId)) {
+          ids.push(userId)
+        }
+      }
     }
   }
   return ids
@@ -97,6 +105,7 @@ export async function getChatGroup(chatGroupId: string) {
             }
           }
         },
+        attachments: true,
         messages: {
           orderBy: { createdAt: "desc" },
           take: 50,

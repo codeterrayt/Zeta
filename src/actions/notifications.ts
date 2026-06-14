@@ -17,7 +17,7 @@ function extractUserMentions(html: string): string[] {
   let match
   while ((match = regex.exec(html)) !== null) {
     const attrs = match[1]
-    const isMention = attrs.includes('class="mention"') || attrs.includes("class='mention'") || attrs.includes('data-type="mention"') || attrs.includes("data-type='mention'")
+    const isMention = /class=["'][^"']*mention[^"']*["']/.test(attrs) || attrs.includes('data-type="mention"') || attrs.includes("data-type='mention'")
     if (isMention) {
       const idMatch = attrs.match(/data-id=["']([^"']+)["']/)
       if (idMatch && idMatch[1]) {
