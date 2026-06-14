@@ -98,7 +98,8 @@ export async function getChatGroup(chatGroupId: string) {
           }
         },
         messages: {
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: "desc" },
+          take: 50,
           include: {
             sender: {
               select: { id: true, name: true, email: true, image: true }
@@ -115,6 +116,43 @@ export async function getChatGroup(chatGroupId: string) {
   } catch (error) {
     console.error("getChatGroup error:", error)
     return { success: false, error: "Failed to fetch chat group" }
+  }
+}
+
+/**
+ * Fetch older chat messages for a chat group (for pagination).
+ */
+export async function getChatMessages(chatGroupId: string, beforeTimestamp?: string, limit: number = 50) {
+  try {
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    // Security check: must be a member
+    const member = await prisma.chatMember.findUnique({
+      where: { chatGroupId_userId: { chatGroupId, userId } }
+    })
+    if (!member) return { success: false, error: "Forbidden: Not a member of this chat group" }
+
+    const messages = await prisma.chatMessage.findMany({
+      where: {
+        chatGroupId,
+        ...(beforeTimestamp ? { createdAt: { lt: new Date(beforeTimestamp) } } : {})
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        sender: {
+          select: { id: true, name: true, email: true, image: true }
+        },
+        attachments: true
+      }
+    })
+
+    return { success: true, messages }
+  } catch (error) {
+    console.error("getChatMessages error:", error)
+    return { success: false, error: "Failed to fetch chat messages" }
   }
 }
 

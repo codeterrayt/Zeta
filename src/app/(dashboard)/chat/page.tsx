@@ -18,6 +18,7 @@ import {
   ChevronRight, Sparkles, UserCheck, Key, ShieldCheck, Loader2
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 function ChatPageContent() {
   const { data: session } = useSession()
@@ -33,6 +34,7 @@ function ChatPageContent() {
   const [chatGroups, setChatGroups] = React.useState<any[]>([])
   const [searchQuery, setSearchQuery] = React.useState("")
   const [loading, setLoading] = React.useState(true)
+  const [showProfile, setShowProfile] = React.useState(true)
 
   // Modals state
   const [showCreateModal, setShowCreateModal] = React.useState(false)
@@ -65,13 +67,16 @@ function ChatPageContent() {
   }, [chatGroups, activeGroupId])
 
   const loadGroups = React.useCallback(async () => {
-    setLoading(true)
+    // Only show loading spinner on initial fetch
+    if (chatGroups.length === 0) {
+      setLoading(true)
+    }
     const res = await getChatGroups()
     if (res.success && res.groups) {
       setChatGroups(res.groups)
     }
     setLoading(false)
-  }, [])
+  }, [chatGroups.length])
 
   React.useEffect(() => {
     loadGroups()
@@ -460,7 +465,12 @@ function ChatPageContent() {
       {/* COLUMN 2: Chat window (Center) */}
       <div className="flex-1 flex flex-col h-full overflow-hidden border-r border-border">
         {activeGroupId ? (
-          <ChatWindow chatGroupId={activeGroupId} />
+          <ChatWindow 
+            chatGroupId={activeGroupId} 
+            showProfileToggle={true}
+            isProfileOpen={showProfile}
+            onToggleProfile={() => setShowProfile(!showProfile)}
+          />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground gap-3">
             <div className="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center text-primary shadow-inner">
@@ -481,8 +491,14 @@ function ChatPageContent() {
       </div>
 
       {/* COLUMN 3: Settings panel (Right) */}
-      {activeGroupId && activeGroup && (
-        <div className="w-72 shrink-0 bg-card flex flex-col h-full overflow-y-auto p-4 space-y-6 custom-scrollbar">
+      <div 
+        className={cn(
+          "shrink-0 bg-card flex flex-col h-full overflow-y-auto transition-all duration-300 ease-in-out custom-scrollbar",
+          showProfile && activeGroupId && activeGroup ? "w-72 opacity-100 p-4 border-l border-border" : "w-0 opacity-0 p-0 overflow-hidden border-l-0 border-transparent"
+        )}
+      >
+        {activeGroupId && activeGroup && (
+          <>
           <div className="text-center pb-4 border-b border-border">
             <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-xl mb-3 shadow-inner">
               {activeGroup.isGroup ? <Users className="w-6 h-6" /> : getChatPartnerName(activeGroup)[0]}
@@ -658,8 +674,9 @@ function ChatPageContent() {
               </div>
             </div>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {/* CREATE CHAT / GROUP DIALOG */}
       <DialogPrimitive.Root open={showCreateModal} onOpenChange={setShowCreateModal}>

@@ -166,8 +166,8 @@ export function FloatingChat() {
         transform: `translate(${position.x}px, ${position.y}px)`
       }}
       className={cn(
-        "fixed z-[40] bottom-6 right-6 transition-shadow duration-300",
-        isDragging ? "shadow-2xl scale-[1.01]" : "shadow-xl"
+        "fixed z-[40] bottom-6 right-6 transition-all duration-300",
+        !isMinimized ? (isDragging ? "shadow-2xl scale-[1.01]" : "shadow-xl") : (isDragging ? "scale-[1.05]" : "")
       )}
     >
       {isMinimized ? (

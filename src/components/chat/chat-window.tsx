@@ -3,12 +3,12 @@
 import * as React from "react"
 import { useSession } from "next-auth/react"
 import { useRealtime } from "@/components/providers/realtime-provider"
-import { getChatGroup, sendChatMessage, deleteChatMessage } from "@/actions/chat"
+import { getChatGroup, sendChatMessage, deleteChatMessage, getChatMessages } from "@/actions/chat"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { ContentRenderer } from "@/components/editor/content-renderer"
 import { 
   Send, Trash2, Paperclip, Loader2, Smile, X, Circle,
-  FileIcon, Download, Check, AlertTriangle
+  FileIcon, Download, Check, AlertTriangle, SidebarOpen, SidebarClose
 } from "lucide-react"
 import { toast } from "sonner"
 import { formatDistanceToNow } from "date-fns"
@@ -18,6 +18,9 @@ interface ChatWindowProps {
   chatGroupId: string
   onClose?: () => void
   isFloating?: boolean
+  showProfileToggle?: boolean
+  isProfileOpen?: boolean
+  onToggleProfile?: () => void
 }
 
 const MAX_CHAR_LIMIT = 4000
@@ -29,7 +32,14 @@ function getPlainTextLength(html: string): number {
   return plainText.length
 }
 
-export function ChatWindow({ chatGroupId, onClose, isFloating = false }: ChatWindowProps) {
+export function ChatWindow({ 
+  chatGroupId, 
+  onClose, 
+  isFloating = false, 
+  showProfileToggle = false, 
+  isProfileOpen = true, 
+  onToggleProfile 
+}: ChatWindowProps) {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
   const currentUserName = session?.user?.name || session?.user?.email || "Someone"
@@ -40,6 +50,10 @@ export function ChatWindow({ chatGroupId, onClose, isFloating = false }: ChatWin
   const [loading, setLoading] = React.useState(true)
   const [sending, setSending] = React.useState(false)
   const [messageContent, setMessageContent] = React.useState("")
+  
+  // Pagination states
+  const [hasMore, setHasMore] = React.useState(false)
+  const [loadingMore, setLoadingMore] = React.useState(false)
   
   // Track uploaded attachments for the current message being typed
   const [pendingAttachments, setPendingAttachments] = React.useState<any[]>([])
@@ -56,24 +70,6 @@ export function ChatWindow({ chatGroupId, onClose, isFloating = false }: ChatWin
   const charCount = React.useMemo(() => getPlainTextLength(messageContent), [messageContent])
   const isOverLimit = charCount > MAX_CHAR_LIMIT
 
-  // Load chat group details and messages
-  const loadGroupData = React.useCallback(async () => {
-    setLoading(true)
-    const res = await getChatGroup(chatGroupId)
-    if (res.success && res.group) {
-      const grp = res.group as any
-      setGroup(grp)
-      setMessages(grp.messages || [])
-    } else {
-      toast.error(res.error || "Failed to load chat conversation")
-    }
-    setLoading(false)
-  }, [chatGroupId])
-
-  React.useEffect(() => {
-    loadGroupData()
-  }, [loadGroupData])
-
   // Scroll to bottom helper
   const scrollToBottom = React.useCallback((behavior: ScrollBehavior = "smooth") => {
     if (messagesEndRef.current) {
@@ -81,12 +77,65 @@ export function ChatWindow({ chatGroupId, onClose, isFloating = false }: ChatWin
     }
   }, [])
 
-  // Auto-scroll when messages load or change
-  React.useEffect(() => {
-    if (!loading && messages.length > 0) {
-      scrollToBottom("auto")
+  // Load chat group details and messages
+  const loadGroupData = React.useCallback(async () => {
+    setLoading(true)
+    const res = await getChatGroup(chatGroupId)
+    if (res.success && res.group) {
+      const grp = res.group as any
+      setGroup(grp)
+      // Reverse messages because they are fetched DESC (latest 50)
+      const msgs = (grp.messages || []).reverse()
+      setMessages(msgs)
+      setHasMore(msgs.length === 50)
+      
+      // Scroll to bottom after state update
+      setTimeout(() => scrollToBottom("auto"), 50)
+    } else {
+      toast.error(res.error || "Failed to load chat conversation")
     }
-  }, [messages.length, loading, scrollToBottom])
+    setLoading(false)
+  }, [chatGroupId, scrollToBottom])
+
+  React.useEffect(() => {
+    loadGroupData()
+  }, [loadGroupData])
+
+  // Handle scrolling to paginate older messages
+  const handleScroll = async () => {
+    const container = scrollContainerRef.current
+    if (!container || loadingMore || !hasMore) return
+
+    // Trigger loading older messages when user scrolls near top
+    if (container.scrollTop < 10) {
+      setLoadingMore(true)
+      const oldestMsg = messages[0]
+      if (oldestMsg) {
+        const res = await getChatMessages(chatGroupId, oldestMsg.createdAt)
+        if (res.success && res.messages) {
+          const newMsgs = res.messages.reverse()
+          if (newMsgs.length < 50) {
+            setHasMore(false)
+          }
+
+          // Measure current scroll height and position
+          const oldScrollHeight = container.scrollHeight
+          const oldScrollTop = container.scrollTop
+
+          setMessages(prev => [...newMsgs, ...prev])
+
+          // Restore scroll position after React updates the DOM
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              const newScrollHeight = scrollContainerRef.current.scrollHeight
+              scrollContainerRef.current.scrollTop = newScrollHeight - oldScrollHeight + oldScrollTop
+            }
+          })
+        }
+      }
+      setLoadingMore(false)
+    }
+  }
 
   // Real-time socket room subscription
   React.useEffect(() => {
@@ -266,18 +315,39 @@ export function ChatWindow({ chatGroupId, onClose, isFloating = false }: ChatWin
           </div>
         </div>
         
-        {onClose && (
-          <button onClick={onClose} className="p-1.5 hover:bg-secondary rounded-lg transition-colors text-muted-foreground">
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {showProfileToggle && onToggleProfile && (
+            <button 
+              onClick={onToggleProfile} 
+              className="p-1.5 hover:bg-secondary rounded-lg transition-colors text-muted-foreground"
+              title={isProfileOpen ? "Hide chat details" : "Show chat details"}
+            >
+              {isProfileOpen ? <SidebarClose className="w-4 h-4" /> : <SidebarOpen className="w-4 h-4" />}
+            </button>
+          )}
+          {onClose && (
+            <button onClick={onClose} className="p-1.5 hover:bg-secondary rounded-lg transition-colors text-muted-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages Feed */}
       <div 
         ref={scrollContainerRef}
+        onScroll={handleScroll}
         className="flex-1 min-h-0 p-4 overflow-y-auto space-y-4 custom-scrollbar bg-secondary/10"
       >
+        {hasMore && (
+          <div className="flex justify-center py-2 shrink-0">
+            {loadingMore ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            ) : (
+              <span className="text-[10px] text-muted-foreground italic select-none">Scroll up to load older messages</span>
+            )}
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground gap-1.5">
             <Smile className="w-10 h-10 text-muted-foreground/50" />
