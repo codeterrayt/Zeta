@@ -145,6 +145,7 @@ export function ChatWindow({
 
     // Listeners
     const handleNewMessage = (msg: any) => {
+      if (msg.chatGroupId !== chatGroupId) return
       setMessages((prev: any[]) => {
         if (prev.some(m => m.id === msg.id)) return prev
         return [...prev, msg]
@@ -153,14 +154,17 @@ export function ChatWindow({
     }
 
     const handleUpdatedMessage = (msg: any) => {
+      if (msg.chatGroupId !== chatGroupId) return
       setMessages((prev: any[]) => prev.map(m => m.id === msg.id ? { ...m, ...msg } : m))
     }
 
     const handleDeletedMessage = (data: any) => {
+      if (data.chatGroupId !== chatGroupId) return
       setMessages((prev: any[]) => prev.map(m => m.id === data.id ? { ...m, isDeleted: true } : m))
     }
 
     const handleGroupUpdated = (updatedGroup: any) => {
+      if (updatedGroup.id !== chatGroupId) return
       setGroup((prev: any) => {
         if (!prev) return updatedGroup
         return { ...prev, ...updatedGroup }
@@ -168,6 +172,7 @@ export function ChatWindow({
     }
 
     const handleTyping = (data: any) => {
+      if (data.chatGroupId !== chatGroupId) return
       if (data.userId === currentUserId) return
       setTypists((prev: any[]) => {
         if (prev.some(t => t.userId === data.userId)) return prev
@@ -176,6 +181,7 @@ export function ChatWindow({
     }
 
     const handleStopTyping = (data: any) => {
+      if (data.chatGroupId !== chatGroupId) return
       setTypists(prev => prev.filter(t => t.userId !== data.userId))
     }
 
