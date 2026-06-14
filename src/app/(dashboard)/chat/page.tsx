@@ -85,6 +85,29 @@ export default function ChatPage() {
     }
   }, [searchParams])
 
+  // Prevent main layout window from scrolling on the chat page, hide footer
+  React.useEffect(() => {
+    const mainContainer = document.querySelector("main")?.parentElement
+    if (mainContainer) {
+      mainContainer.classList.add("overflow-y-hidden")
+      mainContainer.classList.remove("overflow-y-auto")
+    }
+    const footer = document.querySelector("footer")
+    if (footer) {
+      footer.style.setProperty("display", "none", "important")
+    }
+
+    return () => {
+      if (mainContainer) {
+        mainContainer.classList.remove("overflow-y-hidden")
+        mainContainer.classList.add("overflow-y-auto")
+      }
+      if (footer) {
+        footer.style.removeProperty("display")
+      }
+    }
+  }, [])
+
   // Real-time updates for the list of chats
   React.useEffect(() => {
     if (!socket) return
