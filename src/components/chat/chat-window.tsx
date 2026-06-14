@@ -6,6 +6,7 @@ import { useRealtime } from "@/components/providers/realtime-provider"
 import { getChatGroup, sendChatMessage, deleteChatMessage, getChatMessages } from "@/actions/chat"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { ContentRenderer } from "@/components/editor/content-renderer"
+import { getAttachmentsForContext } from "@/actions/get-attachments"
 import { 
   Send, Trash2, Paperclip, Loader2, Smile, X, Circle,
   FileIcon, Download, Check, AlertTriangle, SidebarOpen, SidebarClose
@@ -68,6 +69,7 @@ export function ChatWindow({
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+  const highlightedMessageIdRef = React.useRef<string | null>(null)
 
   // Character count
   const charCount = React.useMemo(() => getPlainTextLength(messageContent), [messageContent])
@@ -160,6 +162,16 @@ export function ChatWindow({
           return [...prev, ...newAtts]
         })
       }
+      
+      // If the message contains a file mention, fetch attachments to ensure preview matches the database metadata
+      if (msg.content && (msg.content.includes('data-type="file-mention"') || msg.content.includes('class="file-mention"'))) {
+        getAttachmentsForContext({ chatGroupId }).then(atts => {
+          if (atts) {
+            setGroupAttachments(atts)
+          }
+        })
+      }
+      
       setTimeout(() => scrollToBottom(), 50)
     }
 
@@ -225,15 +237,32 @@ export function ChatWindow({
 
     const handleHashScroll = () => {
       const hash = window.location.hash
-      if (hash && hash.startsWith("#message-")) {
-        const msgId = hash.replace("#message-", "")
-        const element = document.getElementById(`message-${msgId}`)
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" })
-          element.classList.add("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]", "transition-all", "duration-500")
-          setTimeout(() => {
-            element.classList.remove("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]")
-          }, 2500)
+      if (!hash || !hash.startsWith("#message-")) {
+        highlightedMessageIdRef.current = null
+        return
+      }
+
+      const msgId = hash.replace("#message-", "")
+      if (highlightedMessageIdRef.current === msgId) return
+
+      const element = document.getElementById(`message-${msgId}`)
+      if (element) {
+        highlightedMessageIdRef.current = msgId
+        element.scrollIntoView({ behavior: "smooth", block: "center" })
+        element.classList.add("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]", "transition-all", "duration-500")
+        setTimeout(() => {
+          element.classList.remove("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]")
+        }, 2500)
+
+        // Clear hash from URL so it doesn't highlight on subsequent page activity
+        try {
+          window.history.replaceState(
+            null,
+            document.title,
+            window.location.pathname + window.location.search
+          )
+        } catch (e) {
+          console.error("Failed to clear URL hash", e)
         }
       }
     }
@@ -289,6 +318,10 @@ export function ChatWindow({
     const res = await sendChatMessage(chatGroupId, messageContent, attachmentIds)
 
     if (res.success) {
+      setGroupAttachments(prev => {
+        const newAtts = pendingAttachments.filter(a => !prev.some(p => p.id === a.id))
+        return [...prev, ...newAtts]
+      })
       setMessageContent("")
       setPendingAttachments([])
     } else {
@@ -465,29 +498,6 @@ export function ChatWindow({
                               : "text-foreground [&_.mention]:bg-primary/10 [&_.mention]:text-primary [&_.mention]:border-primary/20"
                           )}
                         />
-                      )}
-
-                      {/* Display message attachments */}
-                      {!msg.isDeleted && msg.attachments && msg.attachments.length > 0 && (
-                        <div className="mt-2.5 pt-2 border-t border-border/10 space-y-1 bg-background/5 p-1.5 rounded-lg">
-                          {msg.attachments.map((att: any) => (
-                            <a 
-                              key={att.id}
-                              href={att.url} 
-                              download
-                              target="_blank"
-                              rel="noreferrer"
-                              className={cn(
-                                "flex items-center gap-1.5 text-xs font-medium hover:underline",
-                                isOwn ? "text-primary-foreground" : "text-primary"
-                              )}
-                            >
-                              <FileIcon className="w-3.5 h-3.5" />
-                              <span className="truncate max-w-[150px]">{att.name}</span>
-                              <Download className="w-3 h-3 shrink-0" />
-                            </a>
-                          ))}
-                        </div>
                       )}
                     </div>
 
