@@ -45,7 +45,7 @@ export async function getChatGroups() {
 
     const memberships = await prisma.chatMember.findMany({
       where: { userId },
-      select: { chatGroupId: true }
+      select: { chatGroupId: true, lastReadAt: true }
     })
 
     const groupIds = memberships.map((m: any) => m.chatGroupId)
@@ -73,7 +73,29 @@ export async function getChatGroups() {
       orderBy: { updatedAt: "desc" }
     })
 
-    return { success: true, groups }
+    // Calculate actual unread count for each group based on lastReadAt
+    const groupsWithUnread = await Promise.all(
+      groups.map(async (group) => {
+        const membership = memberships.find(m => m.chatGroupId === group.id)
+        const lastRead = membership?.lastReadAt || new Date(0)
+
+        const unreadCount = await prisma.chatMessage.count({
+          where: {
+            chatGroupId: group.id,
+            senderId: { not: userId },
+            createdAt: { gt: lastRead },
+            isDeleted: false
+          }
+        })
+
+        return {
+          ...group,
+          unreadCount
+        }
+      })
+    )
+
+    return { success: true, groups: groupsWithUnread }
   } catch (error) {
     console.error("getChatGroups error:", error)
     return { success: false, error: "Failed to fetch chat groups" }
@@ -94,6 +116,12 @@ export async function getChatGroup(chatGroupId: string) {
       where: { chatGroupId_userId: { chatGroupId, userId } }
     })
     if (!member) return { success: false, error: "Forbidden: Not a member of this chat group" }
+
+    // Mark as read by updating lastReadAt
+    await prisma.chatMember.update({
+      where: { chatGroupId_userId: { chatGroupId, userId } },
+      data: { lastReadAt: new Date() }
+    })
 
     const group = await prisma.chatGroup.findUnique({
       where: { id: chatGroupId },
@@ -704,5 +732,26 @@ export async function deleteChatMessage(messageId: string) {
   } catch (error) {
     console.error("deleteChatMessage error:", error)
     return { success: false, error: "Failed to delete message" }
+  }
+}
+
+/**
+ * Mark all messages in a chat group as read by updating lastReadAt in ChatMember.
+ */
+export async function markChatGroupAsRead(chatGroupId: string) {
+  try {
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    await prisma.chatMember.update({
+      where: { chatGroupId_userId: { chatGroupId, userId } },
+      data: { lastReadAt: new Date() }
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error("markChatGroupAsRead error:", error)
+    return { success: false, error: "Failed to mark chat as read" }
   }
 }

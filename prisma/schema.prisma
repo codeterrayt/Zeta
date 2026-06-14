@@ -377,6 +377,7 @@ model ChatMember {
   userId      String
   isAdmin     Boolean   @default(false)
   mutedUntil  DateTime? // Mute options
+  lastReadAt  DateTime  @default(now())
 
   chatGroup ChatGroup @relation(fields: [chatGroupId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)

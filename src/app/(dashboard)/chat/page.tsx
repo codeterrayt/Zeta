@@ -157,6 +157,15 @@ function ChatPageContent() {
     }
   }, [socket, activeGroupId, loadGroups])
 
+  React.useEffect(() => {
+    const handleChatRead = (e: Event) => {
+      const { chatGroupId } = (e as CustomEvent).detail
+      setChatGroups(prev => prev.map(g => g.id === chatGroupId ? { ...g, unreadCount: 0 } : g))
+    }
+    window.addEventListener("chat:read", handleChatRead)
+    return () => window.removeEventListener("chat:read", handleChatRead)
+  }, [])
+
   // User search for new chat creation
   React.useEffect(() => {
     if (userSearchText.trim().length < 2) {
@@ -470,6 +479,15 @@ function ChatPageContent() {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-0.5">
                       <span className={`font-black text-xs truncate ${active ? "text-white" : "text-foreground"}`}>{name}</span>
+                      {group.unreadCount > 0 && (
+                        <span className={`text-[9px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center border shadow-sm ${
+                          active 
+                            ? "bg-white text-primary border-primary" 
+                            : "bg-primary text-primary-foreground border-background"
+                        }`}>
+                          {group.unreadCount}
+                        </span>
+                      )}
                     </div>
                     <div className={`text-[10px] truncate ${active ? "text-white/80" : "text-muted-foreground"}`}>
                       {renderLastMessage(group)}

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useSession } from "next-auth/react"
 import { useRealtime } from "@/components/providers/realtime-provider"
-import { getChatGroup, sendChatMessage, deleteChatMessage, getChatMessages } from "@/actions/chat"
+import { getChatGroup, sendChatMessage, deleteChatMessage, getChatMessages, markChatGroupAsRead } from "@/actions/chat"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { ContentRenderer } from "@/components/editor/content-renderer"
 import { getAttachmentsForContext } from "@/actions/get-attachments"
@@ -95,6 +95,9 @@ export function ChatWindow({
       setMessages(msgs)
       setHasMore(msgs.length === 50)
       
+      // Notify parent/list that this group was read
+      window.dispatchEvent(new CustomEvent("chat:read", { detail: { chatGroupId } }))
+
       // Scroll to bottom after state update
       setTimeout(() => scrollToBottom("auto"), 50)
     } else {
@@ -169,6 +172,13 @@ export function ChatWindow({
           if (atts) {
             setGroupAttachments(atts)
           }
+        })
+      }
+
+      // Since user is viewing the active chat, mark it as read
+      if (msg.senderId !== currentUserId) {
+        markChatGroupAsRead(chatGroupId).then(() => {
+          window.dispatchEvent(new CustomEvent("chat:read", { detail: { chatGroupId } }))
         })
       }
       

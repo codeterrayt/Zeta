@@ -101,6 +101,15 @@ export function FloatingChat() {
     }
   }, [socket, currentUserId, activeGroupId, loadGroups])
 
+  React.useEffect(() => {
+    const handleChatRead = (e: Event) => {
+      const { chatGroupId } = (e as CustomEvent).detail
+      setChatGroups(prev => prev.map(g => g.id === chatGroupId ? { ...g, unreadCount: 0 } : g))
+    }
+    window.addEventListener("chat:read", handleChatRead)
+    return () => window.removeEventListener("chat:read", handleChatRead)
+  }, [])
+
   // Pointer drag event handlers
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement
@@ -166,17 +175,22 @@ export function FloatingChat() {
       if (widgetRef.current) {
         widgetRef.current.releasePointerCapture(e.pointerId)
       }
+
+      // If minimized and we didn't drag, treat it as a click to expand
+      if (isMinimized && !hasDraggedRef.current) {
+        const target = e.target as HTMLElement
+        if (!target.closest(".close-bubble-btn")) {
+          setIsMinimized(false)
+          loadGroups()
+        }
+      }
     }
   }
 
-  // Calculate unread badge count (just mock or count messages not viewed if field exists)
-  // Let's count chats where the last message was sent by someone else
+  // Calculate total unread badge count
   const unreadCount = React.useMemo(() => {
-    return chatGroups.filter(g => {
-      const lastMsg = g.messages?.[0]
-      return lastMsg && lastMsg.senderId !== currentUserId
-    }).length
-  }, [chatGroups, currentUserId])
+    return chatGroups.reduce((acc, g) => acc + (g.unreadCount || 0), 0)
+  }, [chatGroups])
 
   const getChatPartnerName = (group: any) => {
     if (group.isGroup) return group.name || "Group Chat"
@@ -337,7 +351,14 @@ export function FloatingChat() {
                               {group.isGroup ? "Group Chat" : "Private Chat"}
                             </span>
                           </div>
-                          {isGroupMuted && <VolumeX className="w-3 h-3 text-destructive shrink-0" />}
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {isGroupMuted && <VolumeX className="w-3 h-3 text-destructive shrink-0" />}
+                            {group.unreadCount > 0 && (
+                              <span className="bg-primary text-primary-foreground text-[9px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center border border-background shadow-sm">
+                                {group.unreadCount}
+                              </span>
+                            )}
+                          </div>
                         </button>
                       )
                     })
