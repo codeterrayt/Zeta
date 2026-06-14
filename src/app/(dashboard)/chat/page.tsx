@@ -91,10 +91,15 @@ function ChatPageContent() {
   // Prevent main layout window from scrolling on the chat page, hide footer
   React.useEffect(() => {
     const mainContainer = document.getElementById("dashboard-scroll-container")
+    const mainEl = document.querySelector("main")
+
     if (mainContainer) {
       mainContainer.classList.add("!overflow-hidden")
       mainContainer.classList.remove("overflow-y-auto")
       mainContainer.scrollTop = 0
+    }
+    if (mainEl) {
+      mainEl.classList.add("min-h-0")
     }
     const footer = document.querySelector("footer")
     if (footer) {
@@ -105,6 +110,9 @@ function ChatPageContent() {
       if (mainContainer) {
         mainContainer.classList.remove("!overflow-hidden")
         mainContainer.classList.add("overflow-y-auto")
+      }
+      if (mainEl) {
+        mainEl.classList.remove("min-h-0")
       }
       if (footer) {
         footer.style.removeProperty("display")

@@ -20,7 +20,7 @@ export default function DashboardLayout({
           use h-full overflow-hidden and rely on min-h-0 here to stay bounded.
         */}
         <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] custom-scrollbar" id="dashboard-scroll-container">
-          <main className="flex-1 min-h-0 flex flex-col">
+          <main className="flex-1 flex flex-col">
             {children}
           </main>
           <Footer />
