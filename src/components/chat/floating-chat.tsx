@@ -167,19 +167,21 @@ export function FloatingChat() {
     >
       {isMinimized ? (
         /* Collapsed Chat Bubble */
-        <button
-          onClick={() => {
-            setIsMinimized(false)
-            loadGroups()
-          }}
-          className="w-14 h-14 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-lg relative group/bubble"
-        >
-          <MessageCircle className="w-6 h-6 animate-pulse" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-background ring-1 ring-destructive/20">
-              {unreadCount}
-            </span>
-          )}
+        <div className="relative group/bubble">
+          <button
+            onClick={() => {
+              setIsMinimized(false)
+              loadGroups()
+            }}
+            className="w-14 h-14 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-lg"
+          >
+            <MessageCircle className="w-6 h-6 animate-pulse" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-background ring-1 ring-destructive/20">
+                {unreadCount}
+              </span>
+            )}
+          </button>
           
           {/* Close hover button */}
           <button 
@@ -187,11 +189,11 @@ export function FloatingChat() {
               e.stopPropagation()
               setIsVisible(false)
             }}
-            className="absolute -top-1 -left-1 bg-muted text-muted-foreground p-1 rounded-full border border-border opacity-0 group-hover/bubble:opacity-100 transition-opacity hover:bg-destructive hover:text-white"
+            className="absolute -top-1 -left-1 bg-muted text-muted-foreground p-1 rounded-full border border-border opacity-0 group-hover/bubble:opacity-100 transition-opacity hover:bg-destructive hover:text-white z-10"
           >
             <X className="w-2.5 h-2.5" />
           </button>
-        </button>
+        </div>
       ) : (
         /* Expanded Active Chat Card */
         <div className="w-80 h-[450px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
@@ -266,8 +268,10 @@ export function FloatingChat() {
                   ) : (
                     getFilteredGroups().map((group) => {
                       const name = getChatPartnerName(group)
-                      const isGroupMuted = group.members.find((m: any) => m.userId === currentUserId)?.mutedUntil && new Date(group.members.find((m: any) => m.userId === currentUserId)?.mutedUntil) > new Date()
-                      const avatar = group.members.find((m: any) => m.userId !== currentUserId)?.user?.image
+                      const partner = group?.members?.find((m: any) => m.userId === currentUserId)
+                      const isGroupMuted = partner?.mutedUntil && new Date(partner.mutedUntil) > new Date()
+                      const otherMember = group?.members?.find((m: any) => m.userId !== currentUserId)
+                      const avatar = otherMember?.user?.image
 
                       return (
                         <button

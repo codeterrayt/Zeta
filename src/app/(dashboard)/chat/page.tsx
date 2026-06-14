@@ -316,24 +316,26 @@ export default function ChatPage() {
   }
 
   const getChatPartnerName = (group: any) => {
+    if (!group) return "Chat"
     if (group.isGroup) return group.name || "Group Chat"
-    const partner = group.members.find((m: any) => m.userId !== currentUserId)
+    const partner = group.members?.find((m: any) => m.userId !== currentUserId)
     return partner?.user?.name || partner?.user?.email || "Direct Chat"
   }
 
   const getChatPartnerImage = (group: any) => {
-    if (group.isGroup) return null
-    const partner = group.members.find((m: any) => m.userId !== currentUserId)
+    if (!group || group.isGroup) return null
+    const partner = group.members?.find((m: any) => m.userId !== currentUserId)
     return partner?.user?.image
   }
 
   const isMuted = (group: any) => {
+    if (!group || !group.members) return false
     const currentMember = group.members.find((m: any) => m.userId === currentUserId)
-    return currentMember?.mutedUntil && new Date(currentMember.mutedUntil) > new Date()
+    return !!(currentMember?.mutedUntil && new Date(currentMember.mutedUntil) > new Date())
   }
 
   const getAdminStatus = () => {
-    if (!activeGroup) return { isOwner: false, isAdmin: false }
+    if (!activeGroup || !activeGroup.members) return { isOwner: false, isAdmin: false }
     const currentMember = activeGroup.members.find((m: any) => m.userId === currentUserId)
     return {
       isOwner: activeGroup.ownerId === currentUserId,
