@@ -19,7 +19,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-export default function ChatPage() {
+function ChatPageContent() {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
   const searchParams = useSearchParams()
@@ -80,9 +80,7 @@ export default function ChatPage() {
   // Check query params on mount/change to auto-select a group
   React.useEffect(() => {
     const chatGroupId = searchParams.get("chatGroupId")
-    if (chatGroupId) {
-      setActiveGroupId(chatGroupId)
-    }
+    setActiveGroupId(chatGroupId)
   }, [searchParams])
 
   // Prevent main layout window from scrolling on the chat page, hide footer
@@ -379,7 +377,7 @@ export default function ChatPage() {
   const { isOwner, isAdmin } = getAdminStatus()
 
   return (
-    <div className="flex-1 flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
+    <div className="flex-1 flex h-full overflow-hidden bg-background">
       {/* COLUMN 1: Sidebar list */}
       <div className="w-80 shrink-0 border-r border-border bg-card flex flex-col h-full">
         <div className="p-4 border-b border-border space-y-3 shrink-0">
@@ -946,5 +944,17 @@ export default function ChatPage() {
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="flex-grow flex items-center justify-center p-8 bg-background">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    }>
+      <ChatPageContent />
+    </React.Suspense>
   )
 }
