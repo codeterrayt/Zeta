@@ -85,9 +85,9 @@ function ChatPageContent() {
 
   // Prevent main layout window from scrolling on the chat page, hide footer
   React.useEffect(() => {
-    const mainContainer = document.querySelector("main")?.parentElement
+    const mainContainer = document.getElementById("dashboard-scroll-container")
     if (mainContainer) {
-      mainContainer.classList.add("overflow-y-hidden")
+      mainContainer.classList.add("!overflow-hidden")
       mainContainer.classList.remove("overflow-y-auto")
       mainContainer.scrollTop = 0
     }
@@ -96,18 +96,9 @@ function ChatPageContent() {
       footer.style.setProperty("display", "none", "important")
     }
 
-    // Force scrollTop to 0 periodically on startup to beat Next.js scroll restoration
-    const timers = [
-      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 10),
-      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 50),
-      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 150),
-      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 300),
-    ]
-
     return () => {
-      timers.forEach(clearTimeout)
       if (mainContainer) {
-        mainContainer.classList.remove("overflow-y-hidden")
+        mainContainer.classList.remove("!overflow-hidden")
         mainContainer.classList.add("overflow-y-auto")
       }
       if (footer) {
@@ -427,7 +418,7 @@ function ChatPageContent() {
                   key={group.id}
                   onClick={() => {
                     setActiveGroupId(group.id)
-                    router.push(`/chat?chatGroupId=${group.id}`)
+                    router.replace(`/chat?chatGroupId=${group.id}`, { scroll: false })
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all border text-left cursor-pointer ${
                     active 
@@ -950,7 +941,7 @@ function ChatPageContent() {
 export default function ChatPage() {
   return (
     <React.Suspense fallback={
-      <div className="flex-grow flex items-center justify-center p-8 bg-background">
+      <div className="flex-1 flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     }>

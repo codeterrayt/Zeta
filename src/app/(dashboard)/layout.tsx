@@ -12,12 +12,15 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         <Header />
-        
-        {/* Scrollable Container with Stable Gutter to prevent layout shifts */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col [scrollbar-gutter:stable] custom-scrollbar">
-          <main className="flex-1 flex flex-col">
+        {/*
+          Scrollable region: pages that need scrolling add their own
+          overflow-y-auto inner wrapper. Pages like Chat that are fixed-height
+          use h-full overflow-hidden and rely on min-h-0 here to stay bounded.
+        */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] custom-scrollbar" id="dashboard-scroll-container">
+          <main className="flex-1 min-h-0 flex flex-col">
             {children}
           </main>
           <Footer />
