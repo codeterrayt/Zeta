@@ -112,7 +112,7 @@ export function FloatingChat() {
       if (target.closest(".close-bubble-btn")) {
         return
       }
-      e.preventDefault()
+      // Do not preventDefault here to allow click/focus events to fire on pointerup
       setIsDragging(true)
       dragStartRef.current = {
         x: e.clientX - position.x,
@@ -215,7 +215,7 @@ export function FloatingChat() {
               setIsMinimized(false)
               loadGroups()
             }}
-            className="w-14 h-14 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-lg"
+            className="w-14 h-14 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-lg border border-white/20 touch-none"
           >
             <MessageCircle className="w-6 h-6 animate-pulse" />
             {unreadCount > 0 && (
