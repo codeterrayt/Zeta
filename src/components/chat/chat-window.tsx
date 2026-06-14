@@ -3,7 +3,8 @@
 import * as React from "react"
 import { useSession } from "next-auth/react"
 import { useRealtime } from "@/components/providers/realtime-provider"
-import { getChatGroup, sendChatMessage, deleteChatMessage, getChatMessages, markChatGroupAsRead } from "@/actions/chat"
+import { useSearchParams, useRouter } from "next/navigation"
+import { getChatGroup, sendChatMessage, deleteChatMessage, getChatMessages, markChatGroupAsRead, getChatMessagesAround, getChatMessagesAfter } from "@/actions/chat"
 import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { ContentRenderer } from "@/components/editor/content-renderer"
 import { getAttachmentsForContext } from "@/actions/get-attachments"
@@ -46,6 +47,30 @@ export function ChatWindow({
   const currentUserName = session?.user?.name || session?.user?.email || "Someone"
   const { socket } = useRealtime()
 
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const queryMessageId = searchParams.get("messageId")
+
+  // Reactive hash state to track manual or browser-driven hash changes
+  const [hash, setHash] = React.useState(typeof window !== "undefined" ? window.location.hash : "")
+
+  React.useEffect(() => {
+    const handleHash = () => {
+      setHash(window.location.hash)
+    }
+    window.addEventListener("hashchange", handleHash)
+    handleHash()
+    return () => {
+      window.removeEventListener("hashchange", handleHash)
+    }
+  }, [])
+
+  // Resolved target message ID from query parameters or hash
+  const targetMsgId = React.useMemo(() => {
+    if (queryMessageId) return queryMessageId
+    return hash.startsWith("#message-") ? hash.replace("#message-", "") : null
+  }, [queryMessageId, hash])
+
   const [group, setGroup] = React.useState<any>(null)
   const [messages, setMessages] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -53,7 +78,13 @@ export function ChatWindow({
   const [messageContent, setMessageContent] = React.useState("")
   
   // Pagination states
-  const [hasMore, setHasMore] = React.useState(false)
+  const [hasMoreOlder, setHasMoreOlder] = React.useState(false)
+  const [hasMoreNewer, _setHasMoreNewer] = React.useState(false)
+  const hasMoreNewerRef = React.useRef(false)
+  const setHasMoreNewer = React.useCallback((val: boolean) => {
+    hasMoreNewerRef.current = val
+    _setHasMoreNewer(val)
+  }, [])
   const [loadingMore, setLoadingMore] = React.useState(false)
   
   // Track uploaded attachments for the current message being typed
@@ -83,23 +114,43 @@ export function ChatWindow({
   }, [])
 
   // Load chat group details and messages
-  const loadGroupData = React.useCallback(async () => {
+  const loadGroupData = React.useCallback(async (msgId: string | null) => {
     setLoading(true)
     const res = await getChatGroup(chatGroupId)
     if (res.success && res.group) {
       const grp = res.group as any
       setGroup(grp)
       setGroupAttachments(grp.attachments || [])
-      // Reverse messages because they are fetched DESC (latest 50)
-      const msgs = (grp.messages || []).reverse()
-      setMessages(msgs)
-      setHasMore(msgs.length === 50)
+
+      if (msgId) {
+        const aroundRes = await getChatMessagesAround(chatGroupId, msgId)
+        if (aroundRes.success && aroundRes.messages) {
+          const msgs = (aroundRes.messages || []).reverse()
+          setMessages(msgs)
+          setHasMoreOlder(aroundRes.hasOlder ?? false)
+          setHasMoreNewer(aroundRes.hasNewer ?? false)
+        } else {
+          // Fallback to latest 50 if target message load fails
+          const msgs = (grp.messages || []).reverse()
+          setMessages(msgs)
+          setHasMoreOlder(msgs.length === 50)
+          setHasMoreNewer(false)
+        }
+      } else {
+        // Normal load (latest 50)
+        const msgs = (grp.messages || []).reverse()
+        setMessages(msgs)
+        setHasMoreOlder(msgs.length === 50)
+        setHasMoreNewer(false)
+      }
       
       // Notify parent/list that this group was read
       window.dispatchEvent(new CustomEvent("chat:read", { detail: { chatGroupId } }))
 
-      // Scroll to bottom after state update
-      setTimeout(() => scrollToBottom("auto"), 50)
+      // Scroll to bottom after state update (only if not centering around a target message)
+      if (!msgId) {
+        setTimeout(() => scrollToBottom("auto"), 50)
+      }
     } else {
       toast.error(res.error || "Failed to load chat conversation")
     }
@@ -107,16 +158,28 @@ export function ChatWindow({
   }, [chatGroupId, scrollToBottom])
 
   React.useEffect(() => {
-    loadGroupData()
-  }, [loadGroupData])
+    setMessages([])
+    setGroup(null)
+    setHasMoreOlder(false)
+    setHasMoreNewer(false)
+    highlightedMessageIdRef.current = null
 
-  // Handle scrolling to paginate older messages
+    // Determine targetMsgId for the initial load
+    const queryMessageId = searchParams.get("messageId")
+    const hashVal = typeof window !== "undefined" ? window.location.hash : ""
+    const initialTargetMsgId = queryMessageId || (hashVal.startsWith("#message-") ? hashVal.replace("#message-", "") : null)
+
+    loadGroupData(initialTargetMsgId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatGroupId, loadGroupData])
+
+  // Handle scrolling to paginate messages in both directions
   const handleScroll = async () => {
     const container = scrollContainerRef.current
-    if (!container || loadingMore || !hasMore) return
+    if (!container || loadingMore) return
 
-    // Trigger loading older messages when user scrolls near top
-    if (container.scrollTop < 10) {
+    // 1. Scroll Up: Load older messages
+    if (container.scrollTop < 10 && hasMoreOlder) {
       setLoadingMore(true)
       const oldestMsg = messages[0]
       if (oldestMsg) {
@@ -124,7 +187,7 @@ export function ChatWindow({
         if (res.success && res.messages) {
           const newMsgs = res.messages.reverse()
           if (newMsgs.length < 50) {
-            setHasMore(false)
+            setHasMoreOlder(false)
           }
 
           // Measure current scroll height and position
@@ -144,6 +207,25 @@ export function ChatWindow({
       }
       setLoadingMore(false)
     }
+
+    // 2. Scroll Down: Load newer messages (when viewing old historical messages)
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 15
+    if (isNearBottom && hasMoreNewer) {
+      setLoadingMore(true)
+      const newestMsg = messages[messages.length - 1]
+      if (newestMsg) {
+        const res = await getChatMessagesAfter(chatGroupId, newestMsg.createdAt)
+        if (res.success && res.messages) {
+          const newMsgs = res.messages.reverse()
+          if (newMsgs.length < 50) {
+            setHasMoreNewer(false)
+          }
+
+          setMessages(prev => [...prev, ...newMsgs])
+        }
+      }
+      setLoadingMore(false)
+    }
   }
 
   // Real-time socket room subscription
@@ -155,6 +237,11 @@ export function ChatWindow({
     // Listeners
     const handleNewMessage = (msg: any) => {
       if (msg.chatGroupId !== chatGroupId) return
+      // If we are in historical window (hasMoreNewer is true), we do not append live messages to the list
+      // to avoid visual gaps. The user will load them when they scroll down.
+      if (hasMoreNewerRef.current) {
+        return
+      }
       setMessages((prev: any[]) => {
         if (prev.some(m => m.id === msg.id)) return prev
         return [...prev, msg]
@@ -241,50 +328,57 @@ export function ChatWindow({
     }
   }, [socket, chatGroupId, currentUserId, scrollToBottom])
 
-  // Scroll to hash message on load or hashchange
+  // Scroll to and highlight the target message
   React.useEffect(() => {
-    if (loading || messages.length === 0) return
-
-    const handleHashScroll = () => {
-      const hash = window.location.hash
-      if (!hash || !hash.startsWith("#message-")) {
+    if (loading || !targetMsgId) {
+      if (!targetMsgId) {
         highlightedMessageIdRef.current = null
-        return
       }
+      return
+    }
 
-      const msgId = hash.replace("#message-", "")
-      if (highlightedMessageIdRef.current === msgId) return
+    const msgId = targetMsgId
+    const isAlreadyLoaded = messages.some(m => m.id === msgId)
 
+    if (isAlreadyLoaded) {
       const element = document.getElementById(`message-${msgId}`)
-      if (element) {
+      if (element && highlightedMessageIdRef.current !== msgId) {
         highlightedMessageIdRef.current = msgId
-        element.scrollIntoView({ behavior: "smooth", block: "center" })
+        
+        // Scroll instantly to avoid smooth-scrolling layout lag/interruption
+        element.scrollIntoView({ behavior: "auto", block: "center" })
+        
         element.classList.add("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]", "transition-all", "duration-500")
         setTimeout(() => {
           element.classList.remove("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]")
         }, 2500)
-
-        // Clear hash from URL so it doesn't highlight on subsequent page activity
+        
+        // Clear messageId and hash from URL so it doesn't highlight again
         try {
-          window.history.replaceState(
-            null,
-            document.title,
-            window.location.pathname + window.location.search
-          )
+          const params = new URLSearchParams(window.location.search)
+          params.delete("messageId")
+          const newSearch = params.toString()
+          router.replace(`${window.location.pathname}${newSearch ? `?${newSearch}` : ""}`, { scroll: false })
         } catch (e) {
-          console.error("Failed to clear URL hash", e)
+          console.error("Failed to clear URL parameter/hash", e)
         }
       }
+    } else {
+      // If NOT loaded in current list, fetch messages centered around this target message
+      const fetchAround = async () => {
+        setLoading(true)
+        const aroundRes = await getChatMessagesAround(chatGroupId, msgId)
+        if (aroundRes.success && aroundRes.messages) {
+          const msgs = (aroundRes.messages || []).reverse()
+          setMessages(msgs)
+          setHasMoreOlder(aroundRes.hasOlder ?? false)
+          setHasMoreNewer(aroundRes.hasNewer ?? false)
+        }
+        setLoading(false)
+      }
+      fetchAround()
     }
-
-    const timer = setTimeout(handleHashScroll, 300)
-
-    window.addEventListener("hashchange", handleHashScroll)
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener("hashchange", handleHashScroll)
-    }
-  }, [loading, messages])
+  }, [chatGroupId, loading, targetMsgId, messages, router])
 
   // Handle keypress/typing notification to other members
   const notifyTyping = () => {
@@ -432,7 +526,7 @@ export function ChatWindow({
         onScroll={handleScroll}
         className="flex-1 min-h-0 p-4 overflow-y-auto space-y-4 custom-scrollbar bg-secondary/10"
       >
-        {hasMore && (
+        {hasMoreOlder && (
           <div className="flex justify-center py-2 shrink-0">
             {loadingMore ? (
               <Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -529,6 +623,15 @@ export function ChatWindow({
               </div>
             )
           })
+        )}
+        {hasMoreNewer && (
+          <div className="flex justify-center py-2 shrink-0">
+            {loadingMore ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            ) : (
+              <span className="text-[10px] text-muted-foreground italic select-none">Scroll down to load newer messages</span>
+            )}
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>

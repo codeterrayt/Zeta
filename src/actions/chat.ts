@@ -691,7 +691,7 @@ export async function sendChatMessage(chatGroupId: string, content: string, atta
             type: "CHAT",
             title: group.isGroup ? `Mentioned in ${group.name}` : "Mentioned in Chat",
             content: `${senderName} mentioned you in ${group.isGroup ? `group "${group.name}"` : "a private chat"}.`,
-            link: `/chat?chatGroupId=${chatGroupId}#message-${message.id}`
+            link: `/chat?chatGroupId=${chatGroupId}&messageId=${message.id}#message-${message.id}`
           }
         })
       }
@@ -753,5 +753,125 @@ export async function markChatGroupAsRead(chatGroupId: string) {
   } catch (error) {
     console.error("markChatGroupAsRead error:", error)
     return { success: false, error: "Failed to mark chat as read" }
+  }
+}
+
+/**
+ * Fetch messages around a specific message ID in a chat group.
+ */
+export async function getChatMessagesAround(
+  chatGroupId: string,
+  messageId: string,
+  limit: number = 50
+) {
+  try {
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    // Security check
+    const member = await prisma.chatMember.findUnique({
+      where: { chatGroupId_userId: { chatGroupId, userId } }
+    })
+    if (!member) return { success: false, error: "Forbidden: Not a member" }
+
+    const targetMessage = await prisma.chatMessage.findUnique({
+      where: { id: messageId },
+      include: {
+        sender: { select: { id: true, name: true, email: true, image: true } },
+        attachments: true
+      }
+    })
+
+    if (!targetMessage || targetMessage.chatGroupId !== chatGroupId) {
+      return { success: false, error: "Message not found" }
+    }
+
+    const halfLimit = Math.floor(limit / 2)
+
+    // Older messages (before targetMessage)
+    const olderMessages = await prisma.chatMessage.findMany({
+      where: {
+        chatGroupId,
+        createdAt: { lt: targetMessage.createdAt }
+      },
+      orderBy: { createdAt: "desc" },
+      take: halfLimit,
+      include: {
+        sender: { select: { id: true, name: true, email: true, image: true } },
+        attachments: true
+      }
+    })
+
+    // Newer messages (after targetMessage)
+    const newerMessages = await prisma.chatMessage.findMany({
+      where: {
+        chatGroupId,
+        createdAt: { gt: targetMessage.createdAt }
+      },
+      orderBy: { createdAt: "asc" }, // closest first
+      take: halfLimit,
+      include: {
+        sender: { select: { id: true, name: true, email: true, image: true } },
+        attachments: true
+      }
+    })
+
+    const reversedNewer = [...newerMessages].reverse()
+    const mergedMessagesDesc = [...reversedNewer, targetMessage, ...olderMessages]
+
+    const hasOlder = olderMessages.length === halfLimit
+    const hasNewer = newerMessages.length === halfLimit
+
+    return {
+      success: true,
+      messages: mergedMessagesDesc,
+      hasOlder,
+      hasNewer
+    }
+  } catch (error) {
+    console.error("getChatMessagesAround error:", error)
+    return { success: false, error: "Failed to fetch messages around target" }
+  }
+}
+
+/**
+ * Fetch newer chat messages after a specific timestamp.
+ */
+export async function getChatMessagesAfter(
+  chatGroupId: string,
+  afterTimestamp: string,
+  limit: number = 50
+) {
+  try {
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    // Security check
+    const member = await prisma.chatMember.findUnique({
+      where: { chatGroupId_userId: { chatGroupId, userId } }
+    })
+    if (!member) return { success: false, error: "Forbidden: Not a member" }
+
+    const messages = await prisma.chatMessage.findMany({
+      where: {
+        chatGroupId,
+        createdAt: { gt: new Date(afterTimestamp) }
+      },
+      orderBy: { createdAt: "asc" }, // closest first
+      take: limit,
+      include: {
+        sender: { select: { id: true, name: true, email: true, image: true } },
+        attachments: true
+      }
+    })
+
+    const messagesDesc = [...messages].reverse()
+
+    return { success: true, messages: messagesDesc }
+  } catch (error) {
+    console.error("getChatMessagesAfter error:", error)
+    return { success: false, error: "Failed to fetch newer messages" }
   }
 }
