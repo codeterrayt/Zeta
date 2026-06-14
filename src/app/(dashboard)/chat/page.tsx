@@ -91,13 +91,23 @@ export default function ChatPage() {
     if (mainContainer) {
       mainContainer.classList.add("overflow-y-hidden")
       mainContainer.classList.remove("overflow-y-auto")
+      mainContainer.scrollTop = 0
     }
     const footer = document.querySelector("footer")
     if (footer) {
       footer.style.setProperty("display", "none", "important")
     }
 
+    // Force scrollTop to 0 periodically on startup to beat Next.js scroll restoration
+    const timers = [
+      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 10),
+      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 50),
+      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 150),
+      setTimeout(() => { if (mainContainer) mainContainer.scrollTop = 0 }, 300),
+    ]
+
     return () => {
+      timers.forEach(clearTimeout)
       if (mainContainer) {
         mainContainer.classList.remove("overflow-y-hidden")
         mainContainer.classList.add("overflow-y-auto")

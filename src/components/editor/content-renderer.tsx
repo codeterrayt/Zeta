@@ -185,91 +185,100 @@ function ImageZoomModal({ src, onClose }: ImageZoomModalProps) {
  * 2. Finding all file-mention spans and creating React portals for them
  * 3. Finding all image tags, constraining their sizes, and attaching interactive preview listeners
  */
-export function ContentRenderer({ html, attachments = [], className }: ContentRendererProps) {
-  const containerRef = React.useRef<HTMLDivElement>(null)
-  const [portals, setPortals] = React.useState<React.ReactPortal[]>([])
-  const [selectedImgSrc, setSelectedImgSrc] = React.useState<string | null>(null)
+export const ContentRenderer = React.memo(
+  function ContentRenderer({ html, attachments = [], className }: ContentRendererProps) {
+    const containerRef = React.useRef<HTMLDivElement>(null)
+    const [portals, setPortals] = React.useState<React.ReactPortal[]>([])
+    const [selectedImgSrc, setSelectedImgSrc] = React.useState<string | null>(null)
 
-  // Stringify to prevent reference-equality trigger loops
-  const attachmentsKey = JSON.stringify(attachments)
+    // Stringify to prevent reference-equality trigger loops
+    const attachmentsKey = JSON.stringify(attachments)
 
-  React.useLayoutEffect(() => {
-    const el = containerRef.current
-    if (!el) return
+    React.useLayoutEffect(() => {
+      const el = containerRef.current
+      if (!el) return
 
-    // Inject the raw HTML
-    el.innerHTML = html || ""
+      // Inject the raw HTML
+      el.innerHTML = html || ""
 
-    if (!html) {
-      setPortals([])
-      return
-    }
-
-    // Process and style images inside the rendered content
-    const images = el.querySelectorAll<HTMLImageElement>("img")
-    images.forEach((img) => {
-      // Limit size and add interactive preview styles
-      img.className = "cursor-zoom-in hover:opacity-90 max-h-[280px] max-w-full object-contain rounded-2xl border border-border/40 my-3.5 transition-all duration-200 hover:shadow-lg hover:scale-[1.005] block"
-      
-      const handleImageClick = (e: MouseEvent) => {
-        e.preventDefault()
-        setSelectedImgSrc(img.src)
+      if (!html) {
+        setPortals([])
+        return
       }
-      img.addEventListener("click", handleImageClick)
-    })
 
-    // Find all file mention spans
-    const spans = el.querySelectorAll<HTMLElement>("[data-type='file-mention'], .file-mention")
-    
-    if (spans.length === 0) {
-      setPortals([])
-      return
-    }
+      // Process and style images inside the rendered content
+      const images = el.querySelectorAll<HTMLImageElement>("img")
+      images.forEach((img) => {
+        // Limit size and add interactive preview styles
+        img.className = "cursor-zoom-in hover:opacity-90 max-h-[280px] max-w-full object-contain rounded-2xl border border-border/40 my-3.5 transition-all duration-200 hover:shadow-lg hover:scale-[1.005] block"
+        
+        const handleImageClick = (e: MouseEvent) => {
+          e.preventDefault()
+          setSelectedImgSrc(img.src)
+        }
+        img.addEventListener("click", handleImageClick)
+      })
 
-    const newPortals: React.ReactPortal[] = []
+      // Find all file mention spans
+      const spans = el.querySelectorAll<HTMLElement>("[data-type='file-mention'], .file-mention")
+      
+      if (spans.length === 0) {
+        setPortals([])
+        return
+      }
 
-    spans.forEach((span, index) => {
-      const fileId = span.getAttribute("data-id") || span.getAttribute("data-mention-id") || ""
-      const fileName = span.getAttribute("data-label") || span.textContent?.replace(/^📎\s*/, "") || fileId
+      const newPortals: React.ReactPortal[] = []
 
-      // Look up metadata from the provided attachments list
-      const meta = attachments.find(a => a.id === fileId || a.name === fileName)
+      spans.forEach((span, index) => {
+        const fileId = span.getAttribute("data-id") || span.getAttribute("data-mention-id") || ""
+        const fileName = span.getAttribute("data-label") || span.textContent?.replace(/^📎\s*/, "") || fileId
 
-      // Create a mount point in place of the span
-      const mount = document.createElement("span")
-      mount.className = "file-mention-mount inline-block align-middle"
-      span.replaceWith(mount)
+        // Look up metadata from the provided attachments list
+        const meta = attachments.find(a => a.id === fileId || a.name === fileName)
 
-      const portal = createPortal(
-        <FileMentionBadge
-          key={`${fileId}-${index}`}
-          id={fileId || meta?.id || ""}
-          name={meta?.name || fileName}
-          url={meta?.url}
-          type={meta?.type}
-          size={meta?.size}
-        />,
-        mount
-      )
-      newPortals.push(portal)
-    })
+        // Create a mount point in place of the span
+        const mount = document.createElement("span")
+        mount.className = "file-mention-mount inline-block align-middle"
+        span.replaceWith(mount)
 
-    setPortals(newPortals)
-  }, [html, attachmentsKey])
+        const portal = createPortal(
+          <FileMentionBadge
+            key={`${fileId}-${index}`}
+            id={fileId || meta?.id || ""}
+            name={meta?.name || fileName}
+            url={meta?.url}
+            type={meta?.type}
+            size={meta?.size}
+          />,
+          mount
+        )
+        newPortals.push(portal)
+      })
 
-  return (
-    <>
-      <div
-        ref={containerRef}
-        className={className ?? "prose prose-sm max-w-none text-sm text-foreground/80 leading-relaxed"}
-      />
-      {portals}
-      {selectedImgSrc && (
-        <ImageZoomModal
-          src={selectedImgSrc}
-          onClose={() => setSelectedImgSrc(null)}
+      setPortals(newPortals)
+    }, [html, attachmentsKey])
+
+    return (
+      <>
+        <div
+          ref={containerRef}
+          className={className ?? "prose prose-sm max-w-none text-sm text-foreground/80 leading-relaxed"}
         />
-      )}
-    </>
-  )
-}
+        {portals}
+        {selectedImgSrc && (
+          <ImageZoomModal
+            src={selectedImgSrc}
+            onClose={() => setSelectedImgSrc(null)}
+          />
+        )}
+      </>
+    )
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.html === nextProps.html &&
+      prevProps.className === nextProps.className &&
+      JSON.stringify(prevProps.attachments) === JSON.stringify(nextProps.attachments)
+    )
+  }
+)
