@@ -254,9 +254,21 @@ export async function renameChatGroup(chatGroupId: string, newName: string) {
       return { success: false, error: "Only admins or the owner can rename this group" }
     }
 
+    const oldName = group.name || "Unnamed Group"
+    const actorName = session.user.name || session.user.email || "Someone"
+
     const updated = await prisma.chatGroup.update({
       where: { id: chatGroupId },
       data: { name: newName }
+    })
+
+    await prisma.chatMessage.create({
+      data: {
+        chatGroupId,
+        senderId: userId,
+        content: `[system] ${actorName} renamed the group from "${oldName}" to "${newName}"`,
+        isDeleted: false
+      }
     })
 
     return { success: true, group: updated }
@@ -334,6 +346,23 @@ export async function addChatGroupMembers(chatGroupId: string, userIds: string[]
       }))
     })
 
+    // Create system message
+    const addedUsers = await prisma.user.findMany({
+      where: { id: { in: newMembers } },
+      select: { name: true, email: true }
+    })
+    const adderName = session.user.name || session.user.email || "Someone"
+    const addedUserNames = addedUsers.map(u => u.name || u.email || "Someone").join(", ")
+
+    await prisma.chatMessage.create({
+      data: {
+        chatGroupId,
+        senderId: userId,
+        content: `[system] ${adderName} added ${addedUserNames}`,
+        isDeleted: false
+      }
+    })
+
     // Touch group timestamp
     await prisma.chatGroup.update({
       where: { id: chatGroupId },
@@ -394,8 +423,32 @@ export async function removeChatGroupMember(chatGroupId: string, userIdToRemove:
       }
     }
 
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userIdToRemove },
+      select: { name: true, email: true }
+    })
+    const targetName = targetUser?.name || targetUser?.email || "Someone"
+    const actorName = session.user.name || session.user.email || "Someone"
+
     await prisma.chatMember.delete({
       where: { id: targetMember.id }
+    })
+
+    // Create system message
+    let contentStr = ""
+    if (isSelf) {
+      contentStr = `[system] ${actorName} left the group`
+    } else {
+      contentStr = `[system] ${actorName} removed ${targetName}`
+    }
+
+    await prisma.chatMessage.create({
+      data: {
+        chatGroupId,
+        senderId: userId,
+        content: contentStr,
+        isDeleted: false
+      }
     })
 
     // Touch group timestamp

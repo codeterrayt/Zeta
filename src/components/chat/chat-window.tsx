@@ -366,6 +366,18 @@ export function ChatWindow({
             const displayTime = formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })
             const senderName = msg.sender?.name || msg.sender?.email || "User"
             const avatar = msg.sender?.image
+            const isSystem = msg.content.startsWith("[system]")
+
+            if (isSystem) {
+              const systemText = msg.content.substring(8).trim()
+              return (
+                <div key={msg.id} className="flex justify-center w-full my-1 animate-in fade-in duration-200 select-none">
+                  <div className="bg-secondary/60 text-[10px] font-bold text-muted-foreground/90 px-3 py-1 rounded-full border border-border/20 shadow-sm max-w-[85%] text-center">
+                    {systemText}
+                  </div>
+                </div>
+              )
+            }
 
             return (
               <div 
