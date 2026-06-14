@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users, BookOpen, FileText, Eye, Edit3, Paperclip, Download } from "lucide-react"
+import { X, AlignLeft, MessageSquare, Clock, User, GitCommit, Link as LinkIcon, Loader2, ExternalLink, Pencil, Trash2, Plus, ShieldCheck, UserCheck, PhoneCall, Users, BookOpen, FileText, Eye, Edit3, Paperclip, Download, AlertTriangle, ArrowLeft } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -14,6 +14,7 @@ import { CommentSection } from "./comment-section"
 import { ContentRenderer } from "@/components/editor/content-renderer"
 import { getAttachmentsForContext } from "@/actions/get-attachments"
 import { deleteAttachment } from "@/actions/attachment"
+import { deleteTask } from "@/actions/task"
 import { toast } from "sonner"
 import tippy, { Instance } from "tippy.js"
 import "tippy.js/dist/tippy.css"
@@ -71,6 +72,9 @@ export function TaskModal({
   })
   const [comment, setComment] = React.useState("")
   const [saving, setSaving] = React.useState(false)
+  const [deleting, setDeleting] = React.useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
+  const [deletedExternally, setDeletedExternally] = React.useState<string | null>(null)
   const [askTimelineCommentSetting, setAskTimelineCommentSetting] = React.useState(true)
   const [pendingChanges, setPendingChanges] = React.useState<Array<{
     field: string
@@ -181,7 +185,65 @@ export function TaskModal({
     }
   }, [isOpen, loading, task?.id, searchParams])
 
+  // Reset deletion state whenever a different task is opened in this modal instance
+  React.useEffect(() => {
+    setDeletedExternally(null)
+  }, [task?.id])
+
+  // Listen for real-time task deletion by someone else
+  React.useEffect(() => {
+    if (!task?.id) return
+    const handleTaskDeleted = (e: Event) => {
+      const data = (e as CustomEvent).detail
+      const deleter = data?.deletedBy || "a team member"
+      setDeletedExternally(deleter)
+      if (standalone) {
+        // On standalone page, replace content immediately
+      } else {
+        toast.error(`This task was deleted by ${deleter}.`)
+      }
+    }
+    window.addEventListener(`task:deleted:${task.id}`, handleTaskDeleted)
+    return () => window.removeEventListener(`task:deleted:${task.id}`, handleTaskDeleted)
+  }, [task?.id, standalone])
+
   if (!task) return null
+
+  // Show deleted overlay when another user deletes this task while it's open
+  if (deletedExternally) {
+    const overlay = (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-6 p-10 text-center">
+        <div className="w-20 h-20 rounded-3xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+          <Trash2 className="w-10 h-10 text-destructive" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black">Task Deleted</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+            <span className="font-bold text-foreground">"{task.title}"</span> was permanently deleted by{" "}
+            <span className="font-bold text-foreground">{deletedExternally}</span>.
+          </p>
+        </div>
+        {!standalone ? (
+          <button
+            onClick={() => onClose?.()}
+            className="px-6 py-2.5 rounded-xl bg-secondary text-sm font-bold hover:bg-secondary/80 transition-all"
+          >
+            Close
+          </button>
+        ) : (
+          <Link href="/tasks" className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-all">
+            <ArrowLeft className="w-4 h-4" /> Back to Tasks
+          </Link>
+        )}
+      </div>
+    )
+    if (standalone) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">{overlay}</div>
+      )
+    }
+    return overlay
+  }
 
   const parseGithubUrl = (url: string) => {
     setGithubUrl(url)
@@ -357,6 +419,30 @@ export function TaskModal({
     setAssignments(prev => prev.map(a => a.userId === userId ? { ...a, role } : a))
   }
 
+  const handleDeleteTask = async () => {
+    setDeleting(true)
+    try {
+      const res = await deleteTask(task.id)
+      if (res.success) {
+        toast.success(`"${task.title}" has been deleted.`)
+        setShowDeleteConfirm(false)
+        if (standalone) {
+          router.push(`/projects/${task.projectId}`)
+        } else {
+          onClose?.()
+          router.refresh()
+        }
+      } else {
+        toast.error(res.error || "Failed to delete task")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to delete task")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const modalContent = (
     <div className={cn(
       "flex flex-col transition-all w-full",
@@ -374,6 +460,18 @@ export function TaskModal({
         <div className="flex items-center gap-3">
           <TaskTimeline taskId={task.id} taskTitle={task.title} projectId={task.projectId} />
           
+          {/* Delete Task Button - visible to reporter or admin */}
+          {canEdit && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 rounded-xl hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all shrink-0 group relative"
+              title="Delete task"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity border border-border z-50">Delete task</span>
+            </button>
+          )}
+
           {!standalone && (
             <Link
               href={`/tasks/${task.id}`}
@@ -896,10 +994,61 @@ export function TaskModal({
     </DialogPrimitive.Root>
   )
 
+  // Reusable delete confirmation — uses a nested Radix Dialog so focus-trap works
+  const deleteConfirmDialog = (
+    <DialogPrimitive.Root open={showDeleteConfirm} onOpenChange={(open) => !open && setShowDeleteConfirm(false)}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <DialogPrimitive.Content
+            className="bg-card border border-border rounded-3xl p-8 shadow-2xl w-full max-w-md outline-none"
+            onInteractOutside={() => setShowDeleteConfirm(false)}
+          >
+            <DialogPrimitive.Title className="sr-only">Delete Task</DialogPrimitive.Title>
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-destructive" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-foreground mb-2">Delete Task?</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  You are about to permanently delete{" "}
+                  <span className="font-bold text-foreground">"{task.title}"</span>.{" "}
+                  The Reporter and all Assignees will be notified. This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 w-full pt-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-bold hover:bg-secondary transition-all disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteTask}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-destructive text-white text-sm font-bold hover:bg-destructive/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>
+                  ) : (
+                    <><Trash2 className="w-4 h-4" /> Delete Task</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </DialogPrimitive.Content>
+        </div>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  )
+
   if (standalone) return (
     <>
       {modalContent}
       {showCommentDialog && commentDialogHtml}
+      {deleteConfirmDialog}
     </>
   )
 
@@ -922,6 +1071,7 @@ export function TaskModal({
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
       {showCommentDialog && commentDialogHtml}
+      {deleteConfirmDialog}
     </>
   )
 }

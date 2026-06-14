@@ -27,6 +27,7 @@ import { TiptapEditor } from "@/components/editor/tiptap-editor"
 import { ContentRenderer } from "@/components/editor/content-renderer"
 import { useSession } from "next-auth/react"
 import { getAttachmentsForContext } from "@/actions/get-attachments"
+import { useRealtime } from "@/components/providers/realtime-provider"
 
 type AuditLogComment = {
   id: string
@@ -58,6 +59,7 @@ type AuditLog = {
 
 export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string, taskTitle: string, projectId: string }) {
   const { data: session } = useSession()
+  const { socket } = useRealtime()
   const currentUserId = (session?.user as any)?.id
 
   const [isOpen, setIsOpen] = React.useState(false)
@@ -77,7 +79,7 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
     return [...logs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [logs])
 
-  const loadLogs = async (showLoading = true) => {
+  const loadLogs = React.useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true)
     const [res, atts] = await Promise.all([
       getTaskAuditLogs(taskId),
@@ -90,7 +92,7 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
       setAttachments(atts)
     }
     if (showLoading) setLoading(false)
-  }
+  }, [taskId, projectId])
 
   const handleSaveComment = async (logId: string) => {
     setSavingComment(true)
@@ -165,13 +167,20 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
     }
   }
 
+  // Join/leave the task socket room when dialog opens/closes
   React.useEffect(() => {
+    if (!socket) return
     if (isOpen) {
+      socket.emit("join_task", taskId)
       loadLogs()
     } else {
+      socket.emit("leave_task", taskId)
       setIsMaximized(false)
     }
-  }, [isOpen])
+    return () => {
+      if (isOpen) socket.emit("leave_task", taskId)
+    }
+  }, [isOpen, socket, taskId])
 
   // Sync real-time timeline logs / comment events in background
   React.useEffect(() => {
@@ -218,7 +227,8 @@ export function TaskTimeline({ taskId, taskTitle, projectId }: { taskId: string,
 
     const handleTimelineUpdate = (e: Event) => {
       const detail = (e as CustomEvent).detail
-      if (!detail || detail.taskId === taskId) {
+      // Reload whenever event matches this task or has no taskId filter
+      if (!detail?.taskId || detail.taskId === taskId) {
         loadLogs(false)
       }
     }

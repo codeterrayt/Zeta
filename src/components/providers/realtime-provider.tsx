@@ -246,7 +246,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     socketClient.on("document_deleted", (data) => {
       window.dispatchEvent(new CustomEvent(`document:deleted:${data.id}`))
       window.dispatchEvent(new CustomEvent("document:deleted", { detail: data }))
-      toast.error("A document was deleted.")
+      toast.error("A document was deleted.") 
       router.refresh()
     })
 

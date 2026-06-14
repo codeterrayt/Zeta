@@ -280,7 +280,19 @@ app.prepare().then(async () => {
 
         if (table === "Task") {
           if (action === "DELETE") {
-            io.to(`project:${projectId}`).emit("task_deleted", { id });
+            // Look up the actor who deleted so we can tell others
+            let deletedBy = null;
+            if (userId) {
+              const deleterRes = await pgClient.query(
+                'SELECT name, email FROM "User" WHERE id = $1', [userId]
+              );
+              if (deleterRes.rows[0]) {
+                deletedBy = deleterRes.rows[0].name || deleterRes.rows[0].email;
+              }
+            }
+            const payload = { id, deletedBy };
+            io.to(`project:${projectId}`).emit("task_deleted", payload);
+            io.to(`task:${id}`).emit("task_deleted", payload);
           } else {
             const taskRes = await pgClient.query(`
               SELECT t.*,

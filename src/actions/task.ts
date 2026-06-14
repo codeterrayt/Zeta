@@ -449,3 +449,71 @@ export async function getMyTasks() {
     return { success: false, error: "Failed to fetch tasks" }
   }
 }
+
+export async function deleteTask(taskId: string) {
+  const session = await auth()
+  const actorId = (session?.user as any)?.id
+  if (!actorId) return { success: false, error: "Unauthorized" }
+
+  try {
+    // Fetch task with reporter + assignees before deletion
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        reporter: { select: { id: true, name: true, email: true } },
+        assignments: {
+          include: { user: { select: { id: true, name: true, email: true } } }
+        },
+        project: { select: { id: true, name: true } }
+      }
+    })
+    if (!task) return { success: false, error: "Task not found" }
+
+    // Fetch the actor's info for notifications
+    const actor = await prisma.user.findUnique({
+      where: { id: actorId },
+      select: { id: true, name: true, email: true }
+    })
+    const actorDisplay = actor?.name || actor?.email || "Someone"
+
+    // Collect unique recipient IDs (reporter + all assignees), excluding actor
+    const recipientIds = new Set<string>()
+    if (task.reporter?.id && task.reporter.id !== actorId) recipientIds.add(task.reporter.id)
+    task.assignments.forEach((a: any) => {
+      if (a.userId !== actorId) recipientIds.add(a.userId)
+    })
+
+    const taskTitle = task.title
+    const projectId = task.projectId
+    const projectName = task.project?.name || "Unknown"
+
+    // Delete the task (cascades clean up assignments, audit logs, etc.)
+    await prisma.task.delete({ where: { id: taskId } })
+
+    // Send notifications to all affected users after deletion
+    if (recipientIds.size > 0) {
+      await Promise.all(
+        Array.from(recipientIds).map(userId =>
+          prisma.notification.create({
+            data: {
+              userId,
+              type: "TASK_DELETED" as any,
+              title: "Task Deleted",
+              content: `"${taskTitle}" was deleted by ${actorDisplay} in project "${projectName}"`,
+              link: `/projects/${projectId}`
+            }
+          })
+        )
+      )
+    }
+
+    revalidatePath(`/projects/${projectId}`)
+    revalidatePath("/tasks")
+    revalidatePath("/", "layout")
+
+    return { success: true, deletedBy: actorDisplay, taskTitle, projectId }
+  } catch (error) {
+    console.error("deleteTask error:", error)
+    return { success: false, error: "Failed to delete task" }
+  }
+}
