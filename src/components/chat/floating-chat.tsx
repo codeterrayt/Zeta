@@ -32,6 +32,7 @@ export function FloatingChat() {
   const [isDragging, setIsDragging] = React.useState(false)
   const dragStartRef = React.useRef({ x: 0, y: 0 })
   const widgetRef = React.useRef<HTMLDivElement>(null)
+  const hasDraggedRef = React.useRef(false)
 
   // Load chats
   const loadGroups = React.useCallback(async () => {
@@ -98,7 +99,26 @@ export function FloatingChat() {
   // Pointer drag event handlers
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement
-    // Do not drag if clicking interactive elements
+    hasDraggedRef.current = false // Reset drag indicator
+    
+    // When minimized, allow dragging the entire collapsed button container
+    if (isMinimized) {
+      if (target.closest(".close-bubble-btn")) {
+        return
+      }
+      e.preventDefault()
+      setIsDragging(true)
+      dragStartRef.current = {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      }
+      if (widgetRef.current) {
+        widgetRef.current.setPointerCapture(e.pointerId)
+      }
+      return
+    }
+
+    // Do not drag if clicking interactive elements when expanded
     if (target.closest("button") || target.closest("input") || target.closest("a")) {
       return
     }
@@ -121,6 +141,12 @@ export function FloatingChat() {
     if (!isDragging) return
     const nextX = e.clientX - dragStartRef.current.x
     const nextY = e.clientY - dragStartRef.current.y
+    
+    // If pointer moves more than 4 pixels, consider it a drag gesture
+    if (Math.abs(nextX - position.x) > 4 || Math.abs(nextY - position.y) > 4) {
+      hasDraggedRef.current = true
+    }
+    
     setPosition({ x: nextX, y: nextY })
   }
 
@@ -175,6 +201,7 @@ export function FloatingChat() {
         <div className="relative group/bubble select-none">
           <button
             onClick={() => {
+              if (hasDraggedRef.current) return
               setIsMinimized(false)
               loadGroups()
             }}
@@ -194,7 +221,7 @@ export function FloatingChat() {
               e.stopPropagation()
               setIsVisible(false)
             }}
-            className="absolute -top-1 -left-1 bg-muted text-muted-foreground p-1 rounded-full border border-border opacity-0 group-hover/bubble:opacity-100 transition-opacity hover:bg-destructive hover:text-white z-10"
+            className="close-bubble-btn absolute -top-1 -left-1 bg-muted text-muted-foreground p-1 rounded-full border border-border opacity-0 group-hover/bubble:opacity-100 transition-opacity hover:bg-destructive hover:text-white z-10"
           >
             <X className="w-2.5 h-2.5" />
           </button>
