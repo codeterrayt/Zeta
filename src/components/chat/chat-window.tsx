@@ -562,7 +562,7 @@ export function ChatWindow({
           </div>
         )}
 
-        <div className="flex items-end gap-2.5">
+        <div className="flex items-start gap-2.5">
           <div className="flex-1 bg-secondary/20 rounded-2xl overflow-hidden border border-border/70 flex flex-col focus-within:border-primary/50 transition-colors">
             <TiptapEditor 
               content={messageContent}
