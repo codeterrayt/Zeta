@@ -7,9 +7,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  // Optional: Add authentication check here if you want private uploads
-  // const session = await auth()
-  // if (!session) return new NextResponse("Unauthorized", { status: 401 })
+  // Require authentication to access uploaded files
+  const session = await auth()
+  if (!session?.user?.id) {
+    return new NextResponse("Unauthorized", { status: 401 })
+  }
 
   try {
     const { path: pathArray } = await params
@@ -29,6 +31,7 @@ export async function GET(
     // Determine content type based on extension
     const ext = filePath.split('.').pop()?.toLowerCase()
     let contentType = 'application/octet-stream'
+    let contentDisposition = 'inline'
     
     const mimeTypes: Record<string, string> = {
       'png': 'image/png',
@@ -36,7 +39,6 @@ export async function GET(
       'jpeg': 'image/jpeg',
       'gif': 'image/gif',
       'webp': 'image/webp',
-      'svg': 'image/svg+xml',
       'pdf': 'application/pdf',
       'doc': 'application/msword',
       'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -50,10 +52,19 @@ export async function GET(
       contentType = mimeTypes[ext]
     }
 
+    // SVG files can contain <script> tags — serve as attachment to prevent XSS
+    if (ext === 'svg') {
+      contentType = 'image/svg+xml'
+      contentDisposition = 'attachment'
+    }
+
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable'
+        'Content-Disposition': contentDisposition,
+        'Cache-Control': 'private, max-age=86400',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
       }
     })
   } catch (error: any) {

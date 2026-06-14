@@ -3,12 +3,11 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { ensureOwnerExists } from "@/lib/init"
 
 export async function updateSettings(data: {
   highFocusMax: number,
   mediumFocusMax: number,
-  aiEnabled: boolean,
-  aiModel: string,
   askTimelineComment: boolean,
   notificationsEnabled?: boolean
 }) {
@@ -22,8 +21,6 @@ export async function updateSettings(data: {
       data: {
         highFocusMax: data.highFocusMax,
         mediumFocusMax: data.mediumFocusMax,
-        aiEnabled: data.aiEnabled,
-        aiModel: data.aiModel,
         askTimelineComment: data.askTimelineComment,
         notificationsEnabled: data.notificationsEnabled ?? true
       }
@@ -42,6 +39,9 @@ export async function getUserSettings() {
   const session = await auth()
   const userId = (session?.user as any)?.id
   if (!userId) return { success: false, error: "Unauthorized" }
+
+  // Ensure owner setup is initialized
+  await ensureOwnerExists()
 
   try {
     let settings = await prisma.settings.findUnique({

@@ -2,9 +2,13 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { auth } from "@/auth"
 
 export async function getProjectMembers(projectId: string) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized", members: [] }
+
     const members = await prisma.projectMember.findMany({
       where: { projectId },
       include: {
@@ -20,6 +24,9 @@ export async function getProjectMembers(projectId: string) {
 
 export async function getProjectMembersForAssign(projectId: string) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) return []
+
     const members = await prisma.projectMember.findMany({
       where: { projectId },
       include: { user: { select: { id: true, name: true, email: true } } }
@@ -32,6 +39,15 @@ export async function getProjectMembersForAssign(projectId: string) {
 
 export async function addProjectMemberById(projectId: string, userId: string) {
   try {
+    const session = await auth()
+    const callerId = session?.user?.id
+    if (!callerId) return { success: false, error: "Unauthorized" }
+
+    const callerMembership = await prisma.projectMember.findFirst({
+      where: { projectId, userId: callerId, role: "ADMIN" }
+    })
+    if (!callerMembership) return { success: false, error: "Only project admins can add members" }
+
     const existing = await prisma.projectMember.findFirst({
       where: { projectId, userId }
     })
@@ -81,6 +97,15 @@ export async function addProjectMember(projectId: string, email: string) {
 
 export async function removeProjectMember(projectId: string, userId: string) {
   try {
+    const session = await auth()
+    const callerId = session?.user?.id
+    if (!callerId) return { success: false, error: "Unauthorized" }
+
+    const callerMembership = await prisma.projectMember.findFirst({
+      where: { projectId, userId: callerId, role: "ADMIN" }
+    })
+    if (!callerMembership) return { success: false, error: "Only project admins can remove members" }
+
     await prisma.projectMember.deleteMany({
       where: { projectId, userId }
     })

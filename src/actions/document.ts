@@ -63,6 +63,8 @@ export async function createDocument(data: {
 
 export async function getProjectDocuments(projectId: string) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized", documents: [] }
     const documents = await prisma.document.findMany({
       where: { projectId },
       include: {
@@ -116,6 +118,9 @@ export async function getAllDocuments() {
 }
 
 export async function getDocumentById(id: string) {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
   try {
     const document = await prisma.document.findUnique({
       where: { id },
@@ -145,6 +150,14 @@ export async function updateDocument(id: string, data: { title: string; content:
   if (!session?.user?.id) return { success: false, error: "Unauthorized" }
 
   try {
+    // Verify caller is the document author or a project admin
+    const existingDoc = await prisma.document.findUnique({ where: { id }, select: { authorId: true, projectId: true } })
+    if (existingDoc && existingDoc.authorId !== session.user.id) {
+      const isAdmin = await prisma.projectMember.findFirst({
+        where: { projectId: existingDoc.projectId, userId: session.user.id, role: "ADMIN" }
+      })
+      if (!isAdmin) return { success: false, error: "Only the document author or a project admin can edit this document" }
+    }
     const document = await prisma.document.update({
       where: { id: id },
       data: {
@@ -195,6 +208,14 @@ export async function deleteDocument(id: string) {
     })
 
     if (!document) return { success: false, error: "Document not found" }
+
+    // Verify caller is the document author or a project admin
+    if (document.authorId !== session.user.id) {
+      const isAdmin = await prisma.projectMember.findFirst({
+        where: { projectId: document.projectId, userId: session.user.id, role: "ADMIN" }
+      })
+      if (!isAdmin) return { success: false, error: "Only the document author or a project admin can delete this document" }
+    }
 
     // Log for all linked tasks before deletion
     for (const link of document.taskLinks) {

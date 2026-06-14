@@ -166,6 +166,34 @@ function ChatPageContent() {
     return () => window.removeEventListener("chat:read", handleChatRead)
   }, [])
 
+  // Scroll active chat item into view in sidebar & clear search filter if hidden
+  React.useEffect(() => {
+    if (!activeGroupId) return
+
+    // Check if the group is filtered out by searchQuery
+    const isFilteredOut = !chatGroups.some(g => {
+      if (g.id !== activeGroupId) return false
+      const name = g.isGroup 
+        ? g.name 
+        : g.members.find((m: any) => m.userId !== currentUserId)?.user?.name || "Direct Chat"
+      return name?.toLowerCase().includes(searchQuery.toLowerCase())
+    })
+
+    if (isFilteredOut && searchQuery) {
+      setSearchQuery("")
+      return // Let the next render cycle apply the cleared filter
+    }
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`chat-sidebar-item-${activeGroupId}`)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" })
+      }
+    }, 150) // Slight delay to ensure DOM has rendered
+
+    return () => clearTimeout(timer)
+  }, [activeGroupId, chatGroups, searchQuery, currentUserId])
+
   // User search for new chat creation
   React.useEffect(() => {
     if (userSearchText.trim().length < 2) {
@@ -450,6 +478,7 @@ function ChatPageContent() {
               return (
                 <button
                   key={group.id}
+                  id={`chat-sidebar-item-${group.id}`}
                   onClick={() => {
                     setActiveGroupId(group.id)
                     router.replace(`/chat?chatGroupId=${group.id}`, { scroll: false })

@@ -23,6 +23,13 @@ export async function createTask(data: {
     const session = await auth()
     const currentUserId = session?.user?.id
 
+    if (!currentUserId) return { success: false, error: "Unauthorized" }
+
+    const membership = await prisma.projectMember.findFirst({
+      where: { projectId: data.projectId, userId: currentUserId }
+    })
+    if (!membership) return { success: false, error: "Access denied: not a member of this project" }
+
     let creatorId = data.creatorId
     if (!creatorId || creatorId === "system") {
       let systemUser = await prisma.user.findFirst({ where: { email: "system@Zeta.local" } })

@@ -2,10 +2,11 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { Menu, X, Activity, Home, Folder, ListTodo, BookOpen, Settings, User, MessageSquare } from "lucide-react"
+import { Menu, X, Activity, Home, Folder, ListTodo, BookOpen, Settings, User, MessageSquare, LogOut } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { signOut } from "next-auth/react"
 
 const NAV_LINKS = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -93,6 +94,16 @@ export function MobileSidebar() {
               <Settings className="w-5 h-5" />
               Settings
             </Link>
+            <button
+              onClick={() => {
+                setOpen(false)
+                signOut({ callbackUrl: "/login" })
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border hover:bg-secondary text-muted-foreground border-transparent cursor-pointer"
+            >
+              <LogOut className="w-5 h-5 text-destructive" />
+              Logout
+            </button>
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

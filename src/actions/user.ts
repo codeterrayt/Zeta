@@ -1,8 +1,12 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
 
 export async function searchUsers(query: string, excludeProjectId?: string, limit: number = 10) {
+  const session = await auth()
+  if (!session?.user?.id) return []
+
   if (!query || query.trim().length < 2) return []
 
   try {

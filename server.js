@@ -24,8 +24,9 @@ app.prepare().then(async () => {
 
   const io = new Server(server, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
+      origin: process.env.NEXTAUTH_URL || process.env.AUTH_URL || "http://localhost:3000",
+      methods: ["GET", "POST"],
+      credentials: true
     }
   });
 

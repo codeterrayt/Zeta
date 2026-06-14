@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { auth } from "@/auth"
 
 export async function createSprint(data: {
   projectId: string
@@ -23,6 +24,15 @@ export async function createSprint(data: {
     if (!data.title || data.title.trim() === "") {
       throw new Error("Sprint title cannot be empty.")
     }
+
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    const membership = await prisma.projectMember.findFirst({
+      where: { projectId: data.projectId, userId }
+    })
+    if (!membership) return { success: false, error: "Access denied: not a member of this project" }
 
     const sprint = await prisma.sprint.create({
       data: {
@@ -50,6 +60,9 @@ export async function createSprint(data: {
 
 export async function getProjectSprints(projectId: string) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized", sprints: [] }
+
     const sprints = await prisma.sprint.findMany({
       where: { projectId },
       include: {
@@ -78,6 +91,9 @@ import { unstable_noStore as noStore } from "next/cache"
 export async function getSprintById(sprintId: string) {
   noStore()
   try {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized", sprint: null }
+
     const sprint = await prisma.sprint.findUnique({
       where: { id: sprintId },
       include: {
@@ -112,6 +128,18 @@ export async function getSprintById(sprintId: string) {
 
 export async function deleteSprint(sprintId: string, projectId: string) {
   try {
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    const sprint = await prisma.sprint.findUnique({ where: { id: sprintId } })
+    if (sprint) {
+      const membership = await prisma.projectMember.findFirst({
+        where: { projectId: sprint.projectId, userId, role: "ADMIN" }
+      })
+      if (!membership) return { success: false, error: "Only project admins can delete sprints" }
+    }
+
     await prisma.sprint.delete({
       where: { id: sprintId },
     })
@@ -126,6 +154,18 @@ export async function deleteSprint(sprintId: string, projectId: string) {
 
 export async function updateSprint(sprintId: string, data: any, projectId: string) {
   try {
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    const existingSprint = await prisma.sprint.findUnique({ where: { id: sprintId } })
+    if (existingSprint) {
+      const membership = await prisma.projectMember.findFirst({
+        where: { projectId: existingSprint.projectId, userId }
+      })
+      if (!membership) return { success: false, error: "Access denied: not a member of this project" }
+    }
+
     await prisma.sprint.update({
       where: { id: sprintId },
       data,

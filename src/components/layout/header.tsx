@@ -1,12 +1,26 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Search, MessageSquare } from "lucide-react"
 import { MobileSidebar } from "./mobile-sidebar"
 import { NotificationBell } from "./notification-bell"
 
 export function Header() {
+  const [isMac, setIsMac] = useState(false)
+
+  // Detect OS for search placeholder text
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMac(navigator.userAgent.toLowerCase().includes("mac"))
+    }
+  }, [])
+
   const toggleChat = () => {
     window.dispatchEvent(new CustomEvent("floating-chat:toggle"))
+  }
+
+  const openSearch = () => {
+    window.dispatchEvent(new CustomEvent("command-palette:open"))
   }
 
   return (
@@ -17,8 +31,10 @@ export function Header() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search tasks, projects... (Cmd+K)"
-            className="w-full bg-secondary/50 border border-border rounded-md pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-colors"
+            readOnly
+            onClick={openSearch}
+            placeholder={isMac ? "Search tasks, projects... (⌘K)" : "Search tasks, projects... (Ctrl+K)"}
+            className="w-full bg-secondary/50 border border-border rounded-md pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background transition-colors cursor-pointer select-none"
           />
         </div>
       </div>
@@ -26,7 +42,7 @@ export function Header() {
       <div className="flex items-center gap-4">
         <button
           onClick={toggleChat}
-          className="p-2.5 hover:bg-secondary rounded-xl transition-colors text-muted-foreground cursor-pointer"
+          className="p-2.5 hover:bg-secondary rounded-xl transition-colors text-muted-foreground cursor-pointer animate-in fade-in"
           title="Toggle Chat Widget"
         >
           <MessageSquare className="w-5 h-5" />

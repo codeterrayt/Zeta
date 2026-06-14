@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { Home, Folder, ListTodo, Settings, Activity, BookOpen, User, MessageSquare } from "lucide-react"
+import { Home, Folder, ListTodo, Settings, Activity, BookOpen, User, MessageSquare, LogOut } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { signOut } from "next-auth/react"
 
 const NAV_LINKS = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -74,6 +75,13 @@ export function Sidebar() {
           <Settings className="w-5 h-5" />
           Settings
         </Link>
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all border hover:bg-secondary text-muted-foreground border-transparent cursor-pointer"
+        >
+          <LogOut className="w-5 h-5 text-destructive" />
+          Logout
+        </button>
       </div>
     </aside>
   )

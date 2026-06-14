@@ -6,33 +6,27 @@ import { revalidatePath } from "next/cache"
 
 export async function getCurrentUserId(): Promise<string | null> {
   const session = await auth()
-  console.log("[getCurrentUserId] Session:", JSON.stringify(session))
 
   // Primary: use the id stored in the JWT
   if (session?.user?.id) {
-    console.log("[getCurrentUserId] Found ID in session:", session.user.id)
     return session.user.id
   }
 
   // Fallback: look up user by email if ID didn't come through
   if (session?.user?.email) {
-    console.log("[getCurrentUserId] Looking up ID by email:", session.user.email)
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
     })
-    console.log("[getCurrentUserId] Fallback lookup result:", user?.id)
     return user?.id ?? null
   }
 
-  console.error("[getCurrentUserId] No session or email found")
   return null
 }
 
 export async function createProject(name: string, description: string) {
   try {
     const userId = await getCurrentUserId()
-    console.log("[createProject] Creating project with name:", name, "userId:", userId)
 
     const project = await prisma.$transaction(async (tx) => {
       const newProject = await tx.project.create({
@@ -41,17 +35,13 @@ export async function createProject(name: string, description: string) {
 
       // Auto-add creator as ADMIN member
       if (userId) {
-        console.log("[createProject] Adding member:", userId, "to project:", newProject.id)
         await tx.projectMember.create({
           data: { projectId: newProject.id, userId, role: "ADMIN" },
         })
-      } else {
-        console.warn("[createProject] Skipping member addition - no userId found")
       }
 
       // Initialize default Kanban sections
       const defaultSections = ["BACKLOG", "IN_PROGRESS", "REVIEW", "DONE"]
-      console.log("[createProject] Initializing default sections for project:", newProject.id)
       await tx.boardSection.createMany({
         data: defaultSections.map((name, index) => ({
           projectId: newProject.id,

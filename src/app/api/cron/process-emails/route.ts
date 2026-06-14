@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 // In a real application, you'd use a service like Resend, SendGrid, or Nodemailer.
@@ -11,7 +11,17 @@ async function sendEmailViaSMTP(to: string, subject: string, body: string) {
   return true
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  // Guard: require a CRON_SECRET bearer token to prevent unauthorized triggers
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret) {
+    const authHeader = request.headers.get("authorization")
+    const token = authHeader?.replace("Bearer ", "")
+    if (token !== cronSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+  }
+
   try {
     // 1. Fetch pending emails from the queue
     const pendingEmails = await prisma.emailQueue.findMany({

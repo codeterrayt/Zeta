@@ -46,6 +46,7 @@ model User {
 
   // Custom Zeta fields
   role              Role              @default(USER)
+  isOwner           Boolean           @default(false)
   projects          ProjectMember[]
   assignments       TaskAssignment[]
   reportedTasks     Task[]            @relation("ReportedTasks")
@@ -77,8 +78,6 @@ enum Role {
 model Settings {
   id        String  @id @default(cuid())
   userId    String  @unique
-  aiEnabled Boolean @default(true)
-  aiModel   String  @default("gemini-1.5-pro")
 
   // Dashboard Thresholds
   highFocusMax   Int @default(3)
@@ -397,4 +396,28 @@ model ChatMessage {
   chatGroup   ChatGroup    @relation(fields: [chatGroupId], references: [id], onDelete: Cascade)
   sender      User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
   attachments Attachment[]
+}
+
+model SystemSettings {
+  id         String   @id @default("system")
+  smtpHost   String?
+  smtpPort   Int?
+  smtpUser   String?
+  smtpPass   String?
+  smtpFrom   String?
+  smtpSecure Boolean  @default(false)
+  aiEnabled  Boolean  @default(true)
+  aiModel    String   @default("gemini-1.5-pro")
+  aiApiKey   String?
+  updatedAt  DateTime @updatedAt
+}
+
+model UserInvite {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      Role     @default(USER)
+  token     String   @unique
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
