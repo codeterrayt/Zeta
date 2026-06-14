@@ -1,3 +1,5 @@
+"use client"
+
 import { Search, MessageSquare } from "lucide-react"
 import { MobileSidebar } from "./mobile-sidebar"
 import { NotificationBell } from "./notification-bell"
