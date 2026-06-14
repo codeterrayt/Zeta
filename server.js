@@ -523,6 +523,52 @@ app.prepare().then(async () => {
           }
         }
 
+        else if (table === "Attachment") {
+          if (action === "UPDATE" || action === "INSERT") {
+            try {
+              const attRes = await pgClient.query('SELECT "chatMessageId" FROM "Attachment" WHERE id = $1', [id]);
+              if (attRes.rows[0] && attRes.rows[0].chatMessageId) {
+                const chatMessageId = attRes.rows[0].chatMessageId;
+                const msgRes = await pgClient.query(`
+                  SELECT cm.*, 
+                    json_build_object(
+                      'id', u.id,
+                      'name', u.name,
+                      'email', u.email,
+                      'image', u.image
+                    ) as sender,
+                    COALESCE(
+                      (SELECT json_agg(json_build_object(
+                        'id', a.id,
+                        'name', a.name,
+                        'url', a.url,
+                        'size', a.size,
+                        'type', a.type
+                      )) FROM "Attachment" a WHERE a."chatMessageId" = cm.id),
+                      '[]'::json
+                    ) as attachments
+                  FROM "ChatMessage" cm
+                  JOIN "User" u ON cm."senderId" = u.id
+                  WHERE cm.id = $1
+                `, [chatMessageId]);
+                if (msgRes.rows[0]) {
+                  const message = msgRes.rows[0];
+                  io.to(`chatGroup:${message.chatGroupId}`).emit("chat_message_updated", message);
+                  
+                  try {
+                    const membersRes = await pgClient.query('SELECT "userId" FROM "ChatMember" WHERE "chatGroupId" = $1', [message.chatGroupId]);
+                    for (const row of membersRes.rows) {
+                      io.to(`user:${row.userId}`).emit("chat_message_received", { chatGroupId: message.chatGroupId, message, action: "UPDATE" });
+                    }
+                  } catch(e) {}
+                }
+              }
+            } catch(e) {
+              console.error("Attachment trigger error:", e);
+            }
+          }
+        }
+
         else if (table === "TaskAssignment") {
           io.to(`user:${userId}`).emit("task_assignment_changed", { taskId, action });
           const taskRes = await pgClient.query('SELECT "projectId" FROM "Task" WHERE id = $1', [taskId]);
