@@ -42,6 +42,7 @@ interface TiptapEditorProps {
   projectId?: string
   taskId?: string
   sprintId?: string
+  chatGroupId?: string
   onAttachmentUpload?: (att: any) => void
 }
 
@@ -86,6 +87,7 @@ export function TiptapEditor({
   projectId: manualProjectId,
   taskId: manualTaskId,
   sprintId: manualSprintId,
+  chatGroupId,
   onAttachmentUpload,
 }: TiptapEditorProps) {
   const params = useParams()
@@ -102,6 +104,19 @@ export function TiptapEditor({
   // Resolve projectId for mentions (backtrace from taskId if needed)
   React.useEffect(() => {
     async function resolveProject() {
+      if (chatGroupId) {
+        const { getChatGroup } = await import("@/actions/chat")
+        const res = await getChatGroup(chatGroupId)
+        if (res.success && res.group) {
+          setMembers((res.group as any).members.map((m: any) => m.user))
+        }
+        const { getAttachmentsForContext } = await import("@/actions/get-attachments")
+        getAttachmentsForContext({ chatGroupId }).then(res => {
+          setAttachments(res || [])
+        })
+        return
+      }
+
       let activeProjectId = projectId
 
       if (!activeProjectId && params.taskId) {
@@ -122,7 +137,7 @@ export function TiptapEditor({
       }
     }
     resolveProject()
-  }, [projectId, taskId, sprintId, params.taskId])
+  }, [projectId, taskId, sprintId, chatGroupId, params.taskId])
 
   const attachmentsRef = React.useRef<any[]>([])
   const membersRef = React.useRef<any[]>([])
@@ -304,6 +319,7 @@ export function TiptapEditor({
     formData.append("file", file)
     if (taskId) formData.append("taskId", taskId)
     if (sprintId) formData.append("sprintId", sprintId)
+    if (chatGroupId) formData.append("chatGroupId", chatGroupId)
 
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData })

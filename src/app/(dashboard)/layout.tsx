@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { CommandPalette } from "@/components/layout/command-palette"
+import { FloatingChat } from "@/components/chat/floating-chat"
 
 export default function DashboardLayout({
   children,
@@ -23,6 +24,7 @@ export default function DashboardLayout({
         </div>
       </div>
       <CommandPalette />
+      <FloatingChat />
     </div>
   )
 }

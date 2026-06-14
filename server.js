@@ -88,6 +88,25 @@ app.prepare().then(async () => {
       socket.to(`project:${data.projectId}`).emit("drag_cursor_ended", data);
     });
 
+    // Chat subscriptions & typing indicators
+    socket.on("join_chat_group", (chatGroupId) => {
+      socket.join(`chatGroup:${chatGroupId}`);
+    });
+
+    socket.on("leave_chat_group", (chatGroupId) => {
+      socket.leave(`chatGroup:${chatGroupId}`);
+    });
+
+    socket.on("typing", (data) => {
+      // Broadcast to others in the chat group room: { chatGroupId, userId, userName }
+      socket.to(`chatGroup:${data.chatGroupId}`).emit("typing_indicator", data);
+    });
+
+    socket.on("stop_typing", (data) => {
+      // Broadcast to others in the chat group room: { chatGroupId, userId }
+      socket.to(`chatGroup:${data.chatGroupId}`).emit("stop_typing_indicator", data);
+    });
+
     socket.on("disconnect", () => {
       // Clean up collaborative reader states
       for (const [docId, viewersMap] of activeDocViewers.entries()) {
@@ -207,6 +226,28 @@ app.prepare().then(async () => {
             proj_id := NEW."projectId";
             usr_id := NEW."authorId";
           END IF;
+        ELSIF TG_TABLE_NAME = 'ChatMessage' THEN
+          IF TG_OP = 'DELETE' THEN
+            tsk_id := OLD."chatGroupId";
+            usr_id := OLD."senderId";
+          ELSE
+            tsk_id := NEW."chatGroupId";
+            usr_id := NEW."senderId";
+          END IF;
+        ELSIF TG_TABLE_NAME = 'ChatMember' THEN
+          IF TG_OP = 'DELETE' THEN
+            tsk_id := OLD."chatGroupId";
+            usr_id := OLD."userId";
+          ELSE
+            tsk_id := NEW."chatGroupId";
+            usr_id := NEW."userId";
+          END IF;
+        ELSIF TG_TABLE_NAME = 'ChatGroup' THEN
+          IF TG_OP = 'DELETE' THEN
+            row_id := OLD.id::TEXT;
+          ELSE
+            row_id := NEW.id::TEXT;
+          END IF;
         END IF;
 
         payload := jsonb_build_object(
@@ -244,7 +285,7 @@ app.prepare().then(async () => {
     `);
 
     // Attach Table triggers
-    const tablesToTrigger = ["Task", "Comment", "Attachment", "Sprint", "Project", "ProjectMember", "Notification", "TaskAssignment", "AuditLog", "AuditLogComment", "Document"];
+    const tablesToTrigger = ["Task", "Comment", "Attachment", "Sprint", "Project", "ProjectMember", "Notification", "TaskAssignment", "AuditLog", "AuditLogComment", "Document", "ChatGroup", "ChatMember", "ChatMessage"];
     for (const table of tablesToTrigger) {
       await pgClient.query(`DROP TRIGGER IF EXISTS trg_${table.toLowerCase()}_realtime ON "${table}";`);
       await pgClient.query(`DROP TRIGGER IF EXISTS trg_${table.toLowerCase()}_delete_realtime ON "${table}";`);
@@ -535,6 +576,142 @@ app.prepare().then(async () => {
               }
             }
           }
+        }
+
+        else if (table === "ChatMessage") {
+          if (action === "DELETE") {
+            io.to(`chatGroup:${taskId}`).emit("chat_message_deleted", { id, chatGroupId: taskId });
+            try {
+              const membersRes = await pgClient.query('SELECT "userId" FROM "ChatMember" WHERE "chatGroupId" = $1', [taskId]);
+              for (const row of membersRes.rows) {
+                io.to(`user:${row.userId}`).emit("chat_message_removed", { id, chatGroupId: taskId });
+              }
+            } catch(e) {}
+          } else {
+            const msgRes = await pgClient.query(`
+              SELECT cm.*, 
+                json_build_object(
+                  'id', u.id,
+                  'name', u.name,
+                  'email', u.email,
+                  'image', u.image
+                ) as sender,
+                COALESCE(
+                  (SELECT json_agg(json_build_object(
+                    'id', a.id,
+                    'name', a.name,
+                    'url', a.url,
+                    'size', a.size,
+                    'type', a.type
+                  )) FROM "Attachment" a WHERE a."chatMessageId" = cm.id),
+                  '[]'::json
+                ) as attachments
+              FROM "ChatMessage" cm
+              JOIN "User" u ON cm."senderId" = u.id
+              WHERE cm.id = $1
+            `, [id]);
+
+            if (msgRes.rows[0]) {
+              const message = msgRes.rows[0];
+              if (action === "INSERT") {
+                io.to(`chatGroup:${taskId}`).emit("chat_message_created", message);
+              } else {
+                io.to(`chatGroup:${taskId}`).emit("chat_message_updated", message);
+              }
+
+              try {
+                const membersRes = await pgClient.query('SELECT "userId" FROM "ChatMember" WHERE "chatGroupId" = $1', [taskId]);
+                for (const row of membersRes.rows) {
+                  io.to(`user:${row.userId}`).emit("chat_message_received", { chatGroupId: taskId, message, action });
+                }
+              } catch(e) {}
+            }
+          }
+        }
+
+        else if (table === "ChatGroup") {
+          if (action === "DELETE") {
+            io.to(`chatGroup:${id}`).emit("chat_group_deleted", { chatGroupId: id });
+            try {
+              const membersRes = await pgClient.query('SELECT "userId" FROM "ChatMember" WHERE "chatGroupId" = $1', [id]);
+              for (const row of membersRes.rows) {
+                io.to(`user:${row.userId}`).emit("chat_group_removed_global", { chatGroupId: id });
+              }
+            } catch(e) {}
+          } else {
+            const groupRes = await pgClient.query(`
+              SELECT cg.*,
+                COALESCE(
+                  (SELECT json_agg(json_build_object(
+                    'id', cm.id,
+                    'userId', cm."userId",
+                    'isAdmin', cm."isAdmin",
+                    'mutedUntil', cm."mutedUntil",
+                    'user', json_build_object(
+                      'id', u.id,
+                      'name', u.name,
+                      'email', u.email,
+                      'image', u.image
+                    )
+                  )) FROM "ChatMember" cm
+                     JOIN "User" u ON cm."userId" = u.id
+                     WHERE cm."chatGroupId" = cg.id
+                  ),
+                  '[]'::json
+                ) as members
+              FROM "ChatGroup" cg
+              WHERE cg.id = $1
+            `, [id]);
+
+            if (groupRes.rows[0]) {
+              const group = groupRes.rows[0];
+              io.to(`chatGroup:${id}`).emit("chat_group_updated", group);
+              
+              for (const member of group.members) {
+                io.to(`user:${member.userId}`).emit("chat_group_updated_global", group);
+              }
+            }
+          }
+        }
+
+        else if (table === "ChatMember") {
+          io.to(`chatGroup:${taskId}`).emit("chat_member_changed", { chatGroupId: taskId, userId, action });
+          
+          try {
+            const groupRes = await pgClient.query(`
+              SELECT cg.*,
+                COALESCE(
+                  (SELECT json_agg(json_build_object(
+                    'id', cm.id,
+                    'userId', cm."userId",
+                    'isAdmin', cm."isAdmin",
+                    'mutedUntil', cm."mutedUntil",
+                    'user', json_build_object(
+                      'id', u.id,
+                      'name', u.name,
+                      'email', u.email,
+                      'image', u.image
+                    )
+                  )) FROM "ChatMember" cm
+                     JOIN "User" u ON cm."userId" = u.id
+                     WHERE cm."chatGroupId" = cg.id
+                  ),
+                  '[]'::json
+                ) as members
+              FROM "ChatGroup" cg
+              WHERE cg.id = $1
+            `, [taskId]);
+
+            if (groupRes.rows[0]) {
+              const group = groupRes.rows[0];
+              if (action === "DELETE") {
+                io.to(`user:${userId}`).emit("chat_group_removed_global", { chatGroupId: taskId });
+              } else {
+                io.to(`user:${userId}`).emit("chat_group_updated_global", group);
+              }
+              io.to(`chatGroup:${taskId}`).emit("chat_group_updated", group);
+            }
+          } catch(e) {}
         }
 
       } catch (err) {

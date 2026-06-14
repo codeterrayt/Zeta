@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Home, Folder, ListTodo, Settings, Activity, BookOpen, User } from "lucide-react"
+import { Home, Folder, ListTodo, Settings, Activity, BookOpen, User, MessageSquare } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/projects", label: "Projects", icon: Folder },
   { href: "/tasks", label: "My Tasks", icon: ListTodo },
   { href: "/documentation", label: "Documentation", icon: BookOpen },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
 ]
 
 export function Sidebar() {

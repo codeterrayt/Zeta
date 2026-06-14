@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
     const taskId = formData.get("taskId") as string | null
     const sprintId = formData.get("sprintId") as string | null
     const commentId = formData.get("commentId") as string | null
+    const chatGroupId = formData.get("chatGroupId") as string | null
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
         taskId: taskId || null,
         sprintId: sprintId || null,
         commentId: commentId || null,
+        chatGroupId: chatGroupId || null,
       },
     })
 

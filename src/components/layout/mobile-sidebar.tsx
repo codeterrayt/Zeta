@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { Menu, X, Activity, Home, Folder, ListTodo, BookOpen, Settings, User } from "lucide-react"
+import { Menu, X, Activity, Home, Folder, ListTodo, BookOpen, Settings, User, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/projects", label: "Projects", icon: Folder },
   { href: "/tasks", label: "My Tasks", icon: ListTodo },
   { href: "/documentation", label: "Documentation", icon: BookOpen },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
 ]
 
 export function MobileSidebar() {

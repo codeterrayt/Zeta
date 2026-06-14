@@ -56,6 +56,9 @@ model User {
   authoredDocuments Document[]        @relation("AuthoredDocuments")
   auditLogComments  AuditLogComment[]
   notifications     Notification[]
+  chatMembers       ChatMember[]
+  chatMessages      ChatMessage[]
+  chatGroupsOwned   ChatGroup[]       @relation("ChatGroupsOwned")
 }
 
 model VerificationToken {
@@ -265,11 +268,15 @@ model Attachment {
   taskId    String?
   sprintId  String?
   commentId String?
+  chatGroupId String?
+  chatMessageId String?
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   task    Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
   sprint  Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
   comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  chatGroup ChatGroup? @relation(fields: [chatGroupId], references: [id], onDelete: Cascade)
+  chatMessage ChatMessage? @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
@@ -347,4 +354,46 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatGroup {
+  id                 String       @id @default(cuid())
+  name               String?      // Null for 1-1 chat
+  isGroup            Boolean      @default(false)
+  ownerId            String?      // Null for 1-1 chat
+  allowMemberRename  Boolean      @default(true) // Whether regular members can rename
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  members            ChatMember[]
+  messages           ChatMessage[]
+  attachments        Attachment[]
+  owner              User?        @relation("ChatGroupsOwned", fields: [ownerId], references: [id], onDelete: SetNull)
+}
+
+model ChatMember {
+  id          String    @id @default(cuid())
+  chatGroupId String
+  userId      String
+  isAdmin     Boolean   @default(false)
+  mutedUntil  DateTime? // Mute options
+
+  chatGroup ChatGroup @relation(fields: [chatGroupId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatGroupId, userId])
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  chatGroupId String
+  senderId    String
+  content     String   @db.Text
+  isDeleted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chatGroup   ChatGroup    @relation(fields: [chatGroupId], references: [id], onDelete: Cascade)
+  sender      User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
 }
