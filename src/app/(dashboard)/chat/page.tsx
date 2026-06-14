@@ -532,15 +532,15 @@ function ChatPageContent() {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-1.5 group/title">
-                <h3 className="font-black text-sm truncate max-w-[180px]">{getChatPartnerName(activeGroup)}</h3>
+              <div className="relative flex items-center justify-center gap-1.5 group/title px-6">
+                <h3 className="font-black text-sm truncate max-w-[180px] text-center w-full">{getChatPartnerName(activeGroup)}</h3>
                 {activeGroup.isGroup && (isOwner || isAdmin || activeGroup.allowMemberRename) && (
                   <button 
                     onClick={() => {
                       setRenameValue(activeGroup.name || "")
                       setEditingName(true)
                     }}
-                    className="p-1 rounded text-muted-foreground hover:bg-secondary opacity-0 group-hover/title:opacity-100 transition-opacity"
+                    className="p-1 rounded text-muted-foreground hover:bg-secondary opacity-0 group-hover/title:opacity-100 transition-opacity absolute right-2 top-1/2 -translate-y-1/2"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                   </button>
@@ -553,7 +553,7 @@ function ChatPageContent() {
           </div>
 
           {/* Quick Actions */}
-          <div className="space-y-2">
+          <div className="space-y-2 mt-6">
             <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Options</h4>
             
             <button 

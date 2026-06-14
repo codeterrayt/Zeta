@@ -4,7 +4,8 @@ import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { 
   X, AtSign, UserCheck, FolderPlus, RefreshCw, AlertCircle, 
-  ChevronLeft, ChevronRight, CheckSquare, Inbox, Search, Maximize2 
+  ChevronLeft, ChevronRight, CheckSquare, Inbox, Search, Maximize2,
+  MessageSquare 
 } from "lucide-react"
 import { getNotifications, markNotificationAsViewed, markAllNotificationsAsViewed } from "@/actions/notifications"
 import Link from "next/link"
@@ -158,6 +159,12 @@ export function ViewAllNotificationsModal({
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case "CHAT":
+        return (
+          <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-sm">
+            <MessageSquare className="w-5 h-5" />
+          </div>
+        )
       case "MENTION":
         return (
           <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 shadow-sm">
@@ -201,6 +208,7 @@ export function ViewAllNotificationsModal({
     { id: "all", label: "All Alerts" },
     { id: "unread", label: "Unread Only" },
     { id: "MENTION", label: "@ Mentions" },
+    { id: "CHAT", label: "Chat" },
     { id: "ASSIGNED", label: "Assignments" },
     { id: "TASK_CHANGED", label: "Task Updates" },
     { id: "PROJECT_ADDED", label: "Projects" },

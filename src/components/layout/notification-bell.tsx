@@ -3,7 +3,7 @@
 import * as React from "react"
 import {
   Bell, AtSign, UserCheck, FolderPlus, RefreshCw, AlertCircle,
-  CheckSquare, Inbox, Eye
+  CheckSquare, Inbox, Eye, MessageSquare
 } from "lucide-react"
 import { getNotifications, markNotificationAsViewed, markAllNotificationsAsViewed } from "@/actions/notifications"
 import Link from "next/link"
@@ -79,6 +79,8 @@ export function NotificationBell() {
 
   const getSmallIcon = (type: string) => {
     switch (type) {
+      case "CHAT":
+        return <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
       case "MENTION":
         return <AtSign className="w-3.5 h-3.5 text-purple-400" />
       case "ASSIGNED":

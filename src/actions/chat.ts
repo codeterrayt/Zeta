@@ -651,10 +651,10 @@ export async function sendChatMessage(chatGroupId: string, content: string, atta
         await prisma.notification.create({
           data: {
             userId: mId,
-            type: "MENTION",
+            type: "CHAT",
             title: group.isGroup ? `Mentioned in ${group.name}` : "Mentioned in Chat",
             content: `${senderName} mentioned you in ${group.isGroup ? `group "${group.name}"` : "a private chat"}.`,
-            link: `/chat?chatGroupId=${chatGroupId}`
+            link: `/chat?chatGroupId=${chatGroupId}#message-${message.id}`
           }
         })
       }

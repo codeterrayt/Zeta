@@ -203,6 +203,34 @@ export function ChatWindow({
     }
   }, [socket, chatGroupId, currentUserId, scrollToBottom])
 
+  // Scroll to hash message on load or hashchange
+  React.useEffect(() => {
+    if (loading || messages.length === 0) return
+
+    const handleHashScroll = () => {
+      const hash = window.location.hash
+      if (hash && hash.startsWith("#message-")) {
+        const msgId = hash.replace("#message-", "")
+        const element = document.getElementById(`message-${msgId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" })
+          element.classList.add("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]", "transition-all", "duration-500")
+          setTimeout(() => {
+            element.classList.remove("ring-2", "ring-primary", "ring-offset-2", "scale-[1.02]")
+          }, 2500)
+        }
+      }
+    }
+
+    const timer = setTimeout(handleHashScroll, 300)
+
+    window.addEventListener("hashchange", handleHashScroll)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener("hashchange", handleHashScroll)
+    }
+  }, [loading, messages])
+
   // Handle keypress/typing notification to other members
   const notifyTyping = () => {
     if (!socket || !chatGroupId || !currentUserId) return
@@ -382,6 +410,7 @@ export function ChatWindow({
             return (
               <div 
                 key={msg.id} 
+                id={`message-${msg.id}`}
                 className={`flex gap-3 max-w-[85%] ${isOwn ? "ml-auto flex-row-reverse" : "mr-auto"}`}
               >
                 {!isOwn && (
@@ -412,6 +441,7 @@ export function ChatWindow({
                       ) : (
                         <ContentRenderer 
                           html={msg.content} 
+                          attachments={msg.attachments}
                           className={cn(
                             "prose prose-sm max-w-none text-sm leading-relaxed",
                             isOwn 
@@ -431,7 +461,10 @@ export function ChatWindow({
                               download
                               target="_blank"
                               rel="noreferrer"
-                              className="flex items-center gap-1.5 text-xs text-primary-foreground hover:underline font-medium"
+                              className={cn(
+                                "flex items-center gap-1.5 text-xs font-medium hover:underline",
+                                isOwn ? "text-primary-foreground" : "text-primary"
+                              )}
                             >
                               <FileIcon className="w-3.5 h-3.5" />
                               <span className="truncate max-w-[150px]">{att.name}</span>
