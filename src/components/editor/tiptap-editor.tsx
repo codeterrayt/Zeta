@@ -456,7 +456,7 @@ export function TiptapEditor({
       </div>
 
       {/* Editor Content */}
-      <div className="bg-background rounded-b-xl">
+      <div className="bg-background rounded-b-xl max-h-[120px] overflow-y-auto custom-scrollbar">
         <EditorContent editor={editor} />
       </div>
     </div>
