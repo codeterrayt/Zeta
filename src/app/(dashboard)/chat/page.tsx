@@ -317,13 +317,25 @@ function ChatPageContent() {
     const lastMsg = group.messages?.[0]
     if (!lastMsg) return <span className="italic">No messages yet</span>
     
-    const plainText = lastMsg.content.replace(/<[^>]*>/g, "")
+    const isSystem = lastMsg.content.startsWith("[system]")
+    const plainText = isSystem
+      ? lastMsg.content.substring(8).replace(/<[^>]*>/g, "")
+      : lastMsg.content.replace(/<[^>]*>/g, "")
+      
     const text = lastMsg.isDeleted 
       ? "[Deleted by the Sender]" 
       : plainText.length > 20 
         ? plainText.substring(0, 20) + "..." 
         : plainText
     
+    if (isSystem) {
+      return (
+        <span className="truncate block italic opacity-75">
+          {text}
+        </span>
+      )
+    }
+
     const sender = lastMsg.senderId === currentUserId ? "You: " : `${lastMsg.sender?.name || 'Someone'}: `
     return (
       <span className="truncate block">
