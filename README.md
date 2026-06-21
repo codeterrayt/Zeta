@@ -1,146 +1,207 @@
-﻿<div align="center">
+<div align="center">
+
+<img src="https://img.shields.io/badge/Zeta-Open%20Source%20PM-4F46E5?style=for-the-badge&logoColor=white" alt="Zeta" />
 
 # Zeta
 
-**The open-source project management platform built for modern teams.**
+**The open-source, self-hosted project management platform built for modern engineering teams.**
 
-Sprints · Kanban · Real-time Chat · Docs · AI Summaries — all in one place.
+Sprints · Kanban · Real-time Chat · Wiki Docs · AI Summaries — all in one beautiful app.
+
+<br />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org)
-[![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma)](https://prisma.io)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)](https://prisma.io)
+[![Socket.io](https://img.shields.io/badge/Socket.io-4-010101?logo=socket.io&logoColor=white)](https://socket.io)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![GitHub Stars](https://img.shields.io/github/stars/codeterrayt/Zeta?style=social)](https://github.com/codeterrayt/Zeta/stargazers)
+
+<br />
+
+[**View on GitHub**](https://github.com/codeterrayt/Zeta) · [**Report a Bug**](https://github.com/codeterrayt/Zeta/issues) · [**Request a Feature**](https://github.com/codeterrayt/Zeta/issues) · [**Discussions**](https://github.com/codeterrayt/Zeta/discussions)
 
 </div>
 
 ---
 
-## Demo
+## Why Zeta?
 
-> **[Watch the full demo video](#)**
-> *(placeholder — add a screen recording or Loom link here)*
+Most project management tools are either too simple or locked behind expensive SaaS subscriptions. **Zeta is fully self-hosted, open source, and free** — giving your team complete ownership of their data and workflow.
 
-| Dashboard | Kanban Board | Sprint View |
-|:---------:|:------------:|:-----------:|
-| ![Dashboard](docs/images/dashboard.png) | ![Kanban](docs/images/kanban.png) | ![Sprint](docs/images/sprint.png) |
-
-| Real-time Chat | Documentation Editor | Admin Panel |
-|:--------------:|:--------------------:|:-----------:|
-| ![Chat](docs/images/chat.png) | ![Docs](docs/images/docs.png) | ![Admin](docs/images/admin.png) |
-
-> Replace placeholder images by dropping screenshots into `docs/images/`.
+| | Zeta | Jira | Linear |
+|---|:---:|:---:|:---:|
+| Self-hosted | ✅ | ❌ | ❌ |
+| Open source | ✅ | ❌ | ❌ |
+| Real-time collaboration | ✅ | ⚠️ | ⚠️ |
+| Built-in chat | ✅ | ❌ | ❌ |
+| Wiki & Docs | ✅ | ✅ | ⚠️ |
+| AI summaries | ✅ | 💰 | 💰 |
+| Free forever | ✅ | ❌ | ❌ |
 
 ---
 
-## Why Zeta?
+## Zeta in Action
 
-Most project management tools are either too simple or locked behind expensive SaaS subscriptions. **Zeta is fully self-hosted, open source, and free** — giving your team complete ownership of your data and workflow.
+### Sprint Analytics Dashboard
+> Unified cockpit for sprint health — velocity trends, workload distribution, and real-time task metrics.
 
-- **Your data, your server** — no third-party cloud required
-- **Everything in one app** — no juggling Jira + Slack + Notion
-- **Real-time by default** — Socket.io powers live updates everywhere
-- **AI-assisted** — built-in Gemini integration for smart summaries
-- **Beautiful UI** — dark mode, animations, and a premium design
+![Sprint Analytics Dashboard](docs/images/preview-dashboard.gif)
+
+---
+
+### Drag-and-Drop Kanban Board
+> Move tasks across Backlog → In Progress → Review → Done with live Socket.io updates.
+
+![Kanban Board](docs/images/preview-kanban.gif)
+
+---
+
+### Collaborative Wiki & Docs
+> Rich TipTap editor with `@mention` support, real-time viewer presence, and per-project documentation spaces.
+
+![Documentation Editor](docs/images/preview-docs.gif)
+
+---
+
+### Real-time Team Chat
+> 1-to-1 and group messaging with typing indicators, read receipts, file attachments, and deep-link notifications.
+
+![Team Chat](docs/images/preview-chat.gif)
 
 ---
 
 ## Features
 
-### Dashboard
-- Personalized analytics with bar charts, area charts, and pie charts
-- Stats cards: completed tasks, active tasks, total tasks, sprint count
+<details>
+<summary><strong>📊 Sprint Analytics Dashboard</strong></summary>
+
+- Personalized overview: completed tasks, active tasks, total count, sprint count
+- Bar charts, area charts, and pie charts powered by Recharts
 - Filter by project and sprint for focused metrics
-- Trend indicators showing week-over-week changes
+- Velocity trend indicators showing week-over-week changes
 - Task completion chart over the last 30 days
+- Per-user workload and assignment distribution
+</details>
 
-### Project Management
+<details>
+<summary><strong>📁 Project Management</strong></summary>
+
 - Create and manage multiple projects with descriptions
-- Role-based project membership: Viewer / Contributor / Admin
+- Role-based project membership: **Viewer / Contributor / Admin**
 - Invite members by email or user ID
-- Per-project board sections — fully customizable Kanban columns
-- Project-level settings, member management, and deletion
+- Per-project settings, member management, and deletion
+- Project-level activity and audit trail
+</details>
 
-### Kanban Board
-- Drag-and-drop task cards across custom columns
+<details>
+<summary><strong>🗂 Kanban Board</strong></summary>
+
+- Drag-and-drop task cards across **Backlog → In Progress → Review → Done**
 - Create, edit, and delete tasks inline
-- Task cards show assignees, priority, due dates, and complexity points
+- Task cards display assignees, priority, due dates, and complexity points
 - Supports infinite subtask hierarchy via a closure table model
-- Filter and sort by status, assignee, and sprint
+- Sprint selector with start & end date indicators
+- Interactive sidebar panel with detailed audit logs per task
+</details>
 
-### Sprint Management
+<details>
+<summary><strong>🏃 Sprint Management</strong></summary>
+
 - Create sprints with start and end dates
-- Move tasks in and out of sprints (backlog support)
+- Move tasks in and out of sprints (full backlog support)
 - Sprint-level activity feed and comments
 - Sprint analytics and burndown indicators
-- Mark sprints as complete and archive them
+- Mark sprints complete and archive them
+</details>
 
-### Task Detail
-- Rich TipTap editor for task descriptions (bold, italic, headings, lists, images, links)
-- @mention users directly in descriptions and comments
-- Multiple assignees with roles: Owner / Secondary Owner / POC / Assignee
-- Set due dates, complexity points, sprint, reporter, GitHub link, branch name, repo
+<details>
+<summary><strong>✅ Task Detail</strong></summary>
+
+- Rich TipTap editor for descriptions (bold, italic, headings, lists, images, links)
+- `@mention` users directly in descriptions and comments
+- Multiple assignees with roles: **Owner / Secondary Owner / POC / Assignee**
+- Set due dates, complexity points, sprint, reporter, GitHub link, branch name, and repo
 - Threaded comments with nested replies
-- Attachment uploads (images, PDFs, docs, spreadsheets — up to 50 MB)
-- Full timeline/audit log — every change recorded with optional comment
+- File attachments (images, PDFs, docs, spreadsheets — up to 50 MB)
+- Full audit log — every change recorded with optional comment
 - AI-powered thread summary using Gemini API
+</details>
 
-### Documentation
-- Per-project rich text documentation with TipTap editor
-- Full formatting: headings, blockquotes, highlights, alignment, images, links
-- Link docs to specific tasks for traceability
-- Author/admin-only editing and deletion
+<details>
+<summary><strong>📝 Wiki & Documentation</strong></summary>
 
-### Real-time Chat
+- Per-project rich-text documentation with full TipTap editor
+- Headings, blockquotes, highlights, alignment, images, and links
+- Link docs to specific tasks for full traceability
+- Real-time viewer indicator showing active user avatars
+- `@username` autocomplete mentions
+- Author/admin-only editing and deletion controls
+</details>
+
+<details>
+<summary><strong>💬 Real-time Chat</strong></summary>
+
 - 1-to-1 direct messages and group chats
 - Live typing indicators, online status, and read receipts
-- Rich message editor with formatting, @mentions, and file attachments
+- Rich message editor with formatting, `@mentions`, and file attachments
 - Message edit and soft-delete
 - Paginated message history with lazy scroll loading
 - Search messages across all chats from the command palette
 - Deep-link to any message — click a notification and jump directly with highlight animation
 - Group admin controls: rename, add/remove members, mute, toggle permissions
 - Unread message count badges per chat
+</details>
 
-### Notifications
-- Types: Mention / Assigned / Project Added / Task Changed / Due Soon
-- Auto-generated Due Soon alerts (within 3 days of due date)
+<details>
+<summary><strong>🔔 Notifications</strong></summary>
+
+- Types: **Mention / Assigned / Project Added / Task Changed / Due Soon**
+- Auto-generated **Due Soon** alerts within 3 days of due date
 - Real-time notification bell with badge count
 - Click any notification to deep-link to the relevant task, sprint, or message
+</details>
 
-### Global Search — Command Palette (`Ctrl+K` / `Cmd+K`)
+<details>
+<summary><strong>🔍 Global Search — Command Palette (`Ctrl+K` / `Cmd+K`)</strong></summary>
+
 - Searches across: Projects, Tasks, Sprints, Docs, People, Chats, Files, Notifications
 - Filter by category for focused results
 - Timestamp shown for chat message results (12-hour format)
 - Instant DM creation from People search results
+</details>
 
-### File Storage
+<details>
+<summary><strong>📎 File Storage</strong></summary>
+
 - Upload attachments to tasks, comments, sprints, and chat messages
-- 50 MB per-file limit, allowlisted MIME types
+- 50 MB per-file limit with allowlisted MIME types
 - Global storage search — find any file you've uploaded or have access to
 - Files served with authentication — no public URLs
+</details>
 
-### User Settings
-- Update display name and change password (bcrypt-hashed)
-- Configure dashboard focus thresholds
-- Toggle timeline comment prompts
-- Enable or disable real-time notifications
+<details>
+<summary><strong>⚙️ Admin Panel (Owner/Admin only)</strong></summary>
 
-### Admin Panel (Owner / Admin only)
-- SMTP configuration — host, port, auth, TLS, test connection
-- AI configuration — enable/disable Gemini, choose model, set API key
-- User invitations — invite by email with role assignment; revoke pending invites
-- Privilege management — promote/demote users (owner only)
+- **SMTP configuration** — host, port, auth, TLS, and test connection
+- **AI configuration** — enable/disable Gemini, choose model, set API key
+- **User invitations** — invite by email with role assignment; revoke pending invites
+- **Privilege management** — promote/demote users (owner only)
 - Background email queue with retry logic (up to 3 attempts)
+</details>
 
-### Authentication
+<details>
+<summary><strong>🔐 Authentication</strong></summary>
+
 - Credentials login (email + password, min 8 characters)
 - GitHub OAuth (optional)
 - Email verification flow (when SMTP is configured)
 - Forgot password / reset password via secure token email
 - Invite-only registration option
-- First registered user is automatically Owner + Admin
+- **First registered user is automatically Owner + Admin**
 - Session-based auth via NextAuth.js v5
+</details>
 
 ---
 
@@ -148,24 +209,90 @@ Most project management tools are either too simple or locked behind expensive S
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript 5 |
-| UI | Tailwind CSS v4, Radix UI, Lucide Icons |
-| Rich Text | Tiptap v3 |
-| Database | PostgreSQL via Prisma 7 |
-| Real-time | Socket.io 4 |
-| Auth | NextAuth.js v5 |
-| Charts | Recharts |
-| Drag & Drop | @hello-pangea/dnd |
-| AI | Google Gemini API |
-| Email | Nodemailer |
-| Command Palette | cmdk |
-| Notifications | Sonner |
-| Passwords | bcryptjs |
+| **Framework** | Next.js 16 (App Router) |
+| **Language** | TypeScript 5 |
+| **UI** | Tailwind CSS v4, Radix UI, Lucide Icons |
+| **Rich Text** | Tiptap v3 |
+| **Database** | PostgreSQL via Prisma 7 |
+| **Real-time** | Socket.io 4 |
+| **Auth** | NextAuth.js v5 |
+| **Charts** | Recharts |
+| **Drag & Drop** | @hello-pangea/dnd |
+| **AI** | Google Gemini API |
+| **Email** | Nodemailer |
+| **Command Palette** | cmdk |
+| **Notifications** | Sonner |
+| **Passwords** | bcryptjs |
 
 ---
 
-## Getting Started
+## Self-Hosting with Docker (Recommended)
+
+The fastest way to get Zeta running is with Docker Compose. It spins up the app, PostgreSQL, pgAdmin (database UI), and Dozzle (log viewer) with a single command.
+
+### Step 1 — Clone the Repository
+
+```bash
+git clone https://github.com/codeterrayt/Zeta.git
+cd Zeta
+```
+
+### Step 2 — Configure Environment
+
+Copy the example env file:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in the required values:
+
+```env
+# Database (auto-configured by Docker Compose)
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/Zeta?schema=public"
+
+# NextAuth — required for session encryption
+AUTH_SECRET="your-auth-secret"
+NEXTAUTH_URL="http://localhost:3000"
+AUTH_TRUST_HOST=true
+
+# Cron endpoint protection — generate with the command below
+CRON_SECRET="your-cron-secret"
+```
+
+**Generate your secrets** using Node.js crypto (no extra packages needed):
+
+```bash
+# Generate AUTH_SECRET
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+
+# Generate CRON_SECRET
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Copy the output values into your `.env` file.
+
+### Step 3 — Build & Start
+
+```bash
+docker compose up --build
+```
+
+That's it. Zeta starts with default configurations. Once running:
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| **Zeta App** | http://localhost:3000 | Main application |
+| **pgAdmin** | http://localhost:5050 | DB admin UI (`admin@gmail.com` / `admin`) |
+| **Dozzle Logs** | http://localhost:8888 | Container log viewer |
+
+> **The first account you register automatically becomes the Owner account.** Register immediately after first boot to claim ownership.
+
+---
+
+## Local Development Setup
+
+If you'd prefer to run without Docker:
 
 ### Prerequisites
 
@@ -173,84 +300,67 @@ Most project management tools are either too simple or locked behind expensive S
 - PostgreSQL >= 14
 - npm or pnpm
 
-### 1 — Clone the Repository
+### Steps
 
 ```bash
-git clone https://github.com/your-org/zeta.git
-cd zeta
-```
+# 1. Clone
+git clone https://github.com/codeterrayt/Zeta.git
+cd Zeta
 
-### 2 — Install Dependencies
-
-```bash
+# 2. Install dependencies
 npm install
-```
 
-### 3 — Configure Environment
-
-```bash
+# 3. Configure environment
 cp .env.example .env
-```
+# Edit .env with your database URL and secrets (see above)
 
-Open `.env` and fill in:
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/zeta?schema=public"
-
-# NextAuth — generate with: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-AUTH_SECRET="your-generated-secret"
-
-# GitHub OAuth (optional)
-AUTH_GITHUB_ID=""
-AUTH_GITHUB_SECRET=""
-
-# Gemini AI (optional — can also be set in Admin Panel at runtime)
-GEMINI_API_KEY=""
-
-# App URL
-NEXTAUTH_URL=http://localhost:3000
-AUTH_TRUST_HOST=true
-
-# Cron endpoint protection
-CRON_SECRET="your-generated-cron-secret"
-```
-
-### 4 — Set Up the Database
-
-```bash
+# 4. Run migrations
 npx prisma migrate deploy
 npx prisma generate
-```
 
-### 5 — Run the Development Server
-
-```bash
+# 5. Start the dev server
 npm run dev
 ```
 
-Open http://localhost:3000. The **first user to register** automatically becomes the Owner and Admin.
+Open http://localhost:3000. The **first user to register** becomes the Owner and Admin.
+
+### Useful Dev Commands
+
+```bash
+# Lint the codebase
+npm run lint
+
+# Type-check without building
+npx tsc --noEmit
+
+# Explore the database visually
+npx prisma studio
+
+# Reset the database (destroys all data)
+npx prisma migrate reset
+```
 
 ---
 
-## Docker
+## Environment Variables Reference
 
-```bash
-# Copy and edit the Docker env file
-cp .docker.env .docker.env.local
-# Edit .docker.env.local with your secrets
-
-docker compose up -d
-```
-
-A full Docker Compose file (including a PostgreSQL service) is on the roadmap.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `AUTH_SECRET` | ✅ | NextAuth session encryption secret |
+| `NEXTAUTH_URL` | ✅ | Full URL of your deployment (e.g. `http://localhost:3000`) |
+| `AUTH_TRUST_HOST` | ✅ | Set to `true` when behind a proxy or in Docker |
+| `CRON_SECRET` | ✅ | Secret to protect the `/api/cron` endpoint |
+| `AUTH_GITHUB_ID` | ❌ | GitHub OAuth App Client ID (optional) |
+| `AUTH_GITHUB_SECRET` | ❌ | GitHub OAuth App Client Secret (optional) |
+| `GEMINI_API_KEY` | ❌ | Google Gemini key for AI summaries (can be set via Admin Panel) |
 
 ---
 
 ## Project Structure
 
 ```
-zeta/
+Zeta/
 ├── src/
 │   ├── actions/          # Server Actions (auth, chat, tasks, notifications, search…)
 │   ├── app/
@@ -270,6 +380,7 @@ zeta/
 ├── prisma/
 │   └── schema.prisma     # Full database schema
 ├── server.js             # Custom Node.js server (Next.js + Socket.io)
+├── docker-compose.yml    # Docker Compose with Postgres, pgAdmin, Dozzle
 └── .env.example          # Environment variable template
 ```
 
@@ -277,7 +388,6 @@ zeta/
 
 ## Roadmap
 
-- [ ] Docker Compose file with PostgreSQL service included
 - [ ] GitHub Actions CI pipeline (lint, typecheck, tests)
 - [ ] Unit and integration test suite
 - [ ] Mobile-responsive layout improvements
@@ -294,7 +404,7 @@ zeta/
 
 ## Contributing
 
-We warmly welcome contributions from the community! Whether it is fixing a bug, improving the docs, adding a feature, or sharing feedback — every contribution matters.
+We warmly welcome contributions from the community! Whether it's fixing a bug, improving docs, adding a feature, or sharing feedback — every contribution matters.
 
 ### How to Contribute
 
@@ -313,70 +423,25 @@ We warmly welcome contributions from the community! Whether it is fixing a bug, 
 - Keep PRs small and focused — one feature or fix per PR
 - Use [Conventional Commits](https://www.conventionalcommits.org) for commit messages
 - If adding a new feature, update the relevant documentation
-- For security issues, please **open a private security advisory** instead of a public issue
+- For security issues, **open a private security advisory** instead of a public issue
 
 ### Good First Issues
 
-Issues tagged [`good first issue`](https://github.com/your-org/zeta/labels/good%20first%20issue) are well-scoped and beginner-friendly.
-
-### Bug Reports & Feature Requests
-
-- **Bug?** Open an issue with steps to reproduce
-- **Idea?** Start a discussion or open a feature request
-
-### Useful Commands
-
-```bash
-# Run linting
-npm run lint
-
-# Type-check without building
-npx tsc --noEmit
-
-# Explore the database with Prisma Studio
-npx prisma studio
-
-# Reset the database (destroys all data)
-npx prisma migrate reset
-```
+Issues tagged [`good first issue`](https://github.com/codeterrayt/Zeta/labels/good%20first%20issue) are well-scoped and beginner-friendly.
 
 ---
 
 ## Security
 
-Zeta takes security seriously. If you discover a vulnerability, please **do not open a public issue**. Instead, open a [private security advisory](https://github.com/your-org/zeta/security/advisories/new) or email **security@your-domain.com**.
+Zeta takes security seriously. If you discover a vulnerability, please **do not open a public issue**. Instead, open a [private security advisory](https://github.com/codeterrayt/Zeta/security/advisories/new).
 
-Recent security hardening includes authenticated file serving, per-project authorization on all write operations, MIME type allowlisting, prompt injection mitigation, and cryptographically generated secrets.
+Security hardening includes: authenticated file serving, per-project authorization on all write operations, MIME type allowlisting, prompt injection mitigation, and cryptographically generated secrets.
 
 ---
 
 ## License
 
-Zeta is open source and released under the **MIT License**.
-
-```
-MIT License
-
-Copyright (c) 2026 Zeta Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
+Zeta is open source, released under the **[MIT License](LICENSE)**.
 
 ---
 
@@ -390,8 +455,8 @@ Built with these amazing open-source projects:
 
 <div align="center">
 
-**If Zeta is useful to you, please star the repository — it helps others find the project!**
+**⭐ If Zeta is useful to you, please star the repository — it helps others find the project!**
 
-[Report Bug](https://github.com/your-org/zeta/issues) · [Request Feature](https://github.com/your-org/zeta/issues) · [Join Discussions](https://github.com/your-org/zeta/discussions)
+[⭐ Star on GitHub](https://github.com/codeterrayt/Zeta) · [🐛 Report Bug](https://github.com/codeterrayt/Zeta/issues) · [💡 Request Feature](https://github.com/codeterrayt/Zeta/issues) · [💬 Discussions](https://github.com/codeterrayt/Zeta/discussions)
 
 </div>
