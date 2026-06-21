@@ -275,7 +275,7 @@ Copy the output values into your `.env` file.
 ### Step 3 — Build & Start
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 That's it. Zeta starts with default configurations. Once running:
@@ -351,9 +351,6 @@ npx prisma migrate reset
 | `NEXTAUTH_URL` | ✅ | Full URL of your deployment (e.g. `http://localhost:3000`) |
 | `AUTH_TRUST_HOST` | ✅ | Set to `true` when behind a proxy or in Docker |
 | `CRON_SECRET` | ✅ | Secret to protect the `/api/cron` endpoint |
-| `AUTH_GITHUB_ID` | ❌ | GitHub OAuth App Client ID (optional) |
-| `AUTH_GITHUB_SECRET` | ❌ | GitHub OAuth App Client Secret (optional) |
-| `GEMINI_API_KEY` | ❌ | Google Gemini key for AI summaries (can be set via Admin Panel) |
 
 ---
 
@@ -388,18 +385,8 @@ Zeta/
 
 ## Roadmap
 
-- [ ] AI-powered thread summaries via Gemini API *(in development)*
-- [ ] GitHub Actions CI pipeline (lint, typecheck, tests)
-- [ ] Unit and integration test suite
-- [ ] Mobile-responsive layout improvements
-- [ ] Webhook support (Slack, Discord)
-- [ ] GitHub integration — auto-link commits and PRs to tasks
-- [ ] Time tracking per task
-- [ ] Export to CSV / PDF
-- [ ] SSO / LDAP support
-- [ ] Localization (i18n)
-- [ ] Public project sharing / read-only view
-- [ ] Public REST API with API key authentication
+- [ ] AI-powered thread summaries via Gemini API
+- [ ] Github Integration with Tasks
 
 ---
 
