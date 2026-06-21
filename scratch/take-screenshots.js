@@ -175,30 +175,182 @@ async function run() {
   await hideDevOverlay(page)
   
   // ------------------ 1. DASHBOARD SMOOTH SCROLLING GIF ------------------
-  console.log("Capturing Dashboard Scroll frames...")
+  console.log("Capturing Dashboard Scroll frames with interactive hovers...")
   const dbFrames = []
-  
-  // Smooth scroll down and up
-  const dbScrollSteps = []
-  for (let s = 0; s <= 600; s += 30) dbScrollSteps.push(s)
-  for (let s = 570; s >= 30; s -= 30) dbScrollSteps.push(s)
-  
-  const dbDelays = dbScrollSteps.map(() => 50) // 50ms per frame for smooth 20 FPS scrolling
-  
-  for (let i = 0; i < dbScrollSteps.length; i++) {
-    const scrollVal = dbScrollSteps[i]
-    await page.evaluate((s) => {
+  const dbDelays = []
+  let dbFrameIdx = 0
+
+  // Frame 1: View Top stats cards
+  await hideDevOverlay(page)
+  let dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+  await page.screenshot({ path: dbFPath })
+  dbFrames.push(dbFPath)
+  dbDelays.push(2000) // Stay at top for 2.0s
+  dbFrameIdx++
+
+  // Scroll down slowly to the charts (scroll position 0 to 350)
+  for (let s = 10; s <= 350; s += 10) {
+    await page.evaluate((scrollVal) => {
       const container = document.getElementById("dashboard-scroll-container")
-      if (container) container.scrollTop = s
-    }, scrollVal)
-    await new Promise(r => setTimeout(r, 50)) // wait 50ms for smooth repaint
+      if (container) container.scrollTop = scrollVal
+    }, s)
+    await new Promise(r => setTimeout(r, 100))
     await hideDevOverlay(page)
     
-    const fPath = path.join(outputDir, `db-scroll-f-${i}.png`)
-    await page.screenshot({ path: fPath })
-    dbFrames.push(fPath)
+    dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+    await page.screenshot({ path: dbFPath })
+    dbFrames.push(dbFPath)
+    dbDelays.push(100) // slow scroll delay
+    dbFrameIdx++
   }
+
+  // State 2: Hover over AreaChart to trigger Zoom and show tooltip (Velocity Trend)
+  console.log("Hovering over Velocity Trend AreaChart...")
+  const areaChartRect = await page.evaluate(() => {
+    const el = document.querySelector('.recharts-area')?.closest('.recharts-wrapper')
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { left: r.left, top: r.top, width: r.width, height: r.height }
+  })
   
+  if (areaChartRect) {
+    // Hover at the center of the chart first to trigger the hover zoom transition
+    const centerX = areaChartRect.left + areaChartRect.width * 0.5
+    const centerY = areaChartRect.top + areaChartRect.height * 0.5
+    await page.mouse.move(centerX, centerY)
+    await new Promise(r => setTimeout(r, 600)) // wait for zoom scaling animation (500ms)
+    await hideDevOverlay(page)
+    dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+    await page.screenshot({ path: dbFPath })
+    dbFrames.push(dbFPath)
+    dbDelays.push(800) // show zoomed state briefly
+    dbFrameIdx++
+
+    // Hover at 2 different points along the Velocity Trend chart
+    const relativeXs = [0.35, 0.75]
+    for (const relX of relativeXs) {
+      const x = areaChartRect.left + areaChartRect.width * relX
+      const y = areaChartRect.top + areaChartRect.height * 0.4
+      await page.mouse.move(x, y)
+      await new Promise(r => setTimeout(r, 400)) // wait for tooltip animation
+      await hideDevOverlay(page)
+      
+      dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+      await page.screenshot({ path: dbFPath })
+      dbFrames.push(dbFPath)
+      dbDelays.push(1800) // View tooltip point for 1.8s
+      dbFrameIdx++
+    }
+  }
+
+  // State 3: Hover over BarChart to trigger Zoom and show tooltip (Project Load)
+  console.log("Hovering over Project Load BarChart...")
+  const barChartRect = await page.evaluate(() => {
+    const el = document.querySelector('.recharts-bar')?.closest('.recharts-wrapper')
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { left: r.left, top: r.top, width: r.width, height: r.height }
+  })
+
+  if (barChartRect) {
+    // Hover at the center of the chart first to trigger hover zoom transition
+    const centerX = barChartRect.left + barChartRect.width * 0.5
+    const centerY = barChartRect.top + barChartRect.height * 0.5
+    await page.mouse.move(centerX, centerY)
+    await new Promise(r => setTimeout(r, 600)) // wait for zoom scaling animation
+    await hideDevOverlay(page)
+    dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+    await page.screenshot({ path: dbFPath })
+    dbFrames.push(dbFPath)
+    dbDelays.push(800)
+    dbFrameIdx++
+
+    // Hover at 2 different points along the project workload bar chart
+    const relativeYs = [0.35, 0.70]
+    for (const relY of relativeYs) {
+      const x = barChartRect.left + barChartRect.width * 0.6
+      const y = barChartRect.top + barChartRect.height * relY
+      await page.mouse.move(x, y)
+      await new Promise(r => setTimeout(r, 400))
+      await hideDevOverlay(page)
+      
+      dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+      await page.screenshot({ path: dbFPath })
+      dbFrames.push(dbFPath)
+      dbDelays.push(1800) // View tooltip point for 1.8s
+      dbFrameIdx++
+    }
+  }
+
+  // Scroll down further to the activity feed and cards (scroll position 350 to 650)
+  // Move mouse out of charts first so tooltips disappear
+  await page.mouse.move(10, 10)
+  for (let s = 360; s <= 650; s += 10) {
+    await page.evaluate((scrollVal) => {
+      const container = document.getElementById("dashboard-scroll-container")
+      if (container) container.scrollTop = scrollVal
+    }, s)
+    await new Promise(r => setTimeout(r, 100))
+    await hideDevOverlay(page)
+    
+    dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+    await page.screenshot({ path: dbFPath })
+    dbFrames.push(dbFPath)
+    dbDelays.push(100)
+    dbFrameIdx++
+  }
+
+  // State 4: Hover over Team Performance info icon button to trigger focus tooltip
+  console.log("Hovering over Team Performance Info Button...")
+  const infoBtnRect = await page.evaluate(() => {
+    const divs = Array.from(document.querySelectorAll('div'))
+    const infoDiv = divs.find(d => d.className.includes('group/info'))
+    const btn = infoDiv ? infoDiv.querySelector('button') : null
+    if (!btn) return null
+    const r = btn.getBoundingClientRect()
+    return { left: r.left, top: r.top, width: r.width, height: r.height }
+  })
+
+  if (infoBtnRect) {
+    const x = infoBtnRect.left + infoBtnRect.width / 2
+    const y = infoBtnRect.top + infoBtnRect.height / 2
+    await page.mouse.move(x, y)
+    await new Promise(r => setTimeout(r, 400)) // wait for tooltip display transition
+    await hideDevOverlay(page)
+    
+    dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+    await page.screenshot({ path: dbFPath })
+    dbFrames.push(dbFPath)
+    dbDelays.push(2500) // View tooltip explanation for 2.5s
+    dbFrameIdx++
+  }
+
+  // Scroll back to the top (scroll position 650 to 0)
+  // Move mouse away to clear info button hover tooltip
+  await page.mouse.move(10, 10)
+  for (let s = 640; s >= 0; s -= 15) {
+    await page.evaluate((scrollVal) => {
+      const container = document.getElementById("dashboard-scroll-container")
+      if (container) container.scrollTop = scrollVal
+    }, s)
+    await new Promise(r => setTimeout(r, 100))
+    await hideDevOverlay(page)
+    
+    dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+    await page.screenshot({ path: dbFPath })
+    dbFrames.push(dbFPath)
+    dbDelays.push(100)
+    dbFrameIdx++
+  }
+
+  // Final top view pause
+  await hideDevOverlay(page)
+  dbFPath = path.join(outputDir, `db-scroll-f-${dbFrameIdx}.png`)
+  await page.screenshot({ path: dbFPath })
+  dbFrames.push(dbFPath)
+  dbDelays.push(1000)
+  dbFrameIdx++
+
   console.log("Compiling Dashboard GIFs...")
   await createGif(dbFrames, path.join(outputDir, "highres-dashboard.gif"), 1440, 900, dbDelays)
   await createPreviewGif(dbFrames, path.join(outputDir, "preview-dashboard.gif"), 720, 450, dbDelays)
@@ -344,30 +496,112 @@ async function run() {
   
   chatFrames.forEach(f => fs.unlinkSync(f))
 
-  // ------------------ 4. DOCUMENTATION STATIC IMAGES ------------------
-  console.log("Navigating to documentation for static captures...")
+  // ------------------ 4. DOCUMENTATION ANIMATED FLOW GIF ------------------
+  console.log("Navigating to documentation list for GIF captures...")
   await page.goto("http://localhost:3000/documentation", { waitUntil: "networkidle2" })
   await new Promise(r => setTimeout(r, 4000))
   await hideDevOverlay(page)
+
+  const docFrames = []
+  const docDelays = []
+  let docFrameIdx = 0
+
+  // Frame 1: List of documents
+  fPath = path.join(outputDir, `doc-f-${docFrameIdx}.png`)
+  await page.screenshot({ path: fPath })
+  docFrames.push(fPath)
+  docDelays.push(2000) // view list for 2s
+  docFrameIdx++
+
+  // Navigate to new document page
+  console.log("Navigating to create document page...")
+  await page.goto("http://localhost:3000/documentation/new", { waitUntil: "networkidle2" })
+  await new Promise(r => setTimeout(r, 3000))
+  await hideDevOverlay(page)
+
+  // Frame 2: Empty create form
+  await hideDevOverlay(page)
+  fPath = path.join(outputDir, `doc-f-${docFrameIdx}.png`)
+  await page.screenshot({ path: fPath })
+  docFrames.push(fPath)
+  docDelays.push(1000) // show empty form for 1s
+  docFrameIdx++
+
+  // Frame 3+: Type title character by character
+  const docTitle = "CI/CD Parallel Runner Specifications"
+  await page.focus('input[placeholder="Document Title..."]')
   
-  console.log("Capturing Documentation...")
-  const docPath = path.join(outputDir, "highres-docs.png")
-  await page.screenshot({ path: docPath })
+  for (let i = 0; i < docTitle.length; i += 3) {
+    const chunk = docTitle.substring(i, i + 3)
+    await page.type('input[placeholder="Document Title..."]', chunk)
+    await new Promise(r => setTimeout(r, 100))
+    await hideDevOverlay(page)
+    
+    fPath = path.join(outputDir, `doc-f-${docFrameIdx}.png`)
+    await page.screenshot({ path: fPath })
+    docFrames.push(fPath)
+    docDelays.push(100) // typing speed
+    docFrameIdx++
+  }
+
+  // Type body content character-by-character
+  const docBody = "Automated runners config. Mentions: @"
+  await page.focus('.ProseMirror')
   
-  // Use our JS downsampler to create the preview docs image as a desktop downsampled layout
-  const docPng = await new Promise((res, rej) => {
-    fs.createReadStream(docPath)
-      .pipe(new PNG())
-      .on("parsed", function() { res(this) })
-      .on("error", rej)
+  for (let i = 0; i < docBody.length; i += 2) {
+    const chunk = docBody.substring(i, i + 2)
+    await page.type('.ProseMirror', chunk)
+    await new Promise(r => setTimeout(r, 100))
+    await hideDevOverlay(page)
+    
+    fPath = path.join(outputDir, `doc-f-${docFrameIdx}.png`)
+    await page.screenshot({ path: fPath })
+    docFrames.push(fPath)
+    docDelays.push(100)
+    docFrameIdx++
+  }
+
+  // Wait for mention autocomplete list to render
+  await new Promise(r => setTimeout(r, 800))
+  await hideDevOverlay(page)
+  fPath = path.join(outputDir, `doc-f-${docFrameIdx}.png`)
+  await page.screenshot({ path: fPath })
+  docFrames.push(fPath)
+  docDelays.push(1000) // dropdown visible for 1s
+  docFrameIdx++
+
+  // Press Enter to select the mention
+  await page.keyboard.press('Enter')
+  await new Promise(r => setTimeout(r, 200))
+  await hideDevOverlay(page)
+  fPath = path.join(outputDir, `doc-f-${docFrameIdx}.png`)
+  await page.screenshot({ path: fPath })
+  docFrames.push(fPath)
+  docDelays.push(800)
+  docFrameIdx++
+
+  // Click Publish Document button
+  await page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('button'))
+    const publishBtn = btns.find(b => b.textContent.includes('Publish Document'))
+    if (publishBtn) publishBtn.click()
   })
-  const previewDocPng = downsample2x(docPng)
-  await new Promise((res, rej) => {
-    const writeStream = fs.createWriteStream(path.join(outputDir, "preview-docs.png"))
-    previewDocPng.pack().pipe(writeStream)
-    writeStream.on("finish", res)
-    writeStream.on("error", rej)
-  })
+  
+  // Wait for redirect to /documentation
+  await new Promise(r => setTimeout(r, 3500))
+  await hideDevOverlay(page)
+  
+  // Final frame: Redirected back to documentation list with the new document published!
+  fPath = path.join(outputDir, `doc-f-${docFrameIdx}.png`)
+  await page.screenshot({ path: fPath })
+  docFrames.push(fPath)
+  docDelays.push(2500) // show final list for 2.5s
+
+  console.log("Compiling Documentation GIFs...")
+  await createGif(docFrames, path.join(outputDir, "highres-docs.gif"), 1440, 900, docDelays)
+  await createPreviewGif(docFrames, path.join(outputDir, "preview-docs.gif"), 720, 450, docDelays)
+  
+  docFrames.forEach(f => fs.unlinkSync(f))
 
   console.log("All smooth animated GIFs and desktop layout previews generated successfully!")
   await browser.close()

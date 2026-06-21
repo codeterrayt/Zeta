@@ -134,7 +134,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 bg-card border border-border/60 rounded-[3rem] p-10 shadow-sm">
+        <div className="lg:col-span-2 bg-card border border-border/60 rounded-[3rem] p-10 shadow-sm transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:border-primary/20">
           <div className="flex items-center justify-between mb-10">
             <div>
               <h2 className="text-2xl font-black tracking-tight">Velocity Trend</h2>
@@ -181,7 +181,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Project Distribution */}
-        <div className="bg-card border border-border/60 rounded-[3rem] p-10 shadow-sm flex flex-col">
+        <div className="bg-card border border-border/60 rounded-[3rem] p-10 shadow-sm flex flex-col transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:border-primary/20">
           <div className="mb-10 text-center">
             <h2 className="text-2xl font-black tracking-tight">Project Load</h2>
             <p className="text-muted-foreground text-sm font-medium">Task distribution across workspaces</p>
