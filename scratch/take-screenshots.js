@@ -149,6 +149,8 @@ async function run() {
     where: { title: { startsWith: "OPEN-T3B2" } }
   })
   const t1Id = t1.id
+  const sprintId = t1.sprintId
+  console.log(`Found Sprint ID for task: ${sprintId}`)
 
   console.log("Launching Microsoft Edge in Desktop Viewport (1440x900)...")
   const browser = await puppeteer.launch({
@@ -359,36 +361,126 @@ async function run() {
   dbFrames.forEach(f => fs.unlinkSync(f))
 
   // ------------------ 2. KANBAN TRANSITION GIF ------------------
-  console.log(`Navigating to project board: ${projectId}...`)
-  await page.goto(`http://localhost:3000/projects/${projectId}`, { waitUntil: "networkidle2" })
-  await new Promise(r => setTimeout(r, 4000))
+  console.log(`Navigating to sprint board: ${projectId}/sprints/${sprintId}...`)
+  await page.goto(`http://localhost:3000/projects/${projectId}/sprints/${sprintId}`, { waitUntil: "networkidle2" })
+  await new Promise(r => setTimeout(r, 4500))
   await hideDevOverlay(page)
 
   console.log("Capturing Kanban transitions...")
   const kbFrames = []
-  const kbDelays = [1500, 1500, 1500] // Stay on each state for 1.5s
-  
-  // Frame 1: In Progress
-  await hideDevOverlay(page)
-  let fPath = path.join(outputDir, "kb-f-0.png")
-  await page.screenshot({ path: fPath })
-  kbFrames.push(fPath)
+  const kbDelays = []
+  let kbFrameIdx = 0
 
-  // Frame 2: Review
-  await prisma.task.update({ where: { id: t1Id }, data: { status: "REVIEW" } })
-  await new Promise(r => setTimeout(r, 1800))
-  await hideDevOverlay(page)
-  fPath = path.join(outputDir, "kb-f-1.png")
-  await page.screenshot({ path: fPath })
-  kbFrames.push(fPath)
+  // Helper to get coordinates
+  const getCardCoord = async (tid) => {
+    return await page.evaluate((id) => {
+      const el = document.querySelector(`[data-rfd-draggable-id="${id}"]`)
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    }, tid)
+  }
 
-  // Frame 3: Done
-  await prisma.task.update({ where: { id: t1Id }, data: { status: "DONE" } })
-  await new Promise(r => setTimeout(r, 1800))
+  const getColumnCoord = async (cid) => {
+    return await page.evaluate((id) => {
+      const el = document.querySelector(`[data-rfd-droppable-id="${id}"]`)
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    }, cid)
+  }
+
+  // Frame 1: Hover over task card in IN_PROGRESS
+  let cardCoord = await getCardCoord(t1Id)
+  if (cardCoord) {
+    await page.mouse.move(cardCoord.x, cardCoord.y)
+    await new Promise(r => setTimeout(r, 400))
+  }
   await hideDevOverlay(page)
-  fPath = path.join(outputDir, "kb-f-2.png")
-  await page.screenshot({ path: fPath })
-  kbFrames.push(fPath)
+  let kbFPath = path.join(outputDir, `kb-f-${kbFrameIdx}.png`)
+  await page.screenshot({ path: kbFPath })
+  kbFrames.push(kbFPath)
+  kbDelays.push(1500) // Hover for 1.5s
+  kbFrameIdx++
+
+  // Move from IN_PROGRESS to REVIEW
+  console.log("Moving card from IN_PROGRESS to REVIEW...")
+  let targetColCoord = await getColumnCoord("REVIEW")
+  if (cardCoord && targetColCoord) {
+    // Start database update
+    await prisma.task.update({ where: { id: t1Id }, data: { status: "REVIEW" } })
+    
+    // Simulate mouse move from start to target in 5 frames
+    const steps = 5
+    for (let i = 1; i <= steps; i++) {
+      const x = cardCoord.x + (targetColCoord.x - cardCoord.x) * (i / steps)
+      const y = cardCoord.y + (targetColCoord.y - cardCoord.y) * (i / steps)
+      await page.mouse.move(x, y)
+      await new Promise(r => setTimeout(r, 150)) // wait for smooth animation
+      await hideDevOverlay(page)
+      
+      kbFPath = path.join(outputDir, `kb-f-${kbFrameIdx}.png`)
+      await page.screenshot({ path: kbFPath })
+      kbFrames.push(kbFPath)
+      kbDelays.push(150)
+      kbFrameIdx++
+    }
+  } else {
+    // Fallback if elements not found
+    await prisma.task.update({ where: { id: t1Id }, data: { status: "REVIEW" } })
+    await new Promise(r => setTimeout(r, 1800))
+  }
+
+  // Frame at REVIEW
+  await new Promise(r => setTimeout(r, 600)) // ensure reactive updates completed
+  await hideDevOverlay(page)
+  cardCoord = await getCardCoord(t1Id)
+  if (cardCoord) {
+    await page.mouse.move(cardCoord.x, cardCoord.y)
+  }
+  kbFPath = path.join(outputDir, `kb-f-${kbFrameIdx}.png`)
+  await page.screenshot({ path: kbFPath })
+  kbFrames.push(kbFPath)
+  kbDelays.push(1500) // Hover for 1.5s
+  kbFrameIdx++
+
+  // Move from REVIEW to DONE
+  console.log("Moving card from REVIEW to DONE...")
+  targetColCoord = await getColumnCoord("DONE")
+  if (cardCoord && targetColCoord) {
+    await prisma.task.update({ where: { id: t1Id }, data: { status: "DONE" } })
+    
+    const steps = 5
+    for (let i = 1; i <= steps; i++) {
+      const x = cardCoord.x + (targetColCoord.x - cardCoord.x) * (i / steps)
+      const y = cardCoord.y + (targetColCoord.y - cardCoord.y) * (i / steps)
+      await page.mouse.move(x, y)
+      await new Promise(r => setTimeout(r, 150))
+      await hideDevOverlay(page)
+      
+      kbFPath = path.join(outputDir, `kb-f-${kbFrameIdx}.png`)
+      await page.screenshot({ path: kbFPath })
+      kbFrames.push(kbFPath)
+      kbDelays.push(150)
+      kbFrameIdx++
+    }
+  } else {
+    await prisma.task.update({ where: { id: t1Id }, data: { status: "DONE" } })
+    await new Promise(r => setTimeout(r, 1800))
+  }
+
+  // Frame at DONE
+  await new Promise(r => setTimeout(r, 600))
+  await hideDevOverlay(page)
+  cardCoord = await getCardCoord(t1Id)
+  if (cardCoord) {
+    await page.mouse.move(cardCoord.x, cardCoord.y)
+  }
+  kbFPath = path.join(outputDir, `kb-f-${kbFrameIdx}.png`)
+  await page.screenshot({ path: kbFPath })
+  kbFrames.push(kbFPath)
+  kbDelays.push(1500)
+  kbFrameIdx++
 
   console.log("Compiling Kanban GIFs...")
   await createGif(kbFrames, path.join(outputDir, "highres-kanban.gif"), 1440, 900, kbDelays)
