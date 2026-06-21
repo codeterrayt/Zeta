@@ -6,7 +6,7 @@
 
 **The open-source, self-hosted project management platform built for modern engineering teams.**
 
-Sprints · Kanban · Real-time Chat · Wiki Docs · AI Summaries — all in one beautiful app.
+Sprints · Kanban · Real-time Chat · Wiki Docs — all in one beautiful app.
 
 <br />
 
@@ -37,7 +37,7 @@ Most project management tools are either too simple or locked behind expensive S
 | Real-time collaboration | ✅ | ⚠️ | ⚠️ |
 | Built-in chat | ✅ | ❌ | ❌ |
 | Wiki & Docs | ✅ | ✅ | ⚠️ |
-| AI summaries | ✅ | 💰 | 💰 |
+| AI summaries | 🚧 | 💰 | 💰 |
 | Free forever | ✅ | ❌ | ❌ |
 
 ---
@@ -126,7 +126,6 @@ Most project management tools are either too simple or locked behind expensive S
 - Threaded comments with nested replies
 - File attachments (images, PDFs, docs, spreadsheets — up to 50 MB)
 - Full audit log — every change recorded with optional comment
-- AI-powered thread summary using Gemini API
 </details>
 
 <details>
@@ -388,6 +387,7 @@ Zeta/
 
 ## Roadmap
 
+- [ ] AI-powered thread summaries via Gemini API *(in development)*
 - [ ] GitHub Actions CI pipeline (lint, typecheck, tests)
 - [ ] Unit and integration test suite
 - [ ] Mobile-responsive layout improvements
