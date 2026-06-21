@@ -98,7 +98,8 @@ Most project management tools are either too simple or locked behind expensive S
 <details>
 <summary><strong>🗂 Kanban Board</strong></summary>
 
-- Drag-and-drop task cards across **Backlog → In Progress → Review → Done**
+- Drag-and-drop task cards across fully **customizable stages** (add, rename, or remove columns)
+- Default stages: **Backlog → In Progress → Review → Done** — extend with your own workflow steps
 - Create, edit, and delete tasks inline
 - Task cards display assignees, priority, due dates, and complexity points
 - Supports infinite subtask hierarchy via a closure table model
