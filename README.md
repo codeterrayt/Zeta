@@ -51,6 +51,19 @@ Most project management tools are either too simple or locked behind expensive S
 
 ---
 
+### Project & Sprint Lifecycle
+> Spin up new projects, establish multiple active and planned sprints, map tasks, and track team activity updates.
+
+![Project & Sprint Setup](docs/images/preview-project-sprints.gif)
+
+**Key Walkthrough Highlights:**
+- **Dynamic Project Setup**: Seamlessly spin up separate workspace boards with custom scopes.
+- **Sprint Sequencing**: Spin up multiple sprints (active and upcoming) to plan deliverables.
+- **Task Alignment**: Create and map tasks to sprint backlogs directly from task creation modals.
+- **Dashboard Activity Feed**: Monitor real-time audit trails of workspace actions on the cockpit.
+
+---
+
 ### Drag-and-Drop Kanban Board
 > Move tasks across Backlog → In Progress → Review → Done with live Socket.io updates.
 
@@ -115,6 +128,15 @@ Most project management tools are either too simple or locked behind expensive S
 - Sprint-level activity feed and comments
 - Sprint analytics and burndown indicators
 - Mark sprints complete and archive them
+</details>
+
+<details>
+<summary><strong>📜 Activity Feed & Audit Trails</strong></summary>
+
+- Main dashboard live activity feed aggregating workspace events
+- Comprehensive task-level audit timelines capturing ownership changes, status updates, description edits, and comment threads
+- Sprint-specific activity logs tracking scope additions and removals
+- Live user presence events (real-time indicators in docs and chat)
 </details>
 
 <details>
